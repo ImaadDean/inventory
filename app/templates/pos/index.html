@@ -1,0 +1,343 @@
+{% extends "base.html" %}
+
+{% block title %}Point of Sale - Inventory Management System{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Point of Sale</h1>
+                <p class="text-gray-600">Process sales transactions</p>
+            </div>
+            <div class="text-right">
+                <p class="text-sm text-gray-500">Cashier</p>
+                <p class="text-lg font-semibold text-gray-900">{{ user.full_name }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- POS Interface -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Product Search and Cart -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Product Search -->
+            <div class="bg-white shadow rounded-lg p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Product Search</h3>
+                <div class="relative">
+                    <input type="text"
+                           id="product-search"
+                           placeholder="Search by name, SKU, or barcode..."
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500">
+                    <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                        <i class="fas fa-search text-gray-400"></i>
+                    </div>
+                </div>
+                <div id="search-results" class="mt-4 space-y-2 max-h-60 overflow-y-auto"></div>
+            </div>
+
+            <!-- Shopping Cart -->
+            <div class="bg-white shadow rounded-lg p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Shopping Cart</h3>
+                <div id="cart-items" class="space-y-3">
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-shopping-cart text-3xl mb-2"></i>
+                        <p>Cart is empty</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Summary and Payment -->
+        <div class="space-y-6">
+            <!-- Order Summary -->
+            <div class="bg-white shadow rounded-lg p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Order Summary</h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Subtotal:</span>
+                        <span id="subtotal">$0.00</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Tax (8%):</span>
+                        <span id="tax">$0.00</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Discount:</span>
+                        <span id="discount">$0.00</span>
+                    </div>
+                    <hr>
+                    <div class="flex justify-between text-lg font-semibold">
+                        <span>Total:</span>
+                        <span id="total">$0.00</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customer Info -->
+            <div class="bg-white shadow rounded-lg p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Customer</h3>
+                <div class="space-y-3">
+                    <input type="text"
+                           id="customer-name"
+                           placeholder="Customer name (optional)"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500">
+                    <button type="button"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                        <i class="fas fa-search mr-2"></i>Search Customer
+                    </button>
+                </div>
+            </div>
+
+            <!-- Payment -->
+            <div class="bg-white shadow rounded-lg p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Payment</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+                        <select id="payment-method"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500">
+                            <option value="cash">Cash</option>
+                            <option value="card">Card</option>
+                            <option value="digital_wallet">Digital Wallet</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Amount Received</label>
+                        <input type="number"
+                               id="amount-received"
+                               step="0.01"
+                               placeholder="0.00"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        <span>Change: </span>
+                        <span id="change" class="font-medium">$0.00</span>
+                    </div>
+                    <button type="button"
+                            id="process-sale"
+                            disabled
+                            class="w-full px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed">
+                        <i class="fas fa-credit-card mr-2"></i>Process Sale
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // POS functionality will be implemented here
+    let cart = [];
+    let subtotal = 0;
+    let tax = 0;
+    let total = 0;
+
+    // Product search functionality
+    document.getElementById('product-search').addEventListener('input', async function(e) {
+        const query = e.target.value;
+        if (query.length < 2) {
+            document.getElementById('search-results').innerHTML = '';
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/pos/products/search?query=${encodeURIComponent(query)}&limit=5`);
+            const products = await response.json();
+
+            const resultsHtml = products.map(product => `
+                <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
+                     onclick="addToCart('${product.id}', '${product.name}', '${product.sku}', ${product.price}, ${product.stock_quantity})">
+                    <div>
+                        <p class="font-medium text-gray-900">${product.name}</p>
+                        <p class="text-sm text-gray-500">${product.sku} - Stock: ${product.stock_quantity}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-medium text-gray-900">$${product.price.toFixed(2)}</p>
+                        <p class="text-sm text-gray-500">${product.unit}</p>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('search-results').innerHTML = resultsHtml;
+        } catch (error) {
+            console.error('Search error:', error);
+        }
+    });
+
+    // Add to cart function
+    function addToCart(id, name, sku, price, stock) {
+        const existingItem = cart.find(item => item.id === id);
+
+        if (existingItem) {
+            if (existingItem.quantity < stock) {
+                existingItem.quantity++;
+            } else {
+                showToast('Not enough stock available', 'error');
+                return;
+            }
+        } else {
+            cart.push({
+                id: id,
+                name: name,
+                sku: sku,
+                price: price,
+                quantity: 1,
+                stock: stock
+            });
+        }
+
+        updateCart();
+        document.getElementById('product-search').value = '';
+        document.getElementById('search-results').innerHTML = '';
+    }
+
+    // Update cart display
+    function updateCart() {
+        const cartContainer = document.getElementById('cart-items');
+
+        if (cart.length === 0) {
+            cartContainer.innerHTML = `
+                <div class="text-center py-8 text-gray-500">
+                    <i class="fas fa-shopping-cart text-3xl mb-2"></i>
+                    <p>Cart is empty</p>
+                </div>
+            `;
+        } else {
+            const cartHtml = cart.map(item => `
+                <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                    <div class="flex-1">
+                        <p class="font-medium text-gray-900">${item.name}</p>
+                        <p class="text-sm text-gray-500">${item.sku}</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="updateQuantity('${item.id}', -1)"
+                                class="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300">
+                            <i class="fas fa-minus text-xs"></i>
+                        </button>
+                        <span class="w-8 text-center">${item.quantity}</span>
+                        <button onclick="updateQuantity('${item.id}', 1)"
+                                class="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300">
+                            <i class="fas fa-plus text-xs"></i>
+                        </button>
+                        <span class="w-16 text-right font-medium">$${(item.price * item.quantity).toFixed(2)}</span>
+                        <button onclick="removeFromCart('${item.id}')"
+                                class="w-6 h-6 bg-red-200 rounded-full flex items-center justify-center hover:bg-red-300">
+                            <i class="fas fa-trash text-xs text-red-600"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            cartContainer.innerHTML = cartHtml;
+        }
+
+        updateTotals();
+    }
+
+    // Update quantity
+    function updateQuantity(id, change) {
+        const item = cart.find(item => item.id === id);
+        if (item) {
+            const newQuantity = item.quantity + change;
+            if (newQuantity <= 0) {
+                removeFromCart(id);
+            } else if (newQuantity <= item.stock) {
+                item.quantity = newQuantity;
+                updateCart();
+            } else {
+                showToast('Not enough stock available', 'error');
+            }
+        }
+    }
+
+    // Remove from cart
+    function removeFromCart(id) {
+        cart = cart.filter(item => item.id !== id);
+        updateCart();
+    }
+
+    // Update totals
+    function updateTotals() {
+        subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        tax = subtotal * 0.08; // 8% tax
+        total = subtotal + tax;
+
+        document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
+        document.getElementById('tax').textContent = `$${tax.toFixed(2)}`;
+        document.getElementById('total').textContent = `$${total.toFixed(2)}`;
+
+        // Enable/disable process sale button
+        const processSaleBtn = document.getElementById('process-sale');
+        processSaleBtn.disabled = cart.length === 0;
+
+        // Update change calculation
+        updateChange();
+    }
+
+    // Update change calculation
+    function updateChange() {
+        const amountReceived = parseFloat(document.getElementById('amount-received').value) || 0;
+        const change = amountReceived - total;
+        document.getElementById('change').textContent = `$${Math.max(0, change).toFixed(2)}`;
+    }
+
+    // Amount received input handler
+    document.getElementById('amount-received').addEventListener('input', updateChange);
+
+    // Process sale
+    document.getElementById('process-sale').addEventListener('click', async function() {
+        const amountReceived = parseFloat(document.getElementById('amount-received').value) || 0;
+
+        if (amountReceived < total) {
+            showToast('Insufficient payment amount', 'error');
+            return;
+        }
+
+        const saleData = {
+            customer_name: document.getElementById('customer-name').value || null,
+            items: cart.map(item => ({
+                product_id: item.id,
+                quantity: item.quantity,
+                discount_amount: 0
+            })),
+            tax_rate: 0.08,
+            discount_amount: 0,
+            payment_method: document.getElementById('payment-method').value,
+            payment_received: amountReceived,
+            notes: ''
+        };
+
+        try {
+            const response = await fetch('/api/pos/sales', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(saleData)
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                showToast('Sale processed successfully!', 'success');
+
+                // Reset form
+                cart = [];
+                updateCart();
+                document.getElementById('customer-name').value = '';
+                document.getElementById('amount-received').value = '';
+
+                // Optionally show receipt or redirect
+                console.log('Sale result:', result);
+            } else {
+                const error = await response.json();
+                showToast(error.detail || 'Failed to process sale', 'error');
+            }
+        } catch (error) {
+            console.error('Sale processing error:', error);
+            showToast('Failed to process sale', 'error');
+        }
+    });
+</script>
+{% endblock %}
