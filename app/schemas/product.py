@@ -71,8 +71,8 @@ class ProductCreate(BaseModel):
                 "description": "Latest iPhone model with advanced features",
                 "sku": "IPH15PRO001",
                 "barcode": "1234567890123",
-                "price": 999.99,
-                "cost_price": 750.00,
+                "price": 3700000,
+                "cost_price": 2775000,
                 "stock_quantity": 50,
                 "min_stock_level": 10,
                 "unit": "pcs",
@@ -98,7 +98,7 @@ class ProductUpdate(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
-                "price": 899.99,
+                "price": 3330000,
                 "stock_quantity": 75,
                 "min_stock_level": 15,
                 "supplier": "Apple Inc. - Updated"
@@ -136,8 +136,8 @@ class ProductResponse(BaseModel):
                 "sku": "IPH15PRO001",
                 "barcode": "1234567890123",
                 "category_name": "Electronics",
-                "price": 999.99,
-                "cost_price": 750.00,
+                "price": 3700000,
+                "cost_price": 2775000,
                 "stock_quantity": 50,
                 "min_stock_level": 10,
                 "unit": "pcs",

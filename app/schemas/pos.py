@@ -60,13 +60,13 @@ class SaleCreate(BaseModel):
                     {
                         "product_id": "507f1f77bcf86cd799439011",
                         "quantity": 1,
-                        "discount_amount": 0.0
+                        "discount_amount": 0
                     }
                 ],
                 "tax_rate": 0.08,
-                "discount_amount": 50.0,
+                "discount_amount": 185000,
                 "payment_method": "card",
-                "payment_received": 1000.0,
+                "payment_received": 3700000,
                 "notes": "Customer paid with credit card"
             }
         }
@@ -104,18 +104,18 @@ class SaleResponse(BaseModel):
                         "product_name": "iPhone 15 Pro",
                         "sku": "IPH15PRO001",
                         "quantity": 1,
-                        "unit_price": 999.99,
-                        "total_price": 999.99,
-                        "discount_amount": 0.0
+                        "unit_price": 3700000,
+                        "total_price": 3700000,
+                        "discount_amount": 0
                     }
                 ],
-                "subtotal": 999.99,
-                "tax_amount": 80.0,
-                "discount_amount": 50.0,
-                "total_amount": 1029.99,
+                "subtotal": 3700000,
+                "tax_amount": 296000,
+                "discount_amount": 185000,
+                "total_amount": 3811000,
                 "payment_method": "card",
-                "payment_received": 1030.0,
-                "change_given": 0.01,
+                "payment_received": 3811000,
+                "change_given": 0,
                 "status": "completed",
                 "created_at": "2024-01-20T14:30:00Z"
             }

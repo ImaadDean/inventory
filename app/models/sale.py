@@ -77,14 +77,14 @@ class Sale(BaseModel):
                         "product_name": "iPhone 15",
                         "sku": "IPH15001",
                         "quantity": 1,
-                        "unit_price": 999.99,
-                        "total_price": 999.99
+                        "unit_price": 3700000,
+                        "total_price": 3700000
                     }
                 ],
-                "subtotal": 999.99,
-                "tax_amount": 80.00,
-                "total_amount": 1079.99,
+                "subtotal": 3700000,
+                "tax_amount": 296000,
+                "total_amount": 3996000,
                 "payment_method": "card",
-                "payment_received": 1079.99
+                "payment_received": 3996000
             }
         }

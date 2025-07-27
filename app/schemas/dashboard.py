@@ -23,9 +23,9 @@ class SalesOverview(BaseModel):
     class Config:
         schema_extra = {
             "example": {
-                "total_sales": 15750.50,
+                "total_sales": 58277850,
                 "total_transactions": 125,
-                "average_transaction_value": 126.00,
+                "average_transaction_value": 466223,
                 "total_items_sold": 350
             }
         }

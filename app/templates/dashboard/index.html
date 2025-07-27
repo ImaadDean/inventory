@@ -32,7 +32,7 @@
                     <div class="ml-5 w-0 flex-1">
                         <dl>
                             <dt class="text-sm font-medium text-gray-500 truncate">Today's Sales</dt>
-                            <dd class="text-lg font-medium text-gray-900">${{ "%.2f"|format(dashboard.sales_overview.total_sales) }}</dd>
+                            <dd class="text-lg font-medium text-gray-900">UGX {{ "{:,.0f}"|format(dashboard.sales_overview.total_sales) }}</dd>
                         </dl>
                     </div>
                 </div>
@@ -104,7 +104,7 @@
                     <div class="ml-5 w-0 flex-1">
                         <dl>
                             <dt class="text-sm font-medium text-gray-500 truncate">Inventory Value</dt>
-                            <dd class="text-lg font-medium text-gray-900">${{ "%.2f"|format(dashboard.inventory_overview.total_inventory_value) }}</dd>
+                            <dd class="text-lg font-medium text-gray-900">UGX {{ "{:,.0f}"|format(dashboard.inventory_overview.total_inventory_value) }}</dd>
                         </dl>
                     </div>
                 </div>
@@ -136,7 +136,7 @@
                         </div>
                         <div class="text-right">
                             <p class="text-sm font-medium text-gray-900">{{ product.quantity_sold }} sold</p>
-                            <p class="text-xs text-gray-500">${{ "%.2f"|format(product.total_revenue) }}</p>
+                            <p class="text-xs text-gray-500">UGX {{ "{:,.0f}"|format(product.total_revenue) }}</p>
                         </div>
                     </div>
                     {% endfor %}

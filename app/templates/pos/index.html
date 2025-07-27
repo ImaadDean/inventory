@@ -57,20 +57,20 @@
                 <div class="space-y-3">
                     <div class="flex justify-between">
                         <span class="text-gray-600">Subtotal:</span>
-                        <span id="subtotal">$0.00</span>
+                        <span id="subtotal">UGX 0</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-600">Tax (8%):</span>
-                        <span id="tax">$0.00</span>
+                        <span id="tax">UGX 0</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-600">Discount:</span>
-                        <span id="discount">$0.00</span>
+                        <span id="discount">UGX 0</span>
                     </div>
                     <hr>
                     <div class="flex justify-between text-lg font-semibold">
                         <span>Total:</span>
-                        <span id="total">$0.00</span>
+                        <span id="total">UGX 0</span>
                     </div>
                 </div>
             </div>
@@ -113,7 +113,7 @@
                     </div>
                     <div class="text-sm text-gray-600">
                         <span>Change: </span>
-                        <span id="change" class="font-medium">$0.00</span>
+                        <span id="change" class="font-medium">UGX 0</span>
                     </div>
                     <button type="button"
                             id="process-sale"
@@ -128,6 +128,11 @@
 </div>
 
 <script>
+    // Currency formatting function for UGX
+    function formatCurrency(amount) {
+        return `UGX ${Math.round(amount).toLocaleString()}`;
+    }
+
     // POS functionality will be implemented here
     let cart = [];
     let subtotal = 0;
@@ -154,7 +159,7 @@
                         <p class="text-sm text-gray-500">${product.sku} - Stock: ${product.stock_quantity}</p>
                     </div>
                     <div class="text-right">
-                        <p class="font-medium text-gray-900">$${product.price.toFixed(2)}</p>
+                        <p class="font-medium text-gray-900">${formatCurrency(product.price)}</p>
                         <p class="text-sm text-gray-500">${product.unit}</p>
                     </div>
                 </div>
@@ -221,7 +226,7 @@
                                 class="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300">
                             <i class="fas fa-plus text-xs"></i>
                         </button>
-                        <span class="w-16 text-right font-medium">$${(item.price * item.quantity).toFixed(2)}</span>
+                        <span class="w-16 text-right font-medium">${formatCurrency(item.price * item.quantity)}</span>
                         <button onclick="removeFromCart('${item.id}')"
                                 class="w-6 h-6 bg-red-200 rounded-full flex items-center justify-center hover:bg-red-300">
                             <i class="fas fa-trash text-xs text-red-600"></i>
@@ -264,9 +269,9 @@
         tax = subtotal * 0.08; // 8% tax
         total = subtotal + tax;
 
-        document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
-        document.getElementById('tax').textContent = `$${tax.toFixed(2)}`;
-        document.getElementById('total').textContent = `$${total.toFixed(2)}`;
+        document.getElementById('subtotal').textContent = formatCurrency(subtotal);
+        document.getElementById('tax').textContent = formatCurrency(tax);
+        document.getElementById('total').textContent = formatCurrency(total);
 
         // Enable/disable process sale button
         const processSaleBtn = document.getElementById('process-sale');
@@ -280,7 +285,7 @@
     function updateChange() {
         const amountReceived = parseFloat(document.getElementById('amount-received').value) || 0;
         const change = amountReceived - total;
-        document.getElementById('change').textContent = `$${Math.max(0, change).toFixed(2)}`;
+        document.getElementById('change').textContent = formatCurrency(Math.max(0, change));
     }
 
     // Amount received input handler

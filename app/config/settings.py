@@ -21,6 +21,11 @@ class Settings(BaseSettings):
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = True
 
+    # Currency Configuration
+    CURRENCY_CODE: str = "UGX"
+    CURRENCY_SYMBOL: str = "UGX"
+    CURRENCY_NAME: str = "Ugandan Shilling"
+
     # CORS Configuration
     ALLOWED_ORIGINS: list = ["*"]
 
