@@ -3,6 +3,7 @@ from typing import Optional, List
 from datetime import datetime
 from bson import ObjectId
 from .user import PyObjectId
+from ..utils.timezone import now_kampala, kampala_to_utc
 
 
 class Customer(BaseModel):
@@ -18,7 +19,7 @@ class Customer(BaseModel):
     is_active: bool = True
     total_purchases: float = Field(default=0.0, ge=0)
     total_orders: int = Field(default=0, ge=0)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: kampala_to_utc(now_kampala()))
     updated_at: Optional[datetime] = None
     last_purchase_date: Optional[datetime] = None
     notes: Optional[str] = Field(None, max_length=1000)

@@ -4,13 +4,14 @@ from datetime import datetime
 from decimal import Decimal
 from bson import ObjectId
 from .user import PyObjectId
+from ..utils.timezone import now_kampala, kampala_to_utc
 
 
 class Category(BaseModel):
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
     name: str = Field(..., min_length=2, max_length=100)
     description: Optional[str] = Field(None, max_length=500)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: kampala_to_utc(now_kampala()))
     updated_at: Optional[datetime] = None
 
     class Config:
@@ -40,7 +41,7 @@ class Product(BaseModel):
     unit: str = Field(default="pcs", max_length=20)  # pieces, kg, liters, etc.
     supplier: Optional[str] = Field(None, max_length=200)
     is_active: bool = True
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: kampala_to_utc(now_kampala()))
     updated_at: Optional[datetime] = None
 
     @property

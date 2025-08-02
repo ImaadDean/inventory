@@ -7,6 +7,7 @@ from app.models.expense_category import ExpenseCategory
 from app.schemas.expense import ExpenseCreate, ExpenseUpdate, ExpenseResponse
 from app.schemas.expense_category import ExpenseCategoryCreate, ExpenseCategoryUpdate, ExpenseCategoryResponse
 from app.config.database import get_database
+from app.utils.timezone import now_kampala, kampala_to_utc
 from bson import ObjectId
 from datetime import datetime, date
 import logging
@@ -172,8 +173,8 @@ async def create_expense(
             "vendor": expense_data.vendor,
             "notes": expense_data.notes,
             "status": expense_data.status,
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow(),
+            "created_at": kampala_to_utc(now_kampala()),
+            "updated_at": kampala_to_utc(now_kampala()),
             "created_by": user.username
         }
         
@@ -249,7 +250,7 @@ async def update_expense(
         
         # Build update document
         update_doc = {
-            "updated_at": datetime.utcnow(),
+            "updated_at": kampala_to_utc(now_kampala()),
             "updated_by": user.username
         }
         

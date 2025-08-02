@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, Field
 from .user import PyObjectId
+from ..utils.timezone import now_kampala, kampala_to_utc
 
 
 class Category(BaseModel):
@@ -11,8 +12,8 @@ class Category(BaseModel):
     description: Optional[str] = Field(None, max_length=500)
     parent_id: Optional[PyObjectId] = None  # For hierarchical categories
     is_active: bool = Field(default=True)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: kampala_to_utc(now_kampala()))
+    updated_at: datetime = Field(default_factory=lambda: kampala_to_utc(now_kampala()))
     
     class Config:
         populate_by_name = True

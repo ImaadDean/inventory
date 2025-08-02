@@ -9,6 +9,7 @@ from ...models import User
 from ...utils.auth import get_current_user, verify_token, get_user_by_username
 from ...config.database import get_database
 from ...utils.expense_categories_init import create_stocking_expense
+from ...utils.timezone import now_kampala, kampala_to_utc
 
 templates = Jinja2Templates(directory="app/templates")
 products_routes = APIRouter(prefix="/products", tags=["Product Management Web"])
@@ -129,8 +130,8 @@ async def create_product(
             "supplier": supplier.strip() if supplier else None,
             "location": location.strip() if location else None,
             "is_active": is_active,
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow(),
+            "created_at": kampala_to_utc(now_kampala()),
+            "updated_at": kampala_to_utc(now_kampala()),
             "created_by": current_user.id,  # Store user ObjectId instead of username
             "total_sold": 0,
             "last_restocked": None,
@@ -211,11 +212,11 @@ async def update_supplier_on_product_creation(db, supplier_name: str, product_id
                 "address": None,
                 "notes": f"Auto-created from product creation",
                 "is_active": True,
-                "created_at": datetime.utcnow(),
-                "updated_at": datetime.utcnow(),
+                "created_at": kampala_to_utc(now_kampala()),
+                "updated_at": kampala_to_utc(now_kampala()),
                 "created_by": "system",
                 "products": [product_id],
-                "last_order_date": datetime.utcnow(),
+                "last_order_date": kampala_to_utc(now_kampala()),
                 "total_orders": 1
             }
 
@@ -234,9 +235,9 @@ async def update_supplier_on_product_creation(db, supplier_name: str, product_id
             # Update supplier with new product
             update_doc = {
                 "products": current_products,
-                "last_order_date": datetime.utcnow(),
+                "last_order_date": kampala_to_utc(now_kampala()),
                 "total_orders": supplier.get("total_orders", 0) + 1,
-                "updated_at": datetime.utcnow()
+                "updated_at": kampala_to_utc(now_kampala())
             }
 
             await suppliers_collection.update_one(

@@ -7,6 +7,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from ..config.settings import settings
 from ..config.database import get_database
 from ..models import User, UserRole
+from .timezone import now_kampala, kampala_to_utc
 from bson import ObjectId
 
 # Password hashing
@@ -29,12 +30,15 @@ def get_password_hash(password: str) -> str:
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """Create JWT access token"""
     to_encode = data.copy()
+    kampala_now = now_kampala()
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire_kampala = kampala_now + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire_kampala = kampala_now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
 
-    to_encode.update({"exp": expire})
+    # Convert to UTC for JWT (JWT expects UTC timestamps)
+    expire = kampala_to_utc(expire_kampala)
+    to_encode.update({"exp": expire.timestamp()})
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 

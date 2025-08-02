@@ -4,6 +4,7 @@ from datetime import datetime
 from enum import Enum
 from bson import ObjectId
 from .user import PyObjectId
+from ..utils.timezone import now_kampala, kampala_to_utc
 
 
 class PaymentMethod(str, Enum):
@@ -53,7 +54,7 @@ class Sale(BaseModel):
     change_given: float = Field(default=0.0, ge=0)
     status: SaleStatus = SaleStatus.COMPLETED
     notes: Optional[str] = Field(None, max_length=500)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: kampala_to_utc(now_kampala()))
     updated_at: Optional[datetime] = None
 
     @property

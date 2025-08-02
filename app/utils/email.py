@@ -71,10 +71,11 @@ async def verify_reset_token(token: str) -> Optional[str]:
         db = await get_database()
         
         # Find token in database
+        current_utc = kampala_to_utc(now_kampala())
         token_data = await db.password_reset_tokens.find_one({
             "token": token,
             "used": False,
-            "expires_at": {"$gt": datetime.utcnow()}
+            "expires_at": {"$gt": current_utc}
         })
         
         if token_data:
@@ -93,7 +94,7 @@ async def mark_token_as_used(token: str) -> bool:
         
         result = await db.password_reset_tokens.update_one(
             {"token": token},
-            {"$set": {"used": True, "used_at": datetime.utcnow()}}
+            {"$set": {"used": True, "used_at": kampala_to_utc(now_kampala())}}
         )
         
         return result.modified_count > 0

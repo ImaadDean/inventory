@@ -9,6 +9,7 @@ from ...schemas.customer import (
 )
 from ...models import Customer, User
 from ...utils.auth import get_current_user, verify_token, get_user_by_username
+from ...utils.timezone import now_kampala, kampala_to_utc
 
 router = APIRouter(prefix="/api/customers", tags=["Customer Management API"])
 
@@ -171,8 +172,8 @@ async def create_customer(
         "is_active": True,
         "total_purchases": 0.0,
         "total_orders": 0,
-        "created_at": datetime.utcnow(),
-        "updated_at": datetime.utcnow(),
+        "created_at": kampala_to_utc(now_kampala()),
+        "updated_at": kampala_to_utc(now_kampala()),
         "last_purchase_date": None,
         "notes": customer_data.notes
     }
@@ -278,7 +279,7 @@ async def update_customer(
                 )
 
         # Build update document
-        update_doc = {"updated_at": datetime.utcnow()}
+        update_doc = {"updated_at": kampala_to_utc(now_kampala())}
 
         # Only update fields that are provided
         if customer_data.name is not None:
@@ -358,7 +359,7 @@ async def delete_customer(
         # Soft delete by setting is_active to False
         await db.customers.update_one(
             {"_id": ObjectId(customer_id)},
-            {"$set": {"is_active": False, "updated_at": datetime.utcnow()}}
+            {"$set": {"is_active": False, "updated_at": kampala_to_utc(now_kampala())}}
         )
 
     except HTTPException:

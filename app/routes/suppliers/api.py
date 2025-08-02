@@ -5,6 +5,7 @@ from app.models.user import User
 from app.models.supplier import Supplier
 from app.schemas.supplier import SupplierCreate, SupplierUpdate, SupplierResponse
 from app.config.database import get_database
+from app.utils.timezone import now_kampala, kampala_to_utc
 from bson import ObjectId
 from datetime import datetime
 import logging
@@ -161,8 +162,8 @@ async def create_supplier(
             "address": supplier_data.address,
             "notes": supplier_data.notes,
             "is_active": supplier_data.is_active,
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow(),
+            "created_at": kampala_to_utc(now_kampala()),
+            "updated_at": kampala_to_utc(now_kampala()),
             "created_by": user.username
         }
         
@@ -232,7 +233,7 @@ async def update_supplier(
 
         # Build update document
         update_doc = {
-            "updated_at": datetime.utcnow(),
+            "updated_at": kampala_to_utc(now_kampala()),
             "updated_by": user.username
         }
 
@@ -258,7 +259,7 @@ async def update_supplier(
                 {
                     "$set": {
                         "supplier": new_name,
-                        "updated_at": datetime.utcnow()
+                        "updated_at": kampala_to_utc(now_kampala())
                     }
                 }
             )
@@ -312,7 +313,7 @@ async def delete_supplier(
                 {
                     "$set": {
                         "supplier": f"[DELETED] {supplier_name}",
-                        "updated_at": datetime.utcnow()
+                        "updated_at": kampala_to_utc(now_kampala())
                     }
                 }
             )
@@ -364,7 +365,7 @@ async def deactivate_supplier(
             {
                 "$set": {
                     "is_active": False,
-                    "updated_at": datetime.utcnow(),
+                    "updated_at": kampala_to_utc(now_kampala()),
                     "updated_by": user.username
                 }
             }
@@ -409,7 +410,7 @@ async def activate_supplier(
             {
                 "$set": {
                     "is_active": True,
-                    "updated_at": datetime.utcnow(),
+                    "updated_at": kampala_to_utc(now_kampala()),
                     "updated_by": user.username
                 }
             }
@@ -490,12 +491,12 @@ async def sync_supplier_products(
             if product_ids:
                 update_doc = {
                     "products": product_ids,
-                    "updated_at": datetime.utcnow()
+                    "updated_at": kampala_to_utc(now_kampala())
                 }
 
                 # Set last_order_date if not exists
                 if not supplier.get("last_order_date") and product_ids:
-                    update_doc["last_order_date"] = datetime.utcnow()
+                    update_doc["last_order_date"] = kampala_to_utc(now_kampala())
 
                 await suppliers_collection.update_one(
                     {"_id": supplier_id},

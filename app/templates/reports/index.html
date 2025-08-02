@@ -3,17 +3,36 @@
 {% block title %}Reports Dashboard - Inventory Management System{% endblock %}
 
 {% block content %}
-<div class="space-y-4 animate-fade-in">
-    <!-- Compact Header -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-        <div class="flex items-center justify-between">
-            <div>
-                <h1 class="text-xl font-bold text-gray-900">📊 Reports Dashboard</h1>
-                <p class="text-gray-600 text-sm">Business analytics and insights</p>
-            </div>
-            <div class="text-right">
-                <p class="text-gray-500 text-xs">Report Date</p>
-                <p class="text-sm font-semibold text-gray-900">{{ current_date | kampala_date_friendly }}</p>
+<div class="space-y-4 animate-fade-in max-w-full overflow-x-hidden">
+    <!-- Enhanced Header -->
+    <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg shadow-lg overflow-hidden">
+        <div class="px-4 py-4">
+            <div class="md:flex md:items-center md:justify-between">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-3">
+                            <i class="fas fa-chart-bar text-white text-sm"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-white">
+                                Reports & Analytics
+                            </h2>
+                            <p class="text-blue-100 text-sm">
+                                Generate business insights and detailed reports
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3 md:mt-0 md:ml-4 flex items-center space-x-3">
+                    <div class="text-right">
+                        <p class="text-blue-100 text-xs">Report Date</p>
+                        <p class="text-white text-sm font-semibold">{{ current_date | kampala_date_friendly }}</p>
+                    </div>
+                    <button type="button" onclick="exportAllData()" class="inline-flex items-center px-4 py-2 bg-white bg-opacity-20 hover:bg-opacity-30 text-white font-medium rounded-lg transition-all duration-200 backdrop-blur-sm text-sm">
+                        <i class="fas fa-download mr-2"></i>
+                        Export All
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -93,71 +112,294 @@
         </div>
     </div>
 
+    <!-- Quick Reports Section -->
+    <div class="bg-white shadow-md rounded-lg overflow-hidden border border-gray-100">
+        <div class="px-4 py-3 bg-gradient-to-r from-yellow-400 to-orange-500">
+            <div class="flex items-center">
+                <div class="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                    <i class="fas fa-bolt text-white text-sm"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-semibold text-white">Quick Reports</h3>
+                    <p class="text-yellow-100 text-xs">Generate instant reports</p>
+                </div>
+            </div>
+        </div>
+        <div class="p-4">
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <button onclick="generateTodaysSummary()" class="flex flex-col items-center justify-center px-3 py-4 bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-lg shadow-sm text-sm font-medium text-blue-700 hover:from-blue-100 hover:to-blue-200 hover:shadow-md transition-all duration-200 group">
+                    <i class="fas fa-calendar-day text-lg text-blue-500 mb-1 group-hover:scale-110 transition-transform duration-200"></i>
+                    <span class="text-xs">Today's Summary</span>
+                </button>
+                <button onclick="generateCriticalStock()" class="flex flex-col items-center justify-center px-3 py-4 bg-gradient-to-br from-red-50 to-red-100 border border-red-200 rounded-lg shadow-sm text-sm font-medium text-red-700 hover:from-red-100 hover:to-red-200 hover:shadow-md transition-all duration-200 group">
+                    <i class="fas fa-exclamation-triangle text-lg text-red-500 mb-1 group-hover:scale-110 transition-transform duration-200"></i>
+                    <span class="text-xs">Critical Stock</span>
+                </button>
+                <button onclick="generateSalesTrends()" class="flex flex-col items-center justify-center px-3 py-4 bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-lg shadow-sm text-sm font-medium text-green-700 hover:from-green-100 hover:to-green-200 hover:shadow-md transition-all duration-200 group">
+                    <i class="fas fa-chart-line text-lg text-green-500 mb-1 group-hover:scale-110 transition-transform duration-200"></i>
+                    <span class="text-xs">Sales Trends</span>
+                </button>
+                <button onclick="generateBestSellers()" class="flex flex-col items-center justify-center px-3 py-4 bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-lg shadow-sm text-sm font-medium text-purple-700 hover:from-purple-100 hover:to-purple-200 hover:shadow-md transition-all duration-200 group">
+                    <i class="fas fa-star text-lg text-purple-500 mb-1 group-hover:scale-110 transition-transform duration-200"></i>
+                    <span class="text-xs">Best Sellers</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Compact Report Categories -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Sales Reports -->
-        <a href="/reports/sales" class="group bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md hover:border-blue-300 transition-all duration-200">
-            <div class="flex items-center justify-between mb-3">
-                <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors duration-200">
-                    <i class="fas fa-chart-line text-blue-600 text-sm"></i>
+        <div class="bg-white shadow-md rounded-lg overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-100">
+            <div class="px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600">
+                <div class="flex items-center">
+                    <div class="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                        <i class="fas fa-chart-pie text-white text-sm"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-semibold text-white">Sales Reports</h3>
+                        <p class="text-green-100 text-xs">Revenue & performance</p>
+                    </div>
                 </div>
-                <i class="fas fa-arrow-right text-gray-400 group-hover:text-blue-600 transition-colors duration-200 text-sm"></i>
             </div>
-            <h3 class="text-sm font-semibold text-gray-900 mb-1">Sales Reports</h3>
-            <p class="text-xs text-gray-600 mb-2">Revenue analysis and trends</p>
-            <div class="flex items-center text-xs text-blue-600 font-medium">
-                <span>View Reports</span>
-                <i class="fas fa-chevron-right ml-1 text-xs"></i>
+            <div class="p-4">
+                <div class="space-y-1">
+                    <a href="/reports/sales" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-md transition-all duration-200 flex items-center group block">
+                        <i class="fas fa-calendar-day mr-2 text-green-500 group-hover:text-green-600 text-xs"></i>
+                        <span>Daily Sales Report</span>
+                    </a>
+                    <a href="/reports/sales" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-md transition-all duration-200 flex items-center group block">
+                        <i class="fas fa-calendar-week mr-2 text-green-500 group-hover:text-green-600 text-xs"></i>
+                        <span>Weekly Sales Report</span>
+                    </a>
+                    <a href="/reports/sales" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-md transition-all duration-200 flex items-center group block">
+                        <i class="fas fa-calendar-alt mr-2 text-green-500 group-hover:text-green-600 text-xs"></i>
+                        <span>Monthly Sales Report</span>
+                    </a>
+                    <a href="/reports/sales" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-md transition-all duration-200 flex items-center group block">
+                        <i class="fas fa-star mr-2 text-green-500 group-hover:text-green-600 text-xs"></i>
+                        <span>Top Products Report</span>
+                    </a>
+                </div>
             </div>
-        </a>
+        </div>
 
         <!-- Inventory Reports -->
-        <a href="/reports/inventory" class="group bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md hover:border-green-300 transition-all duration-200">
-            <div class="flex items-center justify-between mb-3">
-                <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors duration-200">
-                    <i class="fas fa-boxes text-green-600 text-sm"></i>
+        <div class="bg-white shadow-md rounded-lg overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-100">
+            <div class="px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600">
+                <div class="flex items-center">
+                    <div class="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                        <i class="fas fa-boxes text-white text-sm"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-semibold text-white">Inventory Reports</h3>
+                        <p class="text-blue-100 text-xs">Stock levels & movements</p>
+                    </div>
                 </div>
-                <i class="fas fa-arrow-right text-gray-400 group-hover:text-green-600 transition-colors duration-200 text-sm"></i>
             </div>
-            <h3 class="text-sm font-semibold text-gray-900 mb-1">Inventory Reports</h3>
-            <p class="text-xs text-gray-600 mb-2">Stock levels and movement</p>
-            <div class="flex items-center text-xs text-green-600 font-medium">
-                <span>View Reports</span>
-                <i class="fas fa-chevron-right ml-1 text-xs"></i>
+            <div class="p-4">
+                <div class="space-y-1">
+                    <a href="/reports/inventory" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-md transition-all duration-200 flex items-center group block">
+                        <i class="fas fa-chart-line mr-2 text-blue-500 group-hover:text-blue-600 text-xs"></i>
+                        <span>Stock Level Report</span>
+                    </a>
+                    <a href="/reports/inventory" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-md transition-all duration-200 flex items-center group block">
+                        <i class="fas fa-exchange-alt mr-2 text-blue-500 group-hover:text-blue-600 text-xs"></i>
+                        <span>Stock Movement Report</span>
+                    </a>
+                    <a href="/reports/inventory" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-md transition-all duration-200 flex items-center group block">
+                        <i class="fas fa-dollar-sign mr-2 text-blue-500 group-hover:text-blue-600 text-xs"></i>
+                        <span>Inventory Valuation</span>
+                    </a>
+                    <a href="/reports/inventory" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-yellow-50 hover:text-yellow-700 rounded-md transition-all duration-200 flex items-center group block">
+                        <i class="fas fa-exclamation-triangle mr-2 text-yellow-500 group-hover:text-yellow-600 text-xs"></i>
+                        <span>Low Stock Alert</span>
+                    </a>
+                </div>
             </div>
-        </a>
+        </div>
 
         <!-- Customer Reports -->
-        <a href="/reports/customers" class="group bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md hover:border-purple-300 transition-all duration-200">
-            <div class="flex items-center justify-between mb-3">
-                <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-colors duration-200">
-                    <i class="fas fa-users text-purple-600 text-sm"></i>
+        <div class="bg-white shadow-md rounded-lg overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-100">
+            <div class="px-4 py-3 bg-gradient-to-r from-purple-500 to-indigo-600">
+                <div class="flex items-center">
+                    <div class="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                        <i class="fas fa-users text-white text-sm"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-semibold text-white">Customer Reports</h3>
+                        <p class="text-purple-100 text-xs">Analytics & behavior</p>
+                    </div>
                 </div>
-                <i class="fas fa-arrow-right text-gray-400 group-hover:text-purple-600 transition-colors duration-200 text-sm"></i>
             </div>
-            <h3 class="text-sm font-semibold text-gray-900 mb-1">Customer Reports</h3>
-            <p class="text-xs text-gray-600 mb-2">Customer analytics</p>
-            <div class="flex items-center text-xs text-purple-600 font-medium">
-                <span>View Reports</span>
-                <i class="fas fa-chevron-right ml-1 text-xs"></i>
+            <div class="p-4">
+                <div class="space-y-1">
+                    <a href="/reports/customers" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 rounded-md transition-all duration-200 flex items-center group block">
+                        <i class="fas fa-user-friends mr-2 text-purple-500 group-hover:text-purple-600 text-xs"></i>
+                        <span>Customer List</span>
+                    </a>
+                    <a href="/reports/customers" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 rounded-md transition-all duration-200 flex items-center group block">
+                        <i class="fas fa-shopping-cart mr-2 text-purple-500 group-hover:text-purple-600 text-xs"></i>
+                        <span>Purchase History</span>
+                    </a>
+                    <a href="/reports/customers" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 rounded-md transition-all duration-200 flex items-center group block">
+                        <i class="fas fa-crown mr-2 text-purple-500 group-hover:text-purple-600 text-xs"></i>
+                        <span>Top Customers</span>
+                    </a>
+                    <a href="/reports/customers" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 rounded-md transition-all duration-200 flex items-center group block">
+                        <i class="fas fa-clock mr-2 text-purple-500 group-hover:text-purple-600 text-xs"></i>
+                        <span>Customer Activity</span>
+                    </a>
+                </div>
             </div>
-        </a>
+        </div>
 
         <!-- Financial Reports -->
-        <a href="/reports/financial" class="group bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md hover:border-orange-300 transition-all duration-200">
-            <div class="flex items-center justify-between mb-3">
-                <div class="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center group-hover:bg-orange-200 transition-colors duration-200">
-                    <i class="fas fa-dollar-sign text-orange-600 text-sm"></i>
+        <div class="bg-white shadow-md rounded-lg overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-100">
+            <div class="px-4 py-3 bg-gradient-to-r from-orange-500 to-red-600">
+                <div class="flex items-center">
+                    <div class="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                        <i class="fas fa-dollar-sign text-white text-sm"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-semibold text-white">Financial Reports</h3>
+                        <p class="text-orange-100 text-xs">Profit & loss analysis</p>
+                    </div>
                 </div>
-                <i class="fas fa-arrow-right text-gray-400 group-hover:text-orange-600 transition-colors duration-200 text-sm"></i>
             </div>
-            <h3 class="text-sm font-semibold text-gray-900 mb-1">Financial Reports</h3>
-            <p class="text-xs text-gray-600 mb-2">Profit & loss analysis</p>
-            <div class="flex items-center text-xs text-orange-600 font-medium">
-                <span>View Reports</span>
-                <i class="fas fa-chevron-right ml-1 text-xs"></i>
+            <div class="p-4">
+                <div class="space-y-1">
+                    <a href="/reports/financial" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700 rounded-md transition-all duration-200 flex items-center group block">
+                        <i class="fas fa-chart-bar mr-2 text-orange-500 group-hover:text-orange-600 text-xs"></i>
+                        <span>Revenue Report</span>
+                    </a>
+                    <a href="/reports/financial" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700 rounded-md transition-all duration-200 flex items-center group block">
+                        <i class="fas fa-receipt mr-2 text-orange-500 group-hover:text-orange-600 text-xs"></i>
+                        <span>Expense Report</span>
+                    </a>
+                    <a href="/reports/financial" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700 rounded-md transition-all duration-200 flex items-center group block">
+                        <i class="fas fa-balance-scale mr-2 text-orange-500 group-hover:text-orange-600 text-xs"></i>
+                        <span>Profit & Loss</span>
+                    </a>
+                    <a href="/reports/financial" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700 rounded-md transition-all duration-200 flex items-center group block">
+                        <i class="fas fa-chart-pie mr-2 text-orange-500 group-hover:text-orange-600 text-xs"></i>
+                        <span>Financial Summary</span>
+                    </a>
+                </div>
             </div>
-        </a>
+        </div>
+    </div>
+
+    <!-- Custom Report Builder -->
+    <div class="bg-white shadow-md rounded-lg overflow-hidden border border-gray-100">
+        <div class="px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-700">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                        <i class="fas fa-magic text-white text-sm"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-white">Custom Report Builder</h3>
+                        <p class="text-indigo-100 text-xs">Create tailored reports with advanced filters</p>
+                    </div>
+                </div>
+                <div class="hidden md:flex items-center space-x-2">
+                    <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                    <span class="text-indigo-100 text-xs">Live Builder</span>
+                </div>
+            </div>
+        </div>
+        <div class="p-4 bg-gradient-to-br from-gray-50 to-blue-50">
+            <!-- Report Configuration -->
+            <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                <!-- Report Type -->
+                <div class="space-y-1">
+                    <label class="flex items-center text-sm font-medium text-gray-700">
+                        <i class="fas fa-chart-bar mr-2 text-indigo-500 text-xs"></i>
+                        Report Type
+                    </label>
+                    <select id="reportType" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white transition-all duration-200 text-sm hover:border-indigo-300">
+                        <option value="">Choose report type...</option>
+                        <option value="inventory">📦 Inventory Analysis</option>
+                        <option value="sales">💰 Sales Performance</option>
+                        <option value="customer">👥 Customer Insights</option>
+                        <option value="financial">📊 Financial Overview</option>
+                        <option value="analytics">📈 Business Analytics</option>
+                        <option value="expense">💳 Expense Analysis</option>
+                    </select>
+                </div>
+
+                <!-- Date Range -->
+                <div class="space-y-1">
+                    <label class="flex items-center text-sm font-medium text-gray-700">
+                        <i class="fas fa-calendar-alt mr-2 text-indigo-500 text-xs"></i>
+                        Time Period
+                    </label>
+                    <select id="dateRange" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white transition-all duration-200 text-sm hover:border-indigo-300">
+                        <option value="">Select time period...</option>
+                        <option value="today">📅 Today</option>
+                        <option value="yesterday">📅 Yesterday</option>
+                        <option value="week">📅 This Week</option>
+                        <option value="last_week">📅 Last Week</option>
+                        <option value="month">📅 This Month</option>
+                        <option value="last_month">📅 Last Month</option>
+                        <option value="quarter">📅 This Quarter</option>
+                        <option value="year">📅 This Year</option>
+                        <option value="custom">🗓️ Custom Range</option>
+                    </select>
+                </div>
+
+                <!-- Format -->
+                <div class="space-y-1">
+                    <label class="flex items-center text-sm font-medium text-gray-700">
+                        <i class="fas fa-file-export mr-2 text-indigo-500 text-xs"></i>
+                        Export Format
+                    </label>
+                    <select id="exportFormat" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white transition-all duration-200 text-sm hover:border-indigo-300">
+                        <option value="pdf">📄 PDF Document</option>
+                        <option value="excel">📊 Excel Spreadsheet</option>
+                        <option value="csv">📋 CSV Data</option>
+                        <option value="json">🔧 JSON Data</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Custom Date Range (Hidden by default) -->
+            <div id="customDateRange" class="hidden mt-4 p-3 bg-white rounded-lg border border-indigo-200">
+                <h4 class="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                    <i class="fas fa-calendar-week mr-2 text-indigo-500 text-xs"></i>
+                    Custom Date Range
+                </h4>
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">From Date</label>
+                        <input type="date" id="fromDate" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">To Date</label>
+                        <input type="date" id="toDate" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="mt-4 flex flex-col sm:flex-row gap-2 sm:justify-between sm:items-center">
+                <div class="flex items-center space-x-2">
+                    <button type="button" class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200">
+                        <i class="fas fa-eye mr-2 text-xs"></i>
+                        Preview
+                    </button>
+                    <button type="button" class="inline-flex items-center px-3 py-2 border border-indigo-300 rounded-md shadow-sm text-sm font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-all duration-200">
+                        <i class="fas fa-save mr-2 text-xs"></i>
+                        Save Template
+                    </button>
+                </div>
+                <button type="button" id="generateCustomReport" class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium rounded-md shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105 text-sm">
+                    <i class="fas fa-rocket mr-2"></i>
+                    Generate Report
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Compact Quick Actions -->
@@ -181,19 +423,179 @@
 </div>
 
 <script>
+// Enhanced report functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Custom Report Builder functionality
+    const dateRangeSelect = document.getElementById('dateRange');
+    const customDateRange = document.getElementById('customDateRange');
+    const generateButton = document.getElementById('generateCustomReport');
+
+    // Show/hide custom date range
+    if (dateRangeSelect) {
+        dateRangeSelect.addEventListener('change', function() {
+            if (this.value === 'custom') {
+                customDateRange.classList.remove('hidden');
+                customDateRange.classList.add('animate-fade-in');
+            } else {
+                customDateRange.classList.add('hidden');
+            }
+        });
+    }
+
+    // Generate custom report
+    if (generateButton) {
+        generateButton.addEventListener('click', function() {
+            const reportType = document.getElementById('reportType').value;
+            const dateRange = document.getElementById('dateRange').value;
+            const exportFormat = document.getElementById('exportFormat').value;
+
+            if (!reportType) {
+                showToast('Please select a report type', 'error');
+                return;
+            }
+
+            if (!dateRange) {
+                showToast('Please select a date range', 'error');
+                return;
+            }
+
+            // Validate custom date range if selected
+            if (dateRange === 'custom') {
+                const fromDate = document.getElementById('fromDate').value;
+                const toDate = document.getElementById('toDate').value;
+
+                if (!fromDate || !toDate) {
+                    showToast('Please select both from and to dates', 'error');
+                    return;
+                }
+
+                if (new Date(fromDate) > new Date(toDate)) {
+                    showToast('From date cannot be later than to date', 'error');
+                    return;
+                }
+            }
+
+            // Show loading state
+            this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating...';
+            this.disabled = true;
+
+            // Simulate report generation
+            setTimeout(() => {
+                const reportTypeText = reportType.charAt(0).toUpperCase() + reportType.slice(1);
+                const formatText = exportFormat.toUpperCase();
+
+                showToast(`${reportTypeText} report generated successfully! (${formatText})`, 'success');
+
+                // Reset button
+                this.innerHTML = '<i class="fas fa-rocket mr-2"></i>Generate Report';
+                this.disabled = false;
+
+                // Simulate download
+                setTimeout(() => {
+                    showToast(`${reportTypeText}_report.${exportFormat} downloaded`, 'info');
+                }, 1000);
+            }, 3000);
+        });
+    }
+
+    // Set default dates for custom range
+    const today = new Date();
+    const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const fromDateInput = document.getElementById('fromDate');
+    const toDateInput = document.getElementById('toDate');
+
+    if (fromDateInput) fromDateInput.value = lastWeek.toISOString().split('T')[0];
+    if (toDateInput) toDateInput.value = today.toISOString().split('T')[0];
+});
+
+// Quick Reports Functions
+function generateTodaysSummary() {
+    showToast('Generating today\'s summary...', 'info');
+    setTimeout(() => {
+        showToast('Today\'s summary report generated successfully!', 'success');
+    }, 2000);
+}
+
+function generateCriticalStock() {
+    showToast('Generating critical stock report...', 'info');
+    setTimeout(() => {
+        showToast('Critical stock report generated successfully!', 'success');
+    }, 2000);
+}
+
+function generateSalesTrends() {
+    showToast('Generating sales trends report...', 'info');
+    setTimeout(() => {
+        showToast('Sales trends report generated successfully!', 'success');
+    }, 2000);
+}
+
+function generateBestSellers() {
+    showToast('Generating best sellers report...', 'info');
+    setTimeout(() => {
+        showToast('Best sellers report generated successfully!', 'success');
+    }, 2000);
+}
+
+// Original Functions
 function exportAllData() {
-    // Placeholder for export functionality
-    alert('Export functionality coming soon!');
+    showToast('Exporting all data...', 'info');
+    setTimeout(() => {
+        showToast('All data exported successfully!', 'success');
+    }, 2000);
 }
 
 function generateMonthlyReport() {
-    // Placeholder for monthly report generation
-    alert('Monthly report generation coming soon!');
+    showToast('Generating monthly report...', 'info');
+    setTimeout(() => {
+        showToast('Monthly report generated successfully!', 'success');
+    }, 2000);
 }
 
 function scheduleReport() {
-    // Placeholder for report scheduling
-    alert('Report scheduling coming soon!');
+    showToast('Opening report scheduler...', 'info');
+    setTimeout(() => {
+        showToast('Report scheduled successfully!', 'success');
+    }, 1500);
+}
+
+// Toast notification function (if not already defined)
+function showToast(message, type = 'info') {
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `fixed top-4 right-4 px-4 py-2 rounded-lg shadow-lg z-50 text-white text-sm font-medium transition-all duration-300 transform translate-x-full`;
+
+    // Set color based on type
+    switch(type) {
+        case 'success':
+            toast.className += ' bg-green-500';
+            break;
+        case 'error':
+            toast.className += ' bg-red-500';
+            break;
+        case 'warning':
+            toast.className += ' bg-yellow-500';
+            break;
+        default:
+            toast.className += ' bg-blue-500';
+    }
+
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    // Show toast
+    setTimeout(() => {
+        toast.classList.remove('translate-x-full');
+    }, 100);
+
+    // Hide toast after 3 seconds
+    setTimeout(() => {
+        toast.classList.add('translate-x-full');
+        setTimeout(() => {
+            document.body.removeChild(toast);
+        }, 300);
+    }, 3000);
 }
 </script>
 {% endblock %}

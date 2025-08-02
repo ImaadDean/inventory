@@ -3,6 +3,7 @@ from typing import Optional, List
 from datetime import datetime
 from enum import Enum
 from bson import ObjectId
+from ..utils.timezone import now_kampala, kampala_to_utc
 
 
 class PyObjectId(ObjectId):
@@ -42,7 +43,7 @@ class User(BaseModel):
     hashed_password: str
     role: UserRole = UserRole.CASHIER
     is_active: bool = True
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: kampala_to_utc(now_kampala()))
     updated_at: Optional[datetime] = None
     last_login: Optional[datetime] = None
     last_activity: Optional[datetime] = None

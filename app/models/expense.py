@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime, date
 from bson import ObjectId
+from ..utils.timezone import now_kampala, kampala_to_utc
 
 class Expense(BaseModel):
     """Expense model"""
@@ -14,8 +15,8 @@ class Expense(BaseModel):
     vendor: Optional[str] = Field(None, max_length=200)
     notes: Optional[str] = Field(None, max_length=1000)
     status: str = Field(default="pending")  # pending, paid, overdue
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: kampala_to_utc(now_kampala()))
+    updated_at: datetime = Field(default_factory=lambda: kampala_to_utc(now_kampala()))
     created_by: Optional[str] = None
     updated_by: Optional[str] = None
     

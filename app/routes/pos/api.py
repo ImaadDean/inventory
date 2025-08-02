@@ -9,6 +9,7 @@ from ...schemas.pos import (
 from ...schemas.customer import CustomerCreate, CustomerResponse
 from ...models import Sale, SaleItem, User
 from ...utils.auth import get_current_user, verify_token, get_user_by_username
+from ...utils.timezone import now_kampala, kampala_to_utc
 import uuid
 
 router = APIRouter(prefix="/api/pos", tags=["Point of Sale API"])
@@ -167,8 +168,8 @@ async def create_customer_pos(customer_data: CustomerCreate):
             "is_active": True,
             "total_purchases": 0.0,
             "total_orders": 0,
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow(),
+            "created_at": kampala_to_utc(now_kampala()),
+            "updated_at": kampala_to_utc(now_kampala()),
             "last_purchase_date": None,
             "notes": customer_data.notes.strip() if customer_data.notes else None
         }
@@ -284,8 +285,8 @@ async def create_sale(request: Request, sale_data: SaleCreate):
             "change_given": change_given,
             "status": "completed",
             "notes": sale_data.notes,
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow()
+            "created_at": kampala_to_utc(now_kampala()),
+            "updated_at": kampala_to_utc(now_kampala())
         }
 
         # Insert sale
@@ -308,8 +309,8 @@ async def create_sale(request: Request, sale_data: SaleCreate):
                         "total_orders": 1
                     },
                     "$set": {
-                        "last_purchase_date": datetime.utcnow(),
-                        "updated_at": datetime.utcnow()
+                        "last_purchase_date": kampala_to_utc(now_kampala()),
+                        "updated_at": kampala_to_utc(now_kampala())
                     }
                 }
             )
@@ -387,8 +388,8 @@ async def create_order(order_data: dict):
             "payment_method": order_data.get("payment_method", "cash"),
             "payment_status": "paid" if order_data.get("payment_method") != "not_paid" else "pending",
             "notes": order_data.get("notes", ""),
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow(),
+            "created_at": kampala_to_utc(now_kampala()),
+            "updated_at": kampala_to_utc(now_kampala()),
             "created_by": ObjectId(order_data["created_by"]) if order_data.get("created_by") and ObjectId.is_valid(order_data["created_by"]) else None
         }
 
@@ -415,8 +416,8 @@ async def create_order(order_data: dict):
                         "total_orders": 1
                     },
                     "$set": {
-                        "last_purchase_date": datetime.utcnow(),
-                        "updated_at": datetime.utcnow()
+                        "last_purchase_date": kampala_to_utc(now_kampala()),
+                        "updated_at": kampala_to_utc(now_kampala())
                     }
                 }
             )

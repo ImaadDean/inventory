@@ -5,6 +5,7 @@ from datetime import datetime
 from ...models import User
 from ...utils.auth import get_current_user, verify_token, get_user_by_username
 from ...config.database import get_database
+from ...utils.timezone import now_kampala, kampala_to_utc
 
 templates = Jinja2Templates(directory="app/templates")
 customers_routes = APIRouter(prefix="/customers", tags=["Customer Management Web"])
@@ -88,8 +89,8 @@ async def create_customer(
             "is_active": True,
             "total_purchases": 0.0,
             "total_orders": 0,
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow(),
+            "created_at": kampala_to_utc(now_kampala()),
+            "updated_at": kampala_to_utc(now_kampala()),
             "created_by": current_user.id,  # Store user ObjectId who created this customer
             "last_purchase_date": None,
             "notes": notes.strip() if notes else None

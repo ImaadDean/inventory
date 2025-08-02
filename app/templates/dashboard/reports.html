@@ -3,115 +3,138 @@
 {% block title %}Reports - Inventory Management System{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
+<div class="space-y-4 animate-fade-in max-w-full overflow-x-hidden">
     <!-- Page Header -->
-    <div class="md:flex md:items-center md:justify-between">
-        <div class="flex-1 min-w-0">
-            <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
-                <i class="fas fa-chart-bar text-primary-600 mr-3"></i>Reports
-            </h2>
-            <p class="mt-1 text-sm text-gray-500">
-                Generate and view detailed reports for your inventory system
-            </p>
-        </div>
-        <div class="mt-4 flex md:mt-0 md:ml-4">
-            <button type="button" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                <i class="fas fa-download mr-2"></i>
-                Export All
-            </button>
+    <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg shadow-lg overflow-hidden">
+        <div class="px-4 py-4">
+            <div class="md:flex md:items-center md:justify-between">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-3">
+                            <i class="fas fa-chart-bar text-white text-sm"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-white">
+                                Reports & Analytics
+                            </h2>
+                            <p class="text-blue-100 text-sm">
+                                Generate business insights and detailed reports
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3 md:mt-0 md:ml-4">
+                    <button type="button" class="inline-flex items-center px-4 py-2 bg-white bg-opacity-20 hover:bg-opacity-30 text-white font-medium rounded-lg transition-all duration-200 backdrop-blur-sm text-sm">
+                        <i class="fas fa-download mr-2"></i>
+                        Export All
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- Report Categories -->
-    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <!-- Inventory Reports -->
-        <div class="bg-white overflow-hidden shadow rounded-lg">
-            <div class="p-6">
+        <div class="bg-white shadow-md rounded-lg overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-100">
+            <div class="px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600">
                 <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
-                            <i class="fas fa-boxes text-white text-sm"></i>
-                        </div>
+                    <div class="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                        <i class="fas fa-boxes text-white text-sm"></i>
                     </div>
-                    <div class="ml-4">
-                        <h3 class="text-lg font-medium text-gray-900">Inventory Reports</h3>
-                        <p class="text-sm text-gray-500">Stock levels, movements, and valuations</p>
+                    <div>
+                        <h3 class="text-base font-semibold text-white">Inventory Reports</h3>
+                        <p class="text-blue-100 text-xs">Stock levels & movements</p>
                     </div>
                 </div>
-                <div class="mt-6 space-y-3">
-                    <button class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md">
-                        <i class="fas fa-chart-line mr-2 text-blue-500"></i>Stock Level Report
+            </div>
+            <div class="p-4">
+                <div class="space-y-1">
+                    <button class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-md transition-all duration-200 flex items-center group">
+                        <i class="fas fa-chart-line mr-2 text-blue-500 group-hover:text-blue-600 text-xs"></i>
+                        <span>Stock Level Report</span>
                     </button>
-                    <button class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md">
-                        <i class="fas fa-exchange-alt mr-2 text-blue-500"></i>Stock Movement Report
+                    <button class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-md transition-all duration-200 flex items-center group">
+                        <i class="fas fa-exchange-alt mr-2 text-blue-500 group-hover:text-blue-600 text-xs"></i>
+                        <span>Stock Movement Report</span>
                     </button>
-                    <button class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md">
-                        <i class="fas fa-dollar-sign mr-2 text-blue-500"></i>Inventory Valuation
+                    <button class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-md transition-all duration-200 flex items-center group">
+                        <i class="fas fa-dollar-sign mr-2 text-blue-500 group-hover:text-blue-600 text-xs"></i>
+                        <span>Inventory Valuation</span>
                     </button>
-                    <button class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md">
-                        <i class="fas fa-exclamation-triangle mr-2 text-yellow-500"></i>Low Stock Alert
+                    <button class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-yellow-50 hover:text-yellow-700 rounded-md transition-all duration-200 flex items-center group">
+                        <i class="fas fa-exclamation-triangle mr-2 text-yellow-500 group-hover:text-yellow-600 text-xs"></i>
+                        <span>Low Stock Alert</span>
                     </button>
                 </div>
             </div>
         </div>
 
         <!-- Sales Reports -->
-        <div class="bg-white overflow-hidden shadow rounded-lg">
-            <div class="p-6">
+        <div class="bg-white shadow-md rounded-lg overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-100">
+            <div class="px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600">
                 <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <div class="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
-                            <i class="fas fa-chart-pie text-white text-sm"></i>
-                        </div>
+                    <div class="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                        <i class="fas fa-chart-pie text-white text-sm"></i>
                     </div>
-                    <div class="ml-4">
-                        <h3 class="text-lg font-medium text-gray-900">Sales Reports</h3>
-                        <p class="text-sm text-gray-500">Revenue, transactions, and performance</p>
+                    <div>
+                        <h3 class="text-base font-semibold text-white">Sales Reports</h3>
+                        <p class="text-green-100 text-xs">Revenue & performance</p>
                     </div>
                 </div>
-                <div class="mt-6 space-y-3">
-                    <button class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md">
-                        <i class="fas fa-calendar-day mr-2 text-green-500"></i>Daily Sales Report
+            </div>
+            <div class="p-4">
+                <div class="space-y-1">
+                    <button class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-md transition-all duration-200 flex items-center group">
+                        <i class="fas fa-calendar-day mr-2 text-green-500 group-hover:text-green-600 text-xs"></i>
+                        <span>Daily Sales Report</span>
                     </button>
-                    <button class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md">
-                        <i class="fas fa-calendar-week mr-2 text-green-500"></i>Weekly Sales Report
+                    <button class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-md transition-all duration-200 flex items-center group">
+                        <i class="fas fa-calendar-week mr-2 text-green-500 group-hover:text-green-600 text-xs"></i>
+                        <span>Weekly Sales Report</span>
                     </button>
-                    <button class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md">
-                        <i class="fas fa-calendar-alt mr-2 text-green-500"></i>Monthly Sales Report
+                    <button class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-md transition-all duration-200 flex items-center group">
+                        <i class="fas fa-calendar-alt mr-2 text-green-500 group-hover:text-green-600 text-xs"></i>
+                        <span>Monthly Sales Report</span>
                     </button>
-                    <button class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md">
-                        <i class="fas fa-star mr-2 text-green-500"></i>Top Products Report
+                    <button class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-md transition-all duration-200 flex items-center group">
+                        <i class="fas fa-star mr-2 text-green-500 group-hover:text-green-600 text-xs"></i>
+                        <span>Top Products Report</span>
                     </button>
                 </div>
             </div>
         </div>
 
         <!-- Customer Reports -->
-        <div class="bg-white overflow-hidden shadow rounded-lg">
-            <div class="p-6">
+        <div class="bg-white shadow-md rounded-lg overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-100">
+            <div class="px-4 py-3 bg-gradient-to-r from-purple-500 to-indigo-600">
                 <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <div class="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
-                            <i class="fas fa-users text-white text-sm"></i>
-                        </div>
+                    <div class="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                        <i class="fas fa-users text-white text-sm"></i>
                     </div>
-                    <div class="ml-4">
-                        <h3 class="text-lg font-medium text-gray-900">Customer Reports</h3>
-                        <p class="text-sm text-gray-500">Customer analytics and behavior</p>
+                    <div>
+                        <h3 class="text-base font-semibold text-white">Customer Reports</h3>
+                        <p class="text-purple-100 text-xs">Analytics & behavior</p>
                     </div>
                 </div>
-                <div class="mt-6 space-y-3">
-                    <button class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md">
-                        <i class="fas fa-user-friends mr-2 text-purple-500"></i>Customer List
+            </div>
+            <div class="p-4">
+                <div class="space-y-1">
+                    <button class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 rounded-md transition-all duration-200 flex items-center group">
+                        <i class="fas fa-user-friends mr-2 text-purple-500 group-hover:text-purple-600 text-xs"></i>
+                        <span>Customer List</span>
                     </button>
-                    <button class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md">
-                        <i class="fas fa-shopping-cart mr-2 text-purple-500"></i>Purchase History
+                    <button class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 rounded-md transition-all duration-200 flex items-center group">
+                        <i class="fas fa-shopping-cart mr-2 text-purple-500 group-hover:text-purple-600 text-xs"></i>
+                        <span>Purchase History</span>
                     </button>
-                    <button class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md">
-                        <i class="fas fa-crown mr-2 text-purple-500"></i>Top Customers
+                    <button class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 rounded-md transition-all duration-200 flex items-center group">
+                        <i class="fas fa-crown mr-2 text-purple-500 group-hover:text-purple-600 text-xs"></i>
+                        <span>Top Customers</span>
                     </button>
-                    <button class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md">
-                        <i class="fas fa-clock mr-2 text-purple-500"></i>Customer Activity
+                    <button class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 rounded-md transition-all duration-200 flex items-center group">
+                        <i class="fas fa-clock mr-2 text-purple-500 group-hover:text-purple-600 text-xs"></i>
+                        <span>Customer Activity</span>
                     </button>
                 </div>
             </div>
@@ -119,72 +142,181 @@
     </div>
 
     <!-- Quick Reports Section -->
-    <div class="bg-white shadow rounded-lg">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-medium text-gray-900">
-                <i class="fas fa-bolt text-yellow-500 mr-2"></i>Quick Reports
-            </h3>
-            <p class="text-sm text-gray-500 mt-1">Generate instant reports with predefined parameters</p>
+    <div class="bg-white shadow-md rounded-lg overflow-hidden border border-gray-100">
+        <div class="px-4 py-3 bg-gradient-to-r from-yellow-400 to-orange-500">
+            <div class="flex items-center">
+                <div class="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                    <i class="fas fa-bolt text-white text-sm"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-semibold text-white">Quick Reports</h3>
+                    <p class="text-yellow-100 text-xs">Generate instant reports</p>
+                </div>
+            </div>
         </div>
-        <div class="p-6">
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <button class="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                    <i class="fas fa-calendar-day mr-2 text-blue-500"></i>
-                    Today's Summary
+        <div class="p-4">
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <button class="flex flex-col items-center justify-center px-3 py-4 bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-lg shadow-sm text-sm font-medium text-blue-700 hover:from-blue-100 hover:to-blue-200 hover:shadow-md transition-all duration-200 group">
+                    <i class="fas fa-calendar-day text-lg text-blue-500 mb-1 group-hover:scale-110 transition-transform duration-200"></i>
+                    <span class="text-xs">Today's Summary</span>
                 </button>
-                <button class="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                    <i class="fas fa-exclamation-triangle mr-2 text-red-500"></i>
-                    Critical Stock
+                <button class="flex flex-col items-center justify-center px-3 py-4 bg-gradient-to-br from-red-50 to-red-100 border border-red-200 rounded-lg shadow-sm text-sm font-medium text-red-700 hover:from-red-100 hover:to-red-200 hover:shadow-md transition-all duration-200 group">
+                    <i class="fas fa-exclamation-triangle text-lg text-red-500 mb-1 group-hover:scale-110 transition-transform duration-200"></i>
+                    <span class="text-xs">Critical Stock</span>
                 </button>
-                <button class="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                    <i class="fas fa-chart-line mr-2 text-green-500"></i>
-                    Sales Trends
+                <button class="flex flex-col items-center justify-center px-3 py-4 bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-lg shadow-sm text-sm font-medium text-green-700 hover:from-green-100 hover:to-green-200 hover:shadow-md transition-all duration-200 group">
+                    <i class="fas fa-chart-line text-lg text-green-500 mb-1 group-hover:scale-110 transition-transform duration-200"></i>
+                    <span class="text-xs">Sales Trends</span>
                 </button>
-                <button class="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                    <i class="fas fa-star mr-2 text-purple-500"></i>
-                    Best Sellers
+                <button class="flex flex-col items-center justify-center px-3 py-4 bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-lg shadow-sm text-sm font-medium text-purple-700 hover:from-purple-100 hover:to-purple-200 hover:shadow-md transition-all duration-200 group">
+                    <i class="fas fa-star text-lg text-purple-500 mb-1 group-hover:scale-110 transition-transform duration-200"></i>
+                    <span class="text-xs">Best Sellers</span>
                 </button>
             </div>
         </div>
     </div>
 
     <!-- Custom Report Builder -->
-    <div class="bg-white shadow rounded-lg">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-medium text-gray-900">
-                <i class="fas fa-cogs text-gray-600 mr-2"></i>Custom Report Builder
-            </h3>
-            <p class="text-sm text-gray-500 mt-1">Create custom reports with your own parameters</p>
+    <div class="bg-white shadow-lg rounded-xl overflow-hidden border border-gray-100">
+        <div class="px-6 py-4 bg-gradient-to-r from-indigo-600 to-purple-700">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-white bg-opacity-20 rounded-xl flex items-center justify-center mr-3">
+                        <i class="fas fa-magic text-white"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-white">Custom Report Builder</h3>
+                        <p class="text-indigo-100 text-sm">Create tailored reports with advanced filters</p>
+                    </div>
+                </div>
+                <div class="hidden md:flex items-center space-x-2">
+                    <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                    <span class="text-indigo-100 text-xs">Live Builder</span>
+                </div>
+            </div>
         </div>
-        <div class="p-6">
-            <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Report Type</label>
-                    <select class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
-                        <option>Select report type...</option>
-                        <option>Inventory Report</option>
-                        <option>Sales Report</option>
-                        <option>Customer Report</option>
-                        <option>Financial Report</option>
+        <div class="p-6 bg-gradient-to-br from-gray-50 to-blue-50">
+            <!-- Report Configuration -->
+            <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                <!-- Report Type -->
+                <div class="space-y-2">
+                    <label class="flex items-center text-sm font-semibold text-gray-700">
+                        <i class="fas fa-chart-bar mr-2 text-indigo-500"></i>
+                        Report Type
+                    </label>
+                    <select id="reportType" class="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white transition-all duration-200 text-sm hover:border-indigo-300">
+                        <option value="">Choose report type...</option>
+                        <option value="inventory">📦 Inventory Analysis</option>
+                        <option value="sales">💰 Sales Performance</option>
+                        <option value="customer">👥 Customer Insights</option>
+                        <option value="financial">📊 Financial Overview</option>
+                        <option value="analytics">📈 Business Analytics</option>
+                        <option value="expense">💳 Expense Analysis</option>
                     </select>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Date Range</label>
-                    <select class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
-                        <option>Select date range...</option>
-                        <option>Today</option>
-                        <option>This Week</option>
-                        <option>This Month</option>
-                        <option>This Quarter</option>
-                        <option>This Year</option>
-                        <option>Custom Range</option>
+
+                <!-- Date Range -->
+                <div class="space-y-2">
+                    <label class="flex items-center text-sm font-semibold text-gray-700">
+                        <i class="fas fa-calendar-alt mr-2 text-indigo-500"></i>
+                        Time Period
+                    </label>
+                    <select id="dateRange" class="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white transition-all duration-200 text-sm hover:border-indigo-300">
+                        <option value="">Select time period...</option>
+                        <option value="today">📅 Today</option>
+                        <option value="yesterday">📅 Yesterday</option>
+                        <option value="week">📅 This Week</option>
+                        <option value="last_week">📅 Last Week</option>
+                        <option value="month">📅 This Month</option>
+                        <option value="last_month">📅 Last Month</option>
+                        <option value="quarter">📅 This Quarter</option>
+                        <option value="year">📅 This Year</option>
+                        <option value="custom">🗓️ Custom Range</option>
+                    </select>
+                </div>
+
+                <!-- Format -->
+                <div class="space-y-2">
+                    <label class="flex items-center text-sm font-semibold text-gray-700">
+                        <i class="fas fa-file-export mr-2 text-indigo-500"></i>
+                        Export Format
+                    </label>
+                    <select id="exportFormat" class="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white transition-all duration-200 text-sm hover:border-indigo-300">
+                        <option value="pdf">📄 PDF Document</option>
+                        <option value="excel">📊 Excel Spreadsheet</option>
+                        <option value="csv">📋 CSV Data</option>
+                        <option value="json">🔧 JSON Data</option>
                     </select>
                 </div>
             </div>
-            <div class="mt-6 flex justify-end">
-                <button type="button" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                    <i class="fas fa-play mr-2"></i>
-                    Generate Report
+
+            <!-- Custom Date Range (Hidden by default) -->
+            <div id="customDateRange" class="hidden mt-6 p-4 bg-white rounded-lg border border-indigo-200">
+                <h4 class="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                    <i class="fas fa-calendar-week mr-2 text-indigo-500"></i>
+                    Custom Date Range
+                </h4>
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">From Date</label>
+                        <input type="date" id="fromDate" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">To Date</label>
+                        <input type="date" id="toDate" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advanced Filters -->
+            <div class="mt-6 p-4 bg-white rounded-lg border border-gray-200">
+                <h4 class="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                    <i class="fas fa-filter mr-2 text-indigo-500"></i>
+                    Advanced Filters
+                    <span class="ml-2 px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded-full">Optional</span>
+                </h4>
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Category</label>
+                        <select class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                            <option value="">All Categories</option>
+                            <option value="electronics">Electronics</option>
+                            <option value="clothing">Clothing</option>
+                            <option value="books">Books</option>
+                            <option value="home">Home & Garden</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Status</label>
+                        <select class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                            <option value="">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="pending">Pending</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Minimum Value</label>
+                        <input type="number" placeholder="0" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="mt-6 flex flex-col sm:flex-row gap-3 sm:justify-between sm:items-center">
+                <div class="flex items-center space-x-3">
+                    <button type="button" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200">
+                        <i class="fas fa-eye mr-2"></i>
+                        Preview
+                    </button>
+                    <button type="button" class="inline-flex items-center px-4 py-2 border border-indigo-300 rounded-lg shadow-sm text-sm font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-all duration-200">
+                        <i class="fas fa-save mr-2"></i>
+                        Save Template
+                    </button>
+                </div>
+                <button type="button" id="generateCustomReport" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105">
+                    <i class="fas fa-rocket mr-2"></i>
+                    Generate Custom Report
                 </button>
             </div>
         </div>
@@ -200,7 +332,7 @@
             button.addEventListener('click', function() {
                 const reportName = this.textContent.trim();
                 showToast(`Generating ${reportName}...`, 'info');
-                
+
                 // Simulate report generation
                 setTimeout(() => {
                     showToast(`${reportName} generated successfully!`, 'success');
@@ -214,13 +346,129 @@
             button.addEventListener('click', function() {
                 const reportName = this.textContent.trim();
                 showToast(`Generating ${reportName}...`, 'info');
-                
+
                 // Simulate quick report generation
                 setTimeout(() => {
                     showToast(`${reportName} ready for download!`, 'success');
                 }, 1500);
             });
         });
+
+        // Custom Report Builder functionality
+        const dateRangeSelect = document.getElementById('dateRange');
+        const customDateRange = document.getElementById('customDateRange');
+        const generateButton = document.getElementById('generateCustomReport');
+
+        // Show/hide custom date range
+        dateRangeSelect.addEventListener('change', function() {
+            if (this.value === 'custom') {
+                customDateRange.classList.remove('hidden');
+                customDateRange.classList.add('animate-fade-in');
+            } else {
+                customDateRange.classList.add('hidden');
+            }
+        });
+
+        // Generate custom report
+        generateButton.addEventListener('click', function() {
+            const reportType = document.getElementById('reportType').value;
+            const dateRange = document.getElementById('dateRange').value;
+            const exportFormat = document.getElementById('exportFormat').value;
+
+            if (!reportType) {
+                showToast('Please select a report type', 'error');
+                return;
+            }
+
+            if (!dateRange) {
+                showToast('Please select a date range', 'error');
+                return;
+            }
+
+            // Validate custom date range if selected
+            if (dateRange === 'custom') {
+                const fromDate = document.getElementById('fromDate').value;
+                const toDate = document.getElementById('toDate').value;
+
+                if (!fromDate || !toDate) {
+                    showToast('Please select both from and to dates', 'error');
+                    return;
+                }
+
+                if (new Date(fromDate) > new Date(toDate)) {
+                    showToast('From date cannot be later than to date', 'error');
+                    return;
+                }
+            }
+
+            // Show loading state
+            this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating...';
+            this.disabled = true;
+
+            // Simulate report generation
+            setTimeout(() => {
+                const reportTypeText = reportType.charAt(0).toUpperCase() + reportType.slice(1);
+                const formatText = exportFormat.toUpperCase();
+
+                showToast(`${reportTypeText} report generated successfully! (${formatText})`, 'success');
+
+                // Reset button
+                this.innerHTML = '<i class="fas fa-rocket mr-2"></i>Generate Custom Report';
+                this.disabled = false;
+
+                // Simulate download
+                setTimeout(() => {
+                    showToast(`${reportTypeText}_report.${exportFormat} downloaded`, 'info');
+                }, 1000);
+            }, 3000);
+        });
+
+        // Preview functionality
+        const previewButton = document.querySelector('button[class*="fa-eye"]');
+        if (previewButton) {
+            previewButton.addEventListener('click', function() {
+                const reportType = document.getElementById('reportType').value;
+
+                if (!reportType) {
+                    showToast('Please select a report type to preview', 'error');
+                    return;
+                }
+
+                showToast('Opening report preview...', 'info');
+
+                // Simulate preview
+                setTimeout(() => {
+                    showToast('Preview opened in new tab', 'success');
+                }, 1000);
+            });
+        }
+
+        // Save template functionality
+        const saveTemplateButton = document.querySelector('button[class*="fa-save"]');
+        if (saveTemplateButton) {
+            saveTemplateButton.addEventListener('click', function() {
+                const reportType = document.getElementById('reportType').value;
+
+                if (!reportType) {
+                    showToast('Please configure the report before saving template', 'error');
+                    return;
+                }
+
+                showToast('Saving report template...', 'info');
+
+                // Simulate save
+                setTimeout(() => {
+                    showToast('Report template saved successfully!', 'success');
+                }, 1500);
+            });
+        }
+
+        // Set default dates for custom range
+        const today = new Date();
+        const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+        document.getElementById('fromDate').value = lastWeek.toISOString().split('T')[0];
+        document.getElementById('toDate').value = today.toISOString().split('T')[0];
     });
 </script>
 {% endblock %}

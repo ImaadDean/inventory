@@ -10,6 +10,7 @@ from ...schemas.product import (
 from ...models import Product, Category, User
 from ...utils.auth import require_admin_or_inventory, get_current_user, verify_token, get_user_by_username
 from ...utils.expense_categories_init import create_restocking_expense
+from ...utils.timezone import now_kampala, kampala_to_utc
 
 router = APIRouter(prefix="/api/products", tags=["Product Management API"])
 
@@ -158,11 +159,11 @@ async def update_supplier_on_restock(db, supplier_name: str, product_id: str, pr
                 "address": None,
                 "notes": f"Auto-created from product restocking",
                 "is_active": True,
-                "created_at": datetime.utcnow(),
-                "updated_at": datetime.utcnow(),
+                "created_at": kampala_to_utc(now_kampala()),
+                "updated_at": kampala_to_utc(now_kampala()),
                 "created_by": "system",
                 "products": [product_id],
-                "last_order_date": datetime.utcnow(),
+                "last_order_date": kampala_to_utc(now_kampala()),
                 "total_orders": 1
             }
 
@@ -181,9 +182,9 @@ async def update_supplier_on_restock(db, supplier_name: str, product_id: str, pr
             # Update supplier with new product and last order date
             update_doc = {
                 "products": current_products,
-                "last_order_date": datetime.utcnow(),
+                "last_order_date": kampala_to_utc(now_kampala()),
                 "total_orders": supplier.get("total_orders", 0) + 1,
-                "updated_at": datetime.utcnow()
+                "updated_at": kampala_to_utc(now_kampala())
             }
 
             await suppliers_collection.update_one(
@@ -451,8 +452,8 @@ async def restock_product(
         # Update the product
         update_data = {
             "stock_quantity": new_stock,
-            "updated_at": datetime.utcnow(),
-            "last_restocked": datetime.utcnow()
+            "updated_at": kampala_to_utc(now_kampala()),
+            "last_restocked": kampala_to_utc(now_kampala())
         }
 
         result = await db.products.update_one(
@@ -477,7 +478,7 @@ async def restock_product(
             "reason": stock_update.reason or "Manual restock",
             "restocked_by": current_user.id,
             "restocked_by_username": current_user.username,
-            "restocked_at": datetime.utcnow()
+            "restocked_at": kampala_to_utc(now_kampala())
         }
 
         # Insert restock log (create collection if it doesn't exist)
