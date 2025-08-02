@@ -204,3 +204,119 @@ async def get_dashboard_summary():
         "low_stock_alerts": inventory_overview["low_stock_products"],
         "top_selling_products": top_selling_products
     }
+
+
+@router.get("/sales-chart")
+async def get_sales_chart_data():
+    """Get sales data for the last 7 days for chart display"""
+    db = await get_database()
+
+    # Get last 7 days of sales data using Kampala timezone
+    sales_data = []
+    labels = []
+
+    now = now_kampala()
+
+    for i in range(6, -1, -1):  # 6 days ago to today
+        # Get the date in Kampala timezone
+        kampala_date = now - timedelta(days=i)
+        day_start = get_day_start(kampala_date)
+        day_end = kampala_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+
+        # Convert to UTC for database query
+        day_start_utc = kampala_to_utc(day_start)
+        day_end_utc = kampala_to_utc(day_end)
+
+        # Get orders for this day (using orders collection instead of sales)
+        orders_pipeline = [
+            {"$match": {"created_at": {"$gte": day_start_utc, "$lte": day_end_utc}}},
+            {"$group": {
+                "_id": None,
+                "total_sales": {"$sum": "$total"}
+            }}
+        ]
+
+        orders_cursor = db.orders.aggregate(orders_pipeline)
+        day_sales = await orders_cursor.to_list(length=1)
+
+        daily_total = day_sales[0]["total_sales"] if day_sales else 0
+        sales_data.append(daily_total)
+
+        # Format day label
+        if i == 0:
+            labels.append("Today")
+        elif i == 1:
+            labels.append("Yesterday")
+        else:
+            labels.append(kampala_date.strftime("%a"))  # Mon, Tue, etc.
+
+    # Debug information
+    print(f"Sales chart data: {sales_data}")
+    print(f"Labels: {labels}")
+    print(f"Total revenue: {sum(sales_data)}")
+
+    return {
+        "success": True,
+        "sales_data": sales_data,
+        "labels": labels,
+        "total_revenue": sum(sales_data)
+    }
+
+
+@router.get("/top-products-chart")
+async def get_top_products_chart_data():
+    """Get top selling products in the last 7 days for chart display"""
+    db = await get_database()
+
+    # Get last 7 days date range
+    now = now_kampala()
+    seven_days_ago = now - timedelta(days=7)
+    start_utc = kampala_to_utc(get_day_start(seven_days_ago))
+    end_utc = kampala_to_utc(now)
+
+    # Get top selling products from orders in last 7 days
+    top_products_pipeline = [
+        {"$match": {"created_at": {"$gte": start_utc, "$lte": end_utc}}},
+        {"$unwind": "$items"},
+        {"$group": {
+            "_id": "$items.product_id",
+            "product_name": {"$first": "$items.name"},
+            "sku": {"$first": "$items.sku"},
+            "quantity_sold": {"$sum": "$items.quantity"},
+            "total_sales": {"$sum": "$items.total"}
+        }},
+        {"$sort": {"total_sales": -1}},
+        {"$limit": 8}  # Top 8 products for better chart display
+    ]
+
+    top_products_cursor = db.orders.aggregate(top_products_pipeline)
+    top_products_data = await top_products_cursor.to_list(length=8)
+
+    product_names = []
+    sales_amounts = []
+
+    for product in top_products_data:
+        # Truncate long product names for better display
+        product_name = product["product_name"] if product["product_name"] else "Unknown Product"
+        if len(product_name) > 20:
+            product_name = product_name[:17] + "..."
+
+        product_names.append(product_name)
+        sales_amounts.append(product["total_sales"])
+
+    # If no products found, return default
+    if not product_names:
+        product_names = ["No sales data"]
+        sales_amounts = [0]
+
+    # Debug information
+    print(f"Top products chart data: {product_names}")
+    print(f"Sales amounts: {sales_amounts}")
+    print(f"Total sales: {sum(sales_amounts)}")
+
+    return {
+        "success": True,
+        "product_names": product_names,
+        "sales_amounts": sales_amounts,
+        "total_sales": sum(sales_amounts)
+    }

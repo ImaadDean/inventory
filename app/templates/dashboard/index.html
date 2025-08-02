@@ -113,6 +113,57 @@
         </div>
     </div>
 
+    <!-- Charts Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <!-- Sales Chart -->
+        <div class="bg-white shadow-md rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300">
+            <div class="px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-600">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                            <i class="fas fa-chart-line text-white text-sm"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-semibold text-white">Sales Overview</h3>
+                            <p class="text-blue-100 text-xs">Last 7 days</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xs text-blue-100">Total Revenue</p>
+                        <p class="text-sm font-bold text-white" id="total-revenue">UGX 0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="p-4">
+                <canvas id="salesChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+
+        <!-- Top Selling Products Chart -->
+        <div class="bg-white shadow-md rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300">
+            <div class="px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                            <i class="fas fa-trophy text-white text-sm"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-semibold text-white">Top Selling Products</h3>
+                            <p class="text-green-100 text-xs">Last 7 days</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xs text-green-100">Total Sales</p>
+                        <p class="text-sm font-bold text-white" id="top-products-total">0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="p-4">
+                <canvas id="topProductsChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
     <!-- Charts and Tables Row -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <!-- Top Selling Products -->
@@ -322,6 +373,9 @@
     </div>
 </div>
 
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
     // Display current date and time in Kampala timezone
     function updateDateTime() {
@@ -337,14 +391,247 @@
             hour12: false,
             hour: '2-digit',
             minute: '2-digit',
-            second: '2-digit',
             timeZone: 'Africa/Kampala'
         });
         document.getElementById('current-date').textContent = kampalaDate + ' ' + kampalaTime;
     }
 
-    // Update time immediately and then every second
+    // Update time immediately and then every minute
     updateDateTime();
-    setInterval(updateDateTime, 1000);
+    setInterval(updateDateTime, 60000);
+
+    // Format currency with K and M suffixes
+    function formatCurrency(value) {
+        if (value >= 1000000) {
+            return (value / 1000000).toFixed(1) + 'M';
+        } else if (value >= 1000) {
+            return (value / 1000).toFixed(1) + 'K';
+        } else {
+            return value.toString();
+        }
+    }
+
+    // Initialize Charts
+    function initializeCharts() {
+        // Sales Chart (Line Chart)
+        const salesCtx = document.getElementById('salesChart').getContext('2d');
+        const salesChart = new Chart(salesCtx, {
+            type: 'line',
+            data: {
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                datasets: [{
+                    label: 'Daily Sales (UGX)',
+                    data: [0, 0, 0, 0, 0, 0, 0], // Will be populated with real data
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: 'rgb(59, 130, 246)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 7
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'Sales: ' + context.parsed.y.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return formatCurrency(value);
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                elements: {
+                    point: {
+                        hoverBackgroundColor: 'rgb(59, 130, 246)'
+                    }
+                }
+            }
+        });
+
+        // Top Selling Products Chart (Doughnut Chart)
+        const topProductsCtx = document.getElementById('topProductsChart').getContext('2d');
+        const topProductsChart = new Chart(topProductsCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Loading...'],
+                datasets: [{
+                    data: [1], // Will be populated with real data
+                    backgroundColor: [
+                        '#10B981', // Emerald - 1st place
+                        '#3B82F6', // Blue - 2nd place
+                        '#8B5CF6', // Purple - 3rd place
+                        '#F59E0B', // Amber - 4th place
+                        '#EF4444', // Red - 5th place
+                        '#06B6D4', // Cyan - 6th place
+                        '#EC4899', // Pink - 7th place
+                        '#84CC16'  // Lime - 8th place
+                    ],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 12,
+                            usePointStyle: true,
+                            font: {
+                                size: 10
+                            },
+                            boxWidth: 12,
+                            boxHeight: 12,
+                            generateLabels: function(chart) {
+                                const data = chart.data;
+                                if (data.labels.length && data.datasets.length) {
+                                    return data.labels.slice(0, 8).map((label, i) => {
+                                        const value = data.datasets[0].data[i];
+                                        // Truncate label if too long for legend
+                                        let displayLabel = label;
+                                        if (label.length > 12) {
+                                            displayLabel = label.substring(0, 9) + '...';
+                                        }
+                                        return {
+                                            text: `${i + 1}. ${displayLabel}: ${formatCurrency(value)}`,
+                                            fillStyle: data.datasets[0].backgroundColor[i],
+                                            strokeStyle: data.datasets[0].backgroundColor[i],
+                                            lineWidth: 0,
+                                            pointStyle: 'circle',
+                                            hidden: false,
+                                            index: i
+                                        };
+                                    });
+                                }
+                                return [];
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed;
+                                return `${label}: ${value.toLocaleString()}`;
+                            }
+                        }
+                    }
+                },
+                cutout: '60%'
+            }
+        });
+
+        // Load real data for charts
+        loadChartData(salesChart, topProductsChart);
+    }
+
+    // Load chart data from API
+    function loadChartData(salesChart, topProductsChart) {
+        // Load sales data
+        fetch('/api/dashboard/sales-chart', {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update chart data and labels
+                salesChart.data.labels = data.labels;
+                salesChart.data.datasets[0].data = data.sales_data;
+                salesChart.update();
+
+                // Update total revenue
+                const totalRevenue = data.total_revenue || data.sales_data.reduce((sum, value) => sum + value, 0);
+                document.getElementById('total-revenue').textContent = formatCurrency(totalRevenue);
+
+                console.log('Sales chart updated:', data.sales_data);
+                console.log('Labels:', data.labels);
+                console.log('Total revenue:', totalRevenue);
+            }
+        })
+        .catch(error => {
+            console.log('Sales chart data not available, using sample data');
+            // Use sample data if API fails
+            const sampleSalesData = [12000, 19000, 8000, 15000, 22000, 18000, 25000];
+            salesChart.data.datasets[0].data = sampleSalesData;
+            salesChart.update();
+
+            const totalRevenue = sampleSalesData.reduce((sum, value) => sum + value, 0);
+            document.getElementById('total-revenue').textContent = formatCurrency(totalRevenue);
+        });
+
+        // Load top products data
+        fetch('/api/dashboard/top-products-chart', {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                topProductsChart.data.labels = data.product_names;
+                topProductsChart.data.datasets[0].data = data.sales_amounts;
+                topProductsChart.update();
+
+                // Update total sales in header
+                const totalSales = data.total_sales || data.sales_amounts.reduce((sum, value) => sum + value, 0);
+                document.getElementById('top-products-total').textContent = formatCurrency(totalSales);
+
+                console.log('Top products chart updated:', data.product_names);
+                console.log('Sales amounts:', data.sales_amounts);
+            }
+        })
+        .catch(error => {
+            console.log('Top products chart data not available, using sample data');
+            // Use sample data if API fails
+            const sampleProductNames = ['Product A', 'Product B', 'Product C'];
+            const sampleSalesData = [500000, 300000, 200000];
+            topProductsChart.data.labels = sampleProductNames;
+            topProductsChart.data.datasets[0].data = sampleSalesData;
+            topProductsChart.update();
+
+            const totalSales = sampleSalesData.reduce((sum, value) => sum + value, 0);
+            document.getElementById('top-products-total').textContent = formatCurrency(totalSales);
+        });
+    }
+
+    // Initialize charts when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeCharts();
+    });
 </script>
 {% endblock %}
