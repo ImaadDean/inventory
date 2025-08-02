@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}Reports Dashboard - Inventory Management System{% endblock %}
+
+{% block content %}
+<div class="space-y-4 animate-fade-in">
+    <!-- Compact Header -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-xl font-bold text-gray-900">📊 Reports Dashboard</h1>
+                <p class="text-gray-600 text-sm">Business analytics and insights</p>
+            </div>
+            <div class="text-right">
+                <p class="text-gray-500 text-xs">Report Date</p>
+                <p class="text-sm font-semibold text-gray-900">{{ current_date | kampala_date_friendly }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compact Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Today Stats -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow duration-200">
+            <div class="flex items-center justify-between mb-2">
+                <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-calendar-day text-blue-600 text-sm"></i>
+                </div>
+                <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">Today</span>
+            </div>
+            <div>
+                <p class="text-lg font-bold text-gray-900">{{ stats.today.orders }}</p>
+                <p class="text-xs text-gray-500 mb-2">Orders</p>
+                <div class="space-y-1">
+                    <p class="text-xs text-gray-600">Revenue: <span class="font-semibold text-green-600">UGX {{ "{:,.0f}".format(stats.today.revenue) }}</span></p>
+                    <p class="text-xs text-gray-600">Customers: <span class="font-semibold">{{ stats.today.customers }}</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- This Week Stats -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow duration-200">
+            <div class="flex items-center justify-between mb-2">
+                <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-calendar-week text-green-600 text-sm"></i>
+                </div>
+                <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">This Week</span>
+            </div>
+            <div>
+                <p class="text-lg font-bold text-gray-900">{{ stats.week.orders }}</p>
+                <p class="text-xs text-gray-500 mb-2">Orders</p>
+                <div class="space-y-1">
+                    <p class="text-xs text-gray-600">Revenue: <span class="font-semibold text-green-600">UGX {{ "{:,.0f}".format(stats.week.revenue) }}</span></p>
+                    <p class="text-xs text-gray-600">Customers: <span class="font-semibold">{{ stats.week.customers }}</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- This Month Stats -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow duration-200">
+            <div class="flex items-center justify-between mb-2">
+                <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-calendar-alt text-purple-600 text-sm"></i>
+                </div>
+                <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">This Month</span>
+            </div>
+            <div>
+                <p class="text-lg font-bold text-gray-900">{{ stats.month.orders }}</p>
+                <p class="text-xs text-gray-500 mb-2">Orders</p>
+                <div class="space-y-1">
+                    <p class="text-xs text-gray-600">Revenue: <span class="font-semibold text-green-600">UGX {{ "{:,.0f}".format(stats.month.revenue) }}</span></p>
+                    <p class="text-xs text-gray-600">Customers: <span class="font-semibold">{{ stats.month.customers }}</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Stats -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow duration-200">
+            <div class="flex items-center justify-between mb-2">
+                <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-chart-line text-indigo-600 text-sm"></i>
+                </div>
+                <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">All Time</span>
+            </div>
+            <div>
+                <p class="text-lg font-bold text-gray-900">{{ stats.total.orders }}</p>
+                <p class="text-xs text-gray-500 mb-2">Total Orders</p>
+                <div class="space-y-1">
+                    <p class="text-xs text-gray-600">Products: <span class="font-semibold">{{ stats.total.products }}</span></p>
+                    <p class="text-xs text-gray-600">Customers: <span class="font-semibold">{{ stats.total.customers }}</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compact Report Categories -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Sales Reports -->
+        <a href="/reports/sales" class="group bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md hover:border-blue-300 transition-all duration-200">
+            <div class="flex items-center justify-between mb-3">
+                <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors duration-200">
+                    <i class="fas fa-chart-line text-blue-600 text-sm"></i>
+                </div>
+                <i class="fas fa-arrow-right text-gray-400 group-hover:text-blue-600 transition-colors duration-200 text-sm"></i>
+            </div>
+            <h3 class="text-sm font-semibold text-gray-900 mb-1">Sales Reports</h3>
+            <p class="text-xs text-gray-600 mb-2">Revenue analysis and trends</p>
+            <div class="flex items-center text-xs text-blue-600 font-medium">
+                <span>View Reports</span>
+                <i class="fas fa-chevron-right ml-1 text-xs"></i>
+            </div>
+        </a>
+
+        <!-- Inventory Reports -->
+        <a href="/reports/inventory" class="group bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md hover:border-green-300 transition-all duration-200">
+            <div class="flex items-center justify-between mb-3">
+                <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors duration-200">
+                    <i class="fas fa-boxes text-green-600 text-sm"></i>
+                </div>
+                <i class="fas fa-arrow-right text-gray-400 group-hover:text-green-600 transition-colors duration-200 text-sm"></i>
+            </div>
+            <h3 class="text-sm font-semibold text-gray-900 mb-1">Inventory Reports</h3>
+            <p class="text-xs text-gray-600 mb-2">Stock levels and movement</p>
+            <div class="flex items-center text-xs text-green-600 font-medium">
+                <span>View Reports</span>
+                <i class="fas fa-chevron-right ml-1 text-xs"></i>
+            </div>
+        </a>
+
+        <!-- Customer Reports -->
+        <a href="/reports/customers" class="group bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md hover:border-purple-300 transition-all duration-200">
+            <div class="flex items-center justify-between mb-3">
+                <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-colors duration-200">
+                    <i class="fas fa-users text-purple-600 text-sm"></i>
+                </div>
+                <i class="fas fa-arrow-right text-gray-400 group-hover:text-purple-600 transition-colors duration-200 text-sm"></i>
+            </div>
+            <h3 class="text-sm font-semibold text-gray-900 mb-1">Customer Reports</h3>
+            <p class="text-xs text-gray-600 mb-2">Customer analytics</p>
+            <div class="flex items-center text-xs text-purple-600 font-medium">
+                <span>View Reports</span>
+                <i class="fas fa-chevron-right ml-1 text-xs"></i>
+            </div>
+        </a>
+
+        <!-- Financial Reports -->
+        <a href="/reports/financial" class="group bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md hover:border-orange-300 transition-all duration-200">
+            <div class="flex items-center justify-between mb-3">
+                <div class="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center group-hover:bg-orange-200 transition-colors duration-200">
+                    <i class="fas fa-dollar-sign text-orange-600 text-sm"></i>
+                </div>
+                <i class="fas fa-arrow-right text-gray-400 group-hover:text-orange-600 transition-colors duration-200 text-sm"></i>
+            </div>
+            <h3 class="text-sm font-semibold text-gray-900 mb-1">Financial Reports</h3>
+            <p class="text-xs text-gray-600 mb-2">Profit & loss analysis</p>
+            <div class="flex items-center text-xs text-orange-600 font-medium">
+                <span>View Reports</span>
+                <i class="fas fa-chevron-right ml-1 text-xs"></i>
+            </div>
+        </a>
+    </div>
+
+    <!-- Compact Quick Actions -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <h3 class="text-sm font-semibold text-gray-900 mb-3">Quick Actions</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <button onclick="exportAllData()" class="flex items-center justify-center px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition-colors duration-200 text-sm">
+                <i class="fas fa-download mr-2 text-xs"></i>
+                Export Data
+            </button>
+            <button onclick="generateMonthlyReport()" class="flex items-center justify-center px-3 py-2 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg transition-colors duration-200 text-sm">
+                <i class="fas fa-file-pdf mr-2 text-xs"></i>
+                Monthly Report
+            </button>
+            <button onclick="scheduleReport()" class="flex items-center justify-center px-3 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg transition-colors duration-200 text-sm">
+                <i class="fas fa-clock mr-2 text-xs"></i>
+                Schedule Report
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function exportAllData() {
+    // Placeholder for export functionality
+    alert('Export functionality coming soon!');
+}
+
+function generateMonthlyReport() {
+    // Placeholder for monthly report generation
+    alert('Monthly report generation coming soon!');
+}
+
+function scheduleReport() {
+    // Placeholder for report scheduling
+    alert('Report scheduling coming soon!');
+}
+</script>
+{% endblock %}

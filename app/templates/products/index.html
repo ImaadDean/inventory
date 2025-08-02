@@ -1,0 +1,2041 @@
+{% extends "base.html" %}
+
+{% block title %}Products - Inventory Management System{% endblock %}
+
+{% block content %}
+<div class="space-y-4 animate-fade-in">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-blue-500 to-indigo-600 shadow-lg rounded-xl p-4 text-white">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div class="mb-2 md:mb-0">
+                <h1 class="text-xl md:text-2xl font-bold">Product Management</h1>
+                <p class="text-blue-100 text-sm">Manage your inventory products and categories</p>
+            </div>
+            <button onclick="openAddProductModal()" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-all duration-200 text-sm">
+                <i class="fas fa-plus"></i>
+                <span class="font-medium">Add Product</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <!-- Total Products -->
+        <div class="bg-white overflow-hidden shadow-md rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+            <div class="p-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-gradient-to-r from-blue-400 to-blue-600 rounded-lg flex items-center justify-center shadow-md">
+                            <i class="fas fa-boxes text-white text-xs"></i>
+                        </div>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <dt class="text-xs font-medium text-gray-500 truncate">Total Products</dt>
+                        <dd class="text-base font-bold text-gray-900 mt-0.5" id="total-products">0</dd>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gradient-to-r from-blue-50 to-blue-100 px-4 py-2">
+                <div class="text-xs">
+                    <span class="text-blue-700 font-medium">In inventory</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- In Stock -->
+        <div class="bg-white overflow-hidden shadow-md rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+            <div class="p-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-gradient-to-r from-green-400 to-green-600 rounded-lg flex items-center justify-center shadow-md">
+                            <i class="fas fa-check-circle text-white text-xs"></i>
+                        </div>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <dt class="text-xs font-medium text-gray-500 truncate">In Stock</dt>
+                        <dd class="text-base font-bold text-gray-900 mt-0.5" id="in-stock">0</dd>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gradient-to-r from-green-50 to-green-100 px-4 py-2">
+                <div class="text-xs">
+                    <span class="text-green-700 font-medium">Available for sale</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Low Stock -->
+        <div class="bg-white overflow-hidden shadow-md rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+            <div class="p-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center shadow-md">
+                            <i class="fas fa-exclamation-triangle text-white text-xs"></i>
+                        </div>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <dt class="text-xs font-medium text-gray-500 truncate">Low Stock</dt>
+                        <dd class="text-base font-bold text-gray-900 mt-0.5" id="low-stock">0</dd>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gradient-to-r from-yellow-50 to-orange-100 px-4 py-2">
+                <div class="text-xs">
+                    <span class="text-orange-700 font-medium">Needs restocking</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Out of Stock -->
+        <div class="bg-white overflow-hidden shadow-md rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+            <div class="p-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-gradient-to-r from-red-400 to-red-600 rounded-lg flex items-center justify-center shadow-md">
+                            <i class="fas fa-times-circle text-white text-xs"></i>
+                        </div>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <dt class="text-xs font-medium text-gray-500 truncate">Out of Stock</dt>
+                        <dd class="text-base font-bold text-gray-900 mt-0.5" id="out-of-stock">0</dd>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gradient-to-r from-red-50 to-red-100 px-4 py-2">
+                <div class="text-xs">
+                    <span class="text-red-700 font-medium">Immediate attention</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Products Table -->
+    <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300">
+        <!-- Table Header with Search & Filters -->
+        <div class="px-4 py-3 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-3 lg:space-y-0">
+                <div class="flex items-center">
+                    <div class="w-6 h-6 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center mr-2">
+                        <i class="fas fa-table text-white text-xs"></i>
+                    </div>
+                    <h3 class="text-base font-semibold text-gray-900">Products Inventory</h3>
+                </div>
+
+                <!-- Compact Search & Filter Controls -->
+                <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                    <div class="relative">
+                        <input type="text" id="search-products" placeholder="Search products..."
+                               class="pl-7 pr-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-40 text-xs transition-all duration-200">
+                        <i class="fas fa-search absolute left-2 top-2 text-gray-400 text-xs"></i>
+                    </div>
+                    <select id="category-filter" class="px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xs transition-all duration-200">
+                        <option value="">All Categories</option>
+                    </select>
+                    <select id="stock-filter" class="px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xs transition-all duration-200">
+                        <option value="">All Stock</option>
+                        <option value="in-stock">In Stock</option>
+                        <option value="low-stock">Low Stock</option>
+                        <option value="out-of-stock">Out of Stock</option>
+                    </select>
+                    <div class="flex space-x-1">
+                        <button onclick="refreshData()" class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1.5 rounded-lg flex items-center space-x-1 text-xs transition-all duration-200">
+                            <i class="fas fa-refresh text-xs"></i>
+                            <span>Refresh</span>
+                        </button>
+                        <button onclick="exportProducts()" class="bg-green-500 hover:bg-green-600 text-white px-2 py-1.5 rounded-lg flex items-center space-x-1 text-xs transition-all duration-200">
+                            <i class="fas fa-download text-xs"></i>
+                            <span>Export</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
+                    <tr>
+                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Product</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Category</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">SKU</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Price</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Stock</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="products-table-body" class="bg-white divide-y divide-gray-100">
+                    <!-- Products will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Product Modal -->
+<div id="add-product-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300">
+            <div class="px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-t-xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                            <i class="fas fa-plus text-white text-xs"></i>
+                        </div>
+                        <h3 class="text-base font-semibold text-white">Add New Product</h3>
+                    </div>
+                    <button type="button" onclick="closeAddProductModal()" class="text-white hover:text-gray-200 transition-colors duration-200">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
+            <form id="add-product-form" method="POST" action="/products/" class="p-4 space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                        <i class="fas fa-tag text-gray-400 mr-1"></i>Product Name
+                    </label>
+                    <input type="text" name="name" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Enter product name">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                        <i class="fas fa-folder text-gray-400 mr-1"></i>Category
+                    </label>
+                    <select name="category_id" id="category-select" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
+                        <option value="">Select Category</option>
+                        <!-- Categories will be loaded here -->
+                    </select>
+                    <div class="mt-2 flex items-center justify-between">
+                        <p class="text-xs text-gray-500">
+                            Don't see your category? <a href="/categories" target="_blank" class="text-blue-600 hover:text-blue-500 underline font-medium">Create new category</a>
+                        </p>
+                        <button type="button" onclick="loadCategories()" class="text-xs text-gray-500 hover:text-gray-700 flex items-center transition-colors duration-200">
+                            <i class="fas fa-refresh mr-1"></i>
+                            Refresh
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                        <i class="fas fa-barcode text-gray-400 mr-1"></i>SKU
+                    </label>
+                    <input type="text" name="sku" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Enter SKU code">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                            <i class="fas fa-dollar-sign text-gray-400 mr-1"></i>Cost Price (UGX)
+                        </label>
+                        <input type="number" id="add-cost-price" name="cost_price" step="0.01" min="0" placeholder="1200" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" onchange="calculateProfitMargin()">
+                        <p class="text-xs text-gray-500 mt-1">What you buy it for</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                            <i class="fas fa-money-bill text-gray-400 mr-1"></i>Selling Price (UGX)
+                        </label>
+                        <input type="number" id="add-selling-price" name="price" step="0.01" min="0" placeholder="2000" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" onchange="calculateProfitMargin()">
+                        <p class="text-xs text-gray-500 mt-1">What you sell it for</p>
+                    </div>
+                </div>
+                <!-- Profit Margin Display -->
+                <div id="profit-margin-display" class="hidden bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <i class="fas fa-chart-line text-green-600 mr-2"></i>
+                            <span class="text-sm font-medium text-green-800">Profit Analysis</span>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm font-bold text-green-800" id="profit-amount">+UGX 0</div>
+                            <div class="text-xs text-green-600" id="profit-percentage">0% margin</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                            <i class="fas fa-boxes text-gray-400 mr-1"></i>Stock Quantity
+                        </label>
+                        <input type="number" name="stock_quantity" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="100">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                            <i class="fas fa-exclamation-triangle text-gray-400 mr-1"></i>Min Stock Level
+                        </label>
+                        <input type="number" name="min_stock_level" min="0" value="10" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="10">
+                        <p class="text-xs text-gray-500 mt-1">Alert when stock falls to this level</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                            <i class="fas fa-layer-group text-gray-400 mr-1"></i>Max Stock Level
+                        </label>
+                        <input type="number" name="max_stock_level" min="0" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Optional">
+                        <p class="text-xs text-gray-500 mt-1">Maximum stock to maintain</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                            <i class="fas fa-cube text-gray-400 mr-1"></i>Unit
+                        </label>
+                        <input type="text" name="unit" value="pcs" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="pcs, kg, liters">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                            <i class="fas fa-truck text-gray-400 mr-1"></i>Supplier
+                        </label>
+                        <select name="supplier" id="supplier-select" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
+                            <option value="">Select Supplier (Optional)</option>
+                            <!-- Suppliers will be loaded here -->
+                        </select>
+                        <div class="mt-1 flex items-center justify-between">
+                            <p class="text-xs text-gray-500">
+                                Don't see your supplier? <a href="/suppliers" target="_blank" class="text-blue-600 hover:text-blue-500 underline font-medium">Manage suppliers</a>
+                            </p>
+                            <button type="button" onclick="loadSuppliers()" class="text-xs text-gray-500 hover:text-gray-700 flex items-center transition-colors duration-200">
+                                <i class="fas fa-refresh mr-1"></i>
+                                Refresh
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                            <i class="fas fa-qrcode text-gray-400 mr-1"></i>Barcode
+                        </label>
+                        <input type="text" name="barcode" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Optional">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                            <i class="fas fa-map-marker-alt text-gray-400 mr-1"></i>Location
+                        </label>
+                        <input type="text" name="location" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Storage location">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                        <i class="fas fa-align-left text-gray-400 mr-1"></i>Description
+                    </label>
+                    <textarea name="description" rows="2" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none" placeholder="Enter product description (optional)"></textarea>
+                </div>
+                <div class="flex items-center p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <input type="checkbox" name="is_active" checked class="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                    <label class="ml-2 block text-xs font-medium text-blue-900">
+                        <i class="fas fa-toggle-on text-blue-600 mr-1"></i>Product is active
+                    </label>
+                    <span class="ml-2 text-xs text-blue-600">Product will be available for sale</span>
+                </div>
+
+                <!-- Expense Creation Section -->
+                <div class="border-t border-gray-200 pt-3">
+                    <div class="flex items-center p-3 bg-green-50 rounded-lg border border-green-200 mb-3">
+                        <input type="checkbox" id="create-expense" name="create_expense" checked disabled class="h-3 w-3 text-green-600 focus:ring-green-500 border-gray-300 rounded">
+                        <label class="ml-2 block text-xs font-medium text-green-900">
+                            <i class="fas fa-receipt text-green-600 mr-1"></i>Create stocking expense
+                        </label>
+                        <span class="ml-2 text-xs text-green-600">Automatically track the cost of this initial stock (Required)</span>
+                    </div>
+
+                    <!-- Expense Fields (Always visible now) -->
+                    <div id="expense-fields" class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">
+                                <i class="fas fa-credit-card text-gray-400 mr-1"></i>Payment Method
+                            </label>
+                            <select name="payment_method" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200">
+                                <option value="">Select Payment Method</option>
+                                <option value="pending">Pending Payment</option>
+                                <option value="cash">Cash</option>
+                                <option value="bank_transfer">Bank Transfer</option>
+                                <option value="mobile_money">Mobile Money</option>
+                                <option value="credit_card">Credit Card</option>
+                                <option value="check">Check</option>
+                            </select>
+                        </div>
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                            <div class="flex items-start">
+                                <i class="fas fa-info-circle text-blue-600 mr-2 mt-0.5"></i>
+                                <div class="text-xs text-blue-800">
+                                    <strong>Expense Details:</strong><br>
+                                    • Unit cost will be taken from "Cost Price" field above<br>
+                                    • Total cost = Cost Price × Stock Quantity<br>
+                                    • Expense will be categorized as "Stocking"<br>
+                                    • Supplier will be used as vendor if selected<br>
+                                    • Payment method will be saved with the product
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t border-gray-200">
+                    <button type="button" onclick="closeAddProductModal()" class="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-3 py-2 text-xs font-medium text-white bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
+                        <i class="fas fa-plus mr-1"></i>Add Product
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Product Modal -->
+<div id="edit-product-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div class="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between rounded-t-xl">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-edit text-white text-sm"></i>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900">Edit Product</h3>
+            </div>
+            <button type="button" onclick="closeEditProductModal()" class="text-gray-400 hover:text-gray-600 transition-colors duration-200">
+                <i class="fas fa-times text-lg"></i>
+            </button>
+        </div>
+
+        <form id="edit-product-form" class="p-4 space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Product Name -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-tag text-gray-400 mr-1"></i>Product Name
+                    </label>
+                    <input type="text" id="edit-name" name="name" required
+                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                           placeholder="Enter product name">
+                </div>
+
+                <!-- Category -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-folder text-gray-400 mr-1"></i>Category
+                    </label>
+                    <select id="edit-category-id" name="category_id" required
+                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
+                        <option value="">Select Category</option>
+                    </select>
+                </div>
+
+                <!-- SKU (Read-only) -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-barcode text-gray-400 mr-1"></i>SKU
+                    </label>
+                    <input type="text" id="edit-sku" name="sku" readonly
+                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                           placeholder="SKU cannot be changed">
+                </div>
+
+                <!-- Cost Price -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-dollar-sign text-gray-400 mr-1"></i>Cost Price (UGX)
+                    </label>
+                    <input type="number" id="edit-cost-price" name="cost_price" step="0.01" min="0"
+                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                           placeholder="What you buy it for" onchange="calculateEditProfitMargin()">
+                    <p class="text-xs text-gray-500 mt-1">What you buy it for</p>
+                </div>
+
+                <!-- Selling Price -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-money-bill text-gray-400 mr-1"></i>Selling Price (UGX)
+                    </label>
+                    <input type="number" id="edit-price" name="price" step="0.01" min="0" required
+                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                           placeholder="What you sell it for" onchange="calculateEditProfitMargin()">
+                    <p class="text-xs text-gray-500 mt-1">What you sell it for</p>
+                </div>
+
+                <!-- Profit Margin Display for Edit Modal -->
+                <div id="edit-profit-margin-display" class="hidden bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-3 md:col-span-2">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <i class="fas fa-chart-line text-green-600 mr-2"></i>
+                            <span class="text-sm font-medium text-green-800">Profit Analysis</span>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm font-bold text-green-800" id="edit-profit-amount">+UGX 0</div>
+                            <div class="text-xs text-green-600" id="edit-profit-percentage">0% margin</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stock Quantity -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-boxes text-gray-400 mr-1"></i>Stock Quantity
+                    </label>
+                    <input type="number" id="edit-stock-quantity" name="stock_quantity" min="0" required
+                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                           placeholder="100">
+                </div>
+
+                <!-- Min Stock Level -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-exclamation-triangle text-gray-400 mr-1"></i>Min Stock Level
+                    </label>
+                    <input type="number" id="edit-min-stock-level" name="min_stock_level" min="0"
+                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                           placeholder="10">
+                </div>
+
+                <!-- Max Stock Level -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-layer-group text-gray-400 mr-1"></i>Max Stock Level
+                    </label>
+                    <input type="number" id="edit-max-stock-level" name="max_stock_level" min="0"
+                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                           placeholder="Optional">
+                </div>
+
+                <!-- Unit -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-cube text-gray-400 mr-1"></i>Unit
+                    </label>
+                    <input type="text" id="edit-unit" name="unit"
+                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                           placeholder="pcs, kg, liters">
+                </div>
+
+                <!-- Supplier -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-truck text-gray-400 mr-1"></i>Supplier
+                    </label>
+                    <select id="edit-supplier" name="supplier" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
+                        <option value="">Select Supplier (Optional)</option>
+                        <!-- Suppliers will be loaded here -->
+                    </select>
+                </div>
+
+                <!-- Barcode -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-qrcode text-gray-400 mr-1"></i>Barcode
+                    </label>
+                    <input type="text" id="edit-barcode" name="barcode"
+                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                           placeholder="Optional">
+                </div>
+
+                <!-- Location -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-map-marker-alt text-gray-400 mr-1"></i>Location
+                    </label>
+                    <input type="text" id="edit-location" name="location"
+                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                           placeholder="Storage location">
+                </div>
+
+                <!-- Payment Method -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-credit-card text-gray-400 mr-1"></i>Payment Method
+                    </label>
+                    <select id="edit-payment-method" name="payment_method" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
+                        <option value="">Not specified</option>
+                        <option value="pending">Pending Payment</option>
+                        <option value="cash">Cash</option>
+                        <option value="bank_transfer">Bank Transfer</option>
+                        <option value="mobile_money">Mobile Money</option>
+                        <option value="credit_card">Credit Card</option>
+                        <option value="check">Check</option>
+                    </select>
+                </div>
+
+                <!-- Description -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-align-left text-gray-400 mr-1"></i>Description
+                    </label>
+                    <textarea id="edit-description" name="description" rows="3"
+                              class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none"
+                              placeholder="Enter product description (optional)"></textarea>
+                </div>
+
+                <!-- Active Status -->
+                <div class="md:col-span-2">
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" id="edit-is-active" name="is_active"
+                               class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2">
+                        <span class="text-sm font-semibold text-gray-700">
+                            <i class="fas fa-toggle-on text-gray-400 mr-1"></i>Product is active
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                <button type="button" onclick="closeEditProductModal()"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200">
+                    Cancel
+                </button>
+                <button type="submit"
+                        class="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
+                    <i class="fas fa-save mr-1"></i>Update Product
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Restock Product Modal -->
+<div id="restock-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300">
+            <div class="px-4 py-3 bg-gradient-to-r from-green-500 to-teal-600 rounded-t-xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                            <i class="fas fa-plus-circle text-white text-xs"></i>
+                        </div>
+                        <h3 class="text-base font-semibold text-white">Restock Product</h3>
+                    </div>
+                    <button type="button" onclick="closeRestockModal()" class="text-white hover:text-gray-200 transition-colors duration-200">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
+            <form id="restock-form" class="p-4 space-y-3">
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <div class="flex items-center">
+                        <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                        <div>
+                            <h4 class="text-sm font-semibold text-blue-900" id="restock-product-name">Product Name</h4>
+                            <p class="text-xs text-blue-700">Current Stock: <span id="restock-current-stock" class="font-medium">0</span> units</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                        <i class="fas fa-plus text-gray-400 mr-1"></i>Quantity to Add
+                    </label>
+                    <input type="number" id="restock-quantity" min="1" required
+                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                           placeholder="Enter quantity to add">
+                    <p class="text-xs text-gray-500 mt-1">Enter the number of units to add to current stock</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                        <i class="fas fa-comment text-gray-400 mr-1"></i>Reason (Optional)
+                    </label>
+                    <textarea id="restock-reason" rows="2"
+                              class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 resize-none"
+                              placeholder="e.g., New stock received from supplier, Inventory adjustment, etc."></textarea>
+                </div>
+
+                <!-- Cost Information for Automatic Expense Creation -->
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <div class="flex items-center mb-2">
+                        <i class="fas fa-receipt text-blue-500 mr-2"></i>
+                        <h4 class="text-xs font-semibold text-blue-900">Cost Information (Optional)</h4>
+                        <span class="ml-2 text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">Auto-creates expense</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-blue-700 mb-1">Unit Cost (UGX)</label>
+                            <input type="number" id="restock-unit-cost" min="0" step="0.01"
+                                   class="w-full px-3 py-2 text-sm border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                   placeholder="0.00">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-blue-700 mb-1">Total Cost</label>
+                            <input type="text" id="restock-total-cost" readonly
+                                   class="w-full px-3 py-2 text-sm bg-blue-50 border border-blue-300 rounded-lg text-blue-900 font-medium"
+                                   placeholder="UGX 0.00">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                        <div>
+                            <label class="block text-xs font-medium text-blue-700 mb-1">Supplier</label>
+                            <div class="relative">
+                                <select id="restock-supplier-select"
+                                        class="w-full px-3 py-2 text-sm border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
+                                    <option value="">Select supplier</option>
+                                    <!-- Suppliers will be loaded dynamically -->
+                                </select>
+                                <div class="absolute inset-y-0 right-8 flex items-center">
+                                    <button type="button" onclick="toggleCustomSupplier()" class="text-blue-600 hover:text-blue-800 text-xs" title="Add new supplier">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-blue-700 mb-1">Payment Method</label>
+                            <select id="restock-payment-method"
+                                    class="w-full px-3 py-2 text-sm border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
+                                <option value="">Select method</option>
+                                <option value="cash">💵 Cash</option>
+                                <option value="bank_transfer">🏦 Bank Transfer</option>
+                                <option value="mobile_money">📱 Mobile Money</option>
+                                <option value="check">📄 Check</option>
+                                <option value="card">💳 Card</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <p class="text-xs text-blue-600 mt-2">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Providing cost information will automatically create an expense record for this restocking.
+                    </p>
+                </div>
+
+                <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-medium text-green-700">New Stock Total:</span>
+                        <span class="text-sm font-bold text-green-900" id="restock-new-total">0 units</span>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-2 pt-3 border-t border-gray-200">
+                    <button type="button" onclick="closeRestockModal()" class="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-3 py-2 text-xs font-medium text-white bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
+                        <i class="fas fa-plus-circle mr-1"></i>Restock Product
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Product Modal -->
+<div id="delete-product-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all duration-300" style="transform: scale(0.95); opacity: 0;">
+            <div class="px-4 py-3 bg-gradient-to-r from-red-500 to-red-600 rounded-t-xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                            <i class="fas fa-exclamation-triangle text-white text-xs"></i>
+                        </div>
+                        <h3 class="text-base font-semibold text-white">Delete Product</h3>
+                    </div>
+                    <button type="button" onclick="closeDeleteModal()" class="text-white hover:text-gray-200 transition-colors duration-200">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-4">
+                <!-- Warning Icon -->
+                <div class="flex justify-center mb-3">
+                    <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-trash-alt text-red-600 text-lg"></i>
+                    </div>
+                </div>
+
+                <!-- Warning Message -->
+                <div class="text-center mb-4">
+                    <h4 class="text-base font-semibold text-gray-900 mb-2">Are you sure?</h4>
+                    <p class="text-sm text-gray-600 mb-3">You are about to permanently delete:</p>
+
+                    <!-- Product Info -->
+                    <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                        <div class="font-semibold text-gray-900" id="delete-product-name">Product Name</div>
+                        <div class="text-sm text-gray-600" id="delete-product-sku">SKU: ABC123</div>
+                    </div>
+
+                    <!-- Warning Details -->
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                        <div class="flex items-start">
+                            <i class="fas fa-exclamation-triangle text-red-600 mt-1 mr-3"></i>
+                            <div class="text-left">
+                                <p class="text-sm font-semibold text-red-800 mb-2">This action cannot be undone!</p>
+                                <ul class="text-sm text-red-700 space-y-1">
+                                    <li>• All restock history will be deleted</li>
+                                    <li>• Product will be removed from inventory</li>
+                                    <li>• Cannot be recovered after deletion</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Info Note -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <div class="flex items-center">
+                            <i class="fas fa-info-circle text-blue-600 mr-2"></i>
+                            <p class="text-sm text-blue-800">Existing orders containing this product will not be affected.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Confirmation Input -->
+                <div class="mb-6">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        Type <span class="text-red-600 font-bold">DELETE</span> to confirm:
+                    </label>
+                    <input type="text" id="delete-confirmation-input"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
+                           placeholder="Type DELETE here"
+                           autocomplete="off">
+                    <div id="delete-input-error" class="text-red-600 text-sm mt-1 hidden">
+                        Please type "DELETE" exactly to confirm
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="closeDeleteModal()"
+                            class="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200">
+                        Cancel
+                    </button>
+                    <button type="button" id="confirm-delete-btn" onclick="confirmDelete()"
+                            class="px-3 py-2 text-xs font-medium text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="fas fa-trash-alt mr-1"></i>Delete Product
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Product management functionality
+function openAddProductModal() {
+    loadCategories();
+    loadSuppliers();
+    document.getElementById('add-product-modal').classList.remove('hidden');
+}
+
+function closeAddProductModal() {
+    document.getElementById('add-product-modal').classList.add('hidden');
+    document.getElementById('add-product-form').reset();
+    // Hide profit margin display
+    document.getElementById('profit-margin-display').classList.add('hidden');
+}
+
+// Restock modal functions
+let currentRestockProductId = null;
+let currentRestockStock = 0;
+
+function openRestockModal(productId, productName, currentStock) {
+    console.log('Opening restock modal for:', productId, productName, currentStock);
+
+    currentRestockProductId = productId;
+    currentRestockStock = parseInt(currentStock) || 0;
+
+    // Update modal content
+    document.getElementById('restock-product-name').textContent = productName;
+    document.getElementById('restock-current-stock').textContent = currentRestockStock;
+    document.getElementById('restock-quantity').value = '';
+    document.getElementById('restock-reason').value = '';
+    document.getElementById('restock-unit-cost').value = '';
+    document.getElementById('restock-total-cost').value = '';
+    document.getElementById('restock-supplier-select').value = '';
+    document.getElementById('restock-payment-method').value = '';
+    document.getElementById('restock-new-total').textContent = currentRestockStock + ' units';
+
+    // Load suppliers for dropdown
+    loadSuppliersForRestock();
+
+    // Show modal
+    document.getElementById('restock-modal').classList.remove('hidden');
+
+    // Focus on quantity input
+    setTimeout(() => {
+        document.getElementById('restock-quantity').focus();
+    }, 100);
+}
+
+function closeRestockModal() {
+    document.getElementById('restock-modal').classList.add('hidden');
+    document.getElementById('restock-form').reset();
+    currentRestockProductId = null;
+    currentRestockStock = 0;
+}
+
+function loadSuppliersForRestock() {
+    fetch('/api/suppliers/', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const supplierSelect = document.getElementById('restock-supplier-select');
+        supplierSelect.innerHTML = '<option value="">Select supplier</option>';
+
+        if (data.suppliers && data.suppliers.length > 0) {
+            data.suppliers.forEach(supplier => {
+                const option = document.createElement('option');
+                option.value = supplier.name;
+                option.textContent = supplier.name;
+                supplierSelect.appendChild(option);
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error loading suppliers:', error);
+    });
+}
+
+function toggleCustomSupplier() {
+    // Open supplier creation modal
+    openSupplierModal();
+}
+
+function openSupplierModal() {
+    // Create and show supplier modal
+    const modalHtml = `
+        <div id="supplier-creation-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50">
+            <div class="flex items-center justify-center min-h-screen p-4">
+                <div class="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all duration-300">
+                    <div class="px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-t-xl">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                                    <i class="fas fa-truck text-white text-xs"></i>
+                                </div>
+                                <h3 class="text-base font-semibold text-white">Add New Supplier</h3>
+                            </div>
+                            <button type="button" onclick="closeSupplierModal()" class="text-white hover:text-gray-200 transition-colors duration-200">
+                                <i class="fas fa-times text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <form id="supplier-creation-form" class="p-4 space-y-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">
+                                <i class="fas fa-building text-gray-400 mr-1"></i>Company Name
+                            </label>
+                            <input type="text" name="name" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Enter company name">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">
+                                <i class="fas fa-user text-gray-400 mr-1"></i>Contact Person
+                            </label>
+                            <input type="text" name="contact_person" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Enter contact person name">
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">
+                                    <i class="fas fa-phone text-gray-400 mr-1"></i>Phone Number
+                                </label>
+                                <input type="tel" name="phone" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="+256 700 000 000">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">
+                                    <i class="fas fa-envelope text-gray-400 mr-1"></i>Email Address
+                                </label>
+                                <input type="email" name="email" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="supplier@example.com">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">
+                                <i class="fas fa-map-marker-alt text-gray-400 mr-1"></i>Address
+                            </label>
+                            <textarea name="address" rows="2" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none" placeholder="Enter supplier address"></textarea>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">
+                                <i class="fas fa-sticky-note text-gray-400 mr-1"></i>Notes
+                            </label>
+                            <textarea name="notes" rows="2" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none" placeholder="Additional notes about the supplier"></textarea>
+                        </div>
+
+                        <div class="flex justify-end space-x-2 pt-3 border-t border-gray-200">
+                            <button type="button" onclick="closeSupplierModal()" class="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200">
+                                Cancel
+                            </button>
+                            <button type="submit" class="px-3 py-2 text-xs font-medium text-white bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
+                                <i class="fas fa-plus mr-1"></i>Add Supplier
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Add modal to page
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // Add form submit handler
+    document.getElementById('supplier-creation-form').addEventListener('submit', handleSupplierCreation);
+
+    // Focus on name input
+    setTimeout(() => {
+        document.querySelector('#supplier-creation-modal input[name="name"]').focus();
+    }, 100);
+}
+
+function closeSupplierModal() {
+    const modal = document.getElementById('supplier-creation-modal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+async function handleSupplierCreation(event) {
+    event.preventDefault();
+
+    const formData = new FormData(event.target);
+    const supplierData = {
+        name: formData.get('name'),
+        contact_person: formData.get('contact_person') || null,
+        phone: formData.get('phone') || null,
+        email: formData.get('email') || null,
+        address: formData.get('address') || null,
+        notes: formData.get('notes') || null,
+        status: 'active'
+    };
+
+    try {
+        const response = await fetch('/api/suppliers/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify(supplierData)
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            showToast('Supplier added successfully!', 'success');
+
+            // Close supplier modal
+            closeSupplierModal();
+
+            // Reload suppliers in restock modal and select the new one
+            loadSuppliersForRestock();
+
+            // Select the newly created supplier
+            setTimeout(() => {
+                const supplierSelect = document.getElementById('restock-supplier-select');
+                if (supplierSelect) {
+                    supplierSelect.value = supplierData.name;
+                }
+            }, 500);
+
+        } else {
+            const error = await response.json();
+            showToast(error.detail || 'Failed to add supplier', 'error');
+        }
+    } catch (error) {
+        console.error('Error adding supplier:', error);
+        showToast('Failed to add supplier', 'error');
+    }
+}
+
+// Handle restock form submission
+function handleRestockSubmit(event) {
+    event.preventDefault();
+
+    if (!currentRestockProductId) {
+        showToast('No product selected for restocking', 'error');
+        return;
+    }
+
+    const quantity = parseInt(document.getElementById('restock-quantity').value);
+    const reason = document.getElementById('restock-reason').value.trim();
+    const unitCost = parseFloat(document.getElementById('restock-unit-cost').value);
+    const supplier = document.getElementById('restock-supplier-select').value.trim();
+    const paymentMethod = document.getElementById('restock-payment-method').value;
+
+    if (!quantity || quantity <= 0) {
+        showToast('Please enter a valid quantity', 'error');
+        return;
+    }
+
+    // Prepare restock data
+    const restockData = {
+        quantity: quantity,
+        reason: reason || 'Manual restock'
+    };
+
+    // Add cost information if provided
+    if (unitCost && unitCost > 0) {
+        restockData.unit_cost = unitCost;
+        if (supplier) restockData.supplier_name = supplier;
+        if (paymentMethod) restockData.payment_method = paymentMethod;
+    }
+
+    console.log('Restocking product:', currentRestockProductId, restockData);
+
+    // Show loading state
+    const submitButton = document.querySelector('#restock-form button[type="submit"]');
+    const originalText = submitButton.innerHTML;
+    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Restocking...';
+    submitButton.disabled = true;
+
+    // Make API call
+    fetch(`/api/products/${currentRestockProductId}/restock`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(restockData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => {
+                throw new Error(err.detail || 'Failed to restock product');
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Restock successful:', data);
+
+        let message = data.message || 'Product restocked successfully!';
+
+        // Add expense information if created
+        if (data.expense_created) {
+            message += `\n${data.expense_created.message}`;
+        }
+
+        showToast(message, 'success');
+
+        // Close modal
+        closeRestockModal();
+
+        // Refresh data
+        loadProductStats();
+        loadProducts();
+    })
+    .catch(error => {
+        console.error('Restock error:', error);
+        showToast(error.message || 'Failed to restock product', 'error');
+    })
+    .finally(() => {
+        // Restore button state
+        submitButton.innerHTML = originalText;
+        submitButton.disabled = false;
+    });
+}
+
+// Update new total when quantity changes and add form handler
+document.addEventListener('DOMContentLoaded', function() {
+    const quantityInput = document.getElementById('restock-quantity');
+    const unitCostInput = document.getElementById('restock-unit-cost');
+    const totalCostInput = document.getElementById('restock-total-cost');
+    const newTotalSpan = document.getElementById('restock-new-total');
+    const restockForm = document.getElementById('restock-form');
+
+    function updateCalculations() {
+        const addQuantity = parseInt(quantityInput.value) || 0;
+        const unitCost = parseFloat(unitCostInput.value) || 0;
+
+        // Update stock total
+        const newTotal = currentRestockStock + addQuantity;
+        newTotalSpan.textContent = newTotal + ' units';
+
+        // Update cost total
+        const totalCost = addQuantity * unitCost;
+        totalCostInput.value = totalCost > 0 ? `UGX ${totalCost.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '';
+    }
+
+    if (quantityInput && newTotalSpan) {
+        quantityInput.addEventListener('input', updateCalculations);
+    }
+
+    if (unitCostInput && totalCostInput) {
+        unitCostInput.addEventListener('input', updateCalculations);
+    }
+
+    if (restockForm) {
+        restockForm.addEventListener('submit', handleRestockSubmit);
+    }
+});
+
+// Load product stats separately
+function loadProductStats() {
+    fetch('/api/products/stats', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Product stats loaded:', data);
+
+        // Update stats cards with animation
+        const stats = [
+            { id: 'total-products', value: data.total_products || 0 },
+            { id: 'in-stock', value: data.in_stock || 0 },
+            { id: 'low-stock', value: data.low_stock || 0 },
+            { id: 'out-of-stock', value: data.out_of_stock || 0 }
+        ];
+
+        stats.forEach(stat => {
+            const element = document.getElementById(stat.id);
+            if (element) {
+                element.textContent = stat.value;
+            }
+        });
+    })
+    .catch(error => {
+        console.error('Error loading product stats:', error);
+        showToast('Failed to load product statistics', 'error');
+
+        // Set default values on error
+        ['total-products', 'in-stock', 'low-stock', 'out-of-stock'].forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = '0';
+            }
+        });
+    });
+}
+
+// Load products with filtering
+function loadProducts() {
+    const searchQuery = document.getElementById('search-products').value.trim();
+    const categoryFilter = document.getElementById('category-filter').value;
+    const stockFilter = document.getElementById('stock-filter').value;
+
+    // Build query parameters
+    const params = new URLSearchParams({
+        page: 1,
+        size: 50
+    });
+
+    if (searchQuery) {
+        params.append('search', searchQuery);
+    }
+    if (categoryFilter) {
+        params.append('category_id', categoryFilter);
+    }
+    if (stockFilter) {
+        params.append('stock_status', stockFilter);
+    }
+
+    fetch(`/api/products/?${params.toString()}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Products loaded:', data);
+        displayProducts(data.products || []);
+
+        // Show appropriate message
+        const total = data.total || 0;
+        if (total === 0) {
+            showToast('No products found matching your criteria', 'info');
+        } else {
+            showToast(`Found ${total} product${total !== 1 ? 's' : ''}`, 'success');
+        }
+    })
+    .catch(error => {
+        console.error('Error loading products:', error);
+        showToast('Failed to load products. Please check your connection.', 'error');
+
+        // Show empty state
+        displayProducts([]);
+    });
+}
+
+function displayProducts(products) {
+    const tableBody = document.querySelector('#products-table-body');
+    if (!tableBody) return;
+
+    if (products.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="7" class="px-3 py-3 text-center text-gray-500">
+                    <div class="flex flex-col items-center">
+                        <i class="fas fa-box text-gray-300 text-4xl mb-2"></i>
+                        <p>No products found</p>
+                        <p class="text-sm">Create your first product to get started</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tableBody.innerHTML = products.map(product => `
+        <tr class="hover:bg-gray-50">
+            <td class="px-3 py-3 whitespace-nowrap">
+                <div class="flex items-center">
+                    <i class="fas fa-box text-primary-500 mr-2"></i>
+                    <div>
+                        <div class="text-sm font-medium text-gray-900">${product.name}</div>
+                        <div class="text-sm text-gray-500">${product.description || 'No description'}</div>
+                    </div>
+                </div>
+            </td>
+            <td class="px-3 py-3 whitespace-nowrap">
+                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                    ${product.category_name}
+                </span>
+            </td>
+            <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-900">
+                ${product.sku}
+            </td>
+            <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-900">
+                UGX ${product.price.toLocaleString('en-UG')}
+            </td>
+            <td class="px-3 py-3 whitespace-nowrap">
+                <div class="text-sm text-gray-900">${product.stock_quantity} ${product.unit}</div>
+                ${product.min_stock_level > 0 ? `<div class="text-xs text-gray-500">Min: ${product.min_stock_level}</div>` : ''}
+            </td>
+            <td class="px-3 py-3 whitespace-nowrap">
+                <div class="flex items-center space-x-2">
+                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStockStatusClass(product.stock_status)}">
+                        ${getStockStatusText(product.stock_status)}
+                    </span>
+                    ${product.stock_status === 'low-stock' || product.stock_status === 'out-of-stock' ?
+                        `<button onclick="openRestockModal('${product.id}', '${product.name}', ${product.stock_quantity})"
+                                 class="text-orange-600 hover:text-orange-800 text-xs p-1 rounded hover:bg-orange-50 transition-colors duration-200"
+                                 title="Quick Restock">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </button>` : ''
+                    }
+                </div>
+            </td>
+            <td class="px-3 py-3 whitespace-nowrap text-right text-sm font-medium">
+                <div class="flex items-center justify-end space-x-2">
+                    <button onclick="openRestockModal('${product.id}', '${product.name}', ${product.stock_quantity})"
+                            class="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50 transition-colors duration-200"
+                            title="Restock Product">
+                        <i class="fas fa-plus-circle"></i>
+                    </button>
+                    <button onclick="editProduct('${product.id}')"
+                            class="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50 transition-colors duration-200"
+                            title="Edit Product">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button onclick="deleteProduct('${product.id}')"
+                            class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 transition-colors duration-200"
+                            title="Delete Product">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function getStockStatusClass(status) {
+    switch(status) {
+        case 'in-stock': return 'bg-green-100 text-green-800';
+        case 'low-stock': return 'bg-yellow-100 text-yellow-800';
+        case 'out-of-stock': return 'bg-red-100 text-red-800';
+        default: return 'bg-gray-100 text-gray-800';
+    }
+}
+
+function getStockStatusText(status) {
+    switch(status) {
+        case 'in-stock': return 'In Stock';
+        case 'low-stock': return 'Low Stock';
+        case 'out-of-stock': return 'Out of Stock';
+        default: return 'Unknown';
+    }
+}
+
+// Load categories for dropdown
+function loadCategories(retryCount = 0) {
+    console.log('loadCategories() called, retry count:', retryCount);
+
+    // Check if elements exist, if not retry after a short delay
+    const categorySelect = document.getElementById('category-filter');
+    const categoryModalSelect = document.getElementById('category-select');
+
+    if ((!categorySelect || !categoryModalSelect) && retryCount < 3) {
+        console.log('Elements not found, retrying in 100ms...');
+        setTimeout(() => loadCategories(retryCount + 1), 100);
+        return;
+    }
+
+    if (!categorySelect) {
+        console.error('category-filter element not found after retries');
+        return;
+    }
+
+    if (!categoryModalSelect) {
+        console.error('category-select element not found after retries');
+        return;
+    }
+
+    console.log('Elements found, proceeding with API call');
+
+    fetch('/api/categories/simple', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => {
+        console.log('Categories API response status:', response.status);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Categories API response data:', data);
+
+        // Clear existing options (except "All Categories" for filter)
+        categorySelect.innerHTML = '<option value="">All Categories</option>';
+        categoryModalSelect.innerHTML = '<option value="">Select Category</option>';
+
+        // Add categories to both dropdowns
+        if (data.categories && Array.isArray(data.categories)) {
+            console.log(`Processing ${data.categories.length} categories`);
+
+            data.categories.forEach((category, index) => {
+                console.log(`Adding category ${index + 1}:`, category);
+
+                if (category.id && category.name) {
+                    // Create options for filter dropdown
+                    const option1 = document.createElement('option');
+                    option1.value = category.id;
+                    option1.textContent = category.name;
+                    categorySelect.appendChild(option1);
+
+                    // Create options for modal dropdown
+                    const option2 = document.createElement('option');
+                    option2.value = category.id;
+                    option2.textContent = category.name;
+                    categoryModalSelect.appendChild(option2);
+
+                    console.log(`Added category: ${category.name} (${category.id})`);
+                } else {
+                    console.warn('Invalid category data:', category);
+                }
+            });
+
+            console.log(`Successfully loaded ${data.categories.length} categories into dropdowns`);
+            console.log('Filter dropdown options:', categorySelect.options.length);
+            console.log('Modal dropdown options:', categoryModalSelect.options.length);
+
+            // Verify the options are actually there
+            for (let i = 0; i < categorySelect.options.length; i++) {
+                console.log(`Filter option ${i}:`, categorySelect.options[i].value, categorySelect.options[i].text);
+            }
+
+            showToast(`Loaded ${data.categories.length} categories`, 'success');
+        } else {
+            console.warn('No categories found in response or invalid format');
+            showToast('No categories found', 'warning');
+        }
+    })
+    .catch(error => {
+        console.error('Error loading categories:', error);
+        showToast('Failed to load categories. Please check your connection.', 'error');
+    });
+}
+
+// Edit product functionality
+let currentEditProductId = null;
+
+function editProduct(productId) {
+    console.log('Editing product:', productId);
+    currentEditProductId = productId;
+
+    // Load product data
+    fetch(`/api/products/${productId}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(product => {
+        console.log('Product data loaded:', product);
+
+        // Populate the form
+        document.getElementById('edit-name').value = product.name || '';
+        document.getElementById('edit-sku').value = product.sku || '';
+        document.getElementById('edit-price').value = product.price || '';
+        document.getElementById('edit-cost-price').value = product.cost_price || '';
+        document.getElementById('edit-stock-quantity').value = product.stock_quantity || 0;
+        document.getElementById('edit-min-stock-level').value = product.min_stock_level || 10;
+        document.getElementById('edit-max-stock-level').value = product.max_stock_level || '';
+        document.getElementById('edit-unit').value = product.unit || 'pcs';
+        document.getElementById('edit-supplier').value = product.supplier || '';
+        document.getElementById('edit-barcode').value = product.barcode || '';
+        document.getElementById('edit-location').value = product.location || '';
+        document.getElementById('edit-payment-method').value = product.payment_method || '';
+        document.getElementById('edit-description').value = product.description || '';
+        document.getElementById('edit-is-active').checked = product.is_active !== false;
+
+        // Load categories and set the selected one
+        loadCategoriesForEdit(product.category_id);
+
+        // Load suppliers and set the selected one
+        loadSuppliersForEdit(product.supplier);
+
+        // Calculate profit margin with loaded data
+        calculateEditProfitMargin();
+
+        // Show the modal
+        document.getElementById('edit-product-modal').classList.remove('hidden');
+    })
+    .catch(error => {
+        console.error('Error loading product:', error);
+        showToast('Failed to load product data', 'error');
+    });
+}
+
+function loadCategoriesForEdit(selectedCategoryId) {
+    fetch('/api/categories/simple', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(categories => {
+        const categorySelect = document.getElementById('edit-category-id');
+        categorySelect.innerHTML = '<option value="">Select Category</option>';
+
+        categories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category.id;
+            option.textContent = category.name;
+            if (category.id === selectedCategoryId) {
+                option.selected = true;
+            }
+            categorySelect.appendChild(option);
+        });
+    })
+    .catch(error => {
+        console.error('Error loading categories:', error);
+        showToast('Failed to load categories', 'error');
+    });
+}
+
+// Load suppliers for dropdown
+function loadSuppliers() {
+    fetch('/api/products/suppliers/dropdown', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            return response.json();
+        }
+        throw new Error('Failed to load suppliers');
+    })
+    .then(data => {
+        const supplierSelect = document.getElementById('supplier-select');
+        if (supplierSelect) {
+            // Clear existing options except the first one
+            supplierSelect.innerHTML = '<option value="">Select Supplier (Optional)</option>';
+
+            // Add supplier options
+            data.suppliers.forEach(supplier => {
+                const option = document.createElement('option');
+                option.value = supplier.name;
+                option.textContent = supplier.name;
+                supplierSelect.appendChild(option);
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error loading suppliers:', error);
+        // Don't show error toast for suppliers since it's optional
+        // Just log the error and continue
+    });
+}
+
+// Load suppliers for edit modal
+function loadSuppliersForEdit(selectedSupplier = null) {
+    fetch('/api/products/suppliers/dropdown', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            return response.json();
+        }
+        throw new Error('Failed to load suppliers');
+    })
+    .then(data => {
+        const supplierSelect = document.getElementById('edit-supplier');
+        if (supplierSelect) {
+            // Clear existing options except the first one
+            supplierSelect.innerHTML = '<option value="">Select Supplier (Optional)</option>';
+
+            // Add supplier options
+            data.suppliers.forEach(supplier => {
+                const option = document.createElement('option');
+                option.value = supplier.name;
+                option.textContent = supplier.name;
+                if (selectedSupplier && supplier.name === selectedSupplier) {
+                    option.selected = true;
+                }
+                supplierSelect.appendChild(option);
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error loading suppliers for edit:', error);
+        // Don't show error toast for suppliers since it's optional
+        // Just log the error and continue
+    });
+}
+
+function closeEditProductModal() {
+    document.getElementById('edit-product-modal').classList.add('hidden');
+    document.getElementById('edit-product-form').reset();
+    currentEditProductId = null;
+    // Hide profit margin display
+    document.getElementById('edit-profit-margin-display').classList.add('hidden');
+}
+
+// Handle edit form submission
+document.addEventListener('DOMContentLoaded', function() {
+    const editForm = document.getElementById('edit-product-form');
+    if (editForm) {
+        editForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            if (!currentEditProductId) {
+                showToast('No product selected for editing', 'error');
+                return;
+            }
+
+            const formData = new FormData(editForm);
+            const submitButton = editForm.querySelector('button[type="submit"]');
+            const originalText = submitButton.innerHTML;
+
+            // Disable submit button and show loading
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Updating...';
+
+            // Build update data
+            const updateData = {};
+
+            // Only include fields that have values
+            const name = formData.get('name');
+            if (name && name.trim()) updateData.name = name.trim();
+
+            const categoryId = formData.get('category_id');
+            if (categoryId) updateData.category_id = categoryId;
+
+            const price = formData.get('price');
+            if (price) updateData.price = parseFloat(price);
+
+            const costPrice = formData.get('cost_price');
+            if (costPrice) updateData.cost_price = parseFloat(costPrice);
+
+            const stockQuantity = formData.get('stock_quantity');
+            if (stockQuantity !== null) updateData.stock_quantity = parseInt(stockQuantity);
+
+            const minStockLevel = formData.get('min_stock_level');
+            if (minStockLevel !== null) updateData.min_stock_level = parseInt(minStockLevel);
+
+            const maxStockLevel = formData.get('max_stock_level');
+            if (maxStockLevel) updateData.max_stock_level = parseInt(maxStockLevel);
+
+            const unit = formData.get('unit');
+            if (unit && unit.trim()) updateData.unit = unit.trim();
+
+            const supplier = formData.get('supplier');
+            if (supplier && supplier.trim()) updateData.supplier = supplier.trim();
+
+            const barcode = formData.get('barcode');
+            if (barcode && barcode.trim()) updateData.barcode = barcode.trim();
+
+            const description = formData.get('description');
+            if (description && description.trim()) updateData.description = description.trim();
+
+            updateData.is_active = formData.get('is_active') === 'on';
+
+            console.log('Updating product with data:', updateData);
+
+            // Send update request
+            fetch(`/api/products/${currentEditProductId}`, {
+                method: 'PUT',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(updateData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.detail || 'Failed to update product');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Product updated successfully:', data);
+                showToast('Product updated successfully!', 'success');
+
+                // Close modal
+                closeEditProductModal();
+
+                // Refresh data
+                loadProductStats();
+                loadProducts();
+            })
+            .catch(error => {
+                console.error('Update error:', error);
+                showToast(error.message || 'Failed to update product', 'error');
+            })
+            .finally(() => {
+                // Restore button state
+                submitButton.innerHTML = originalText;
+                submitButton.disabled = false;
+            });
+        });
+    }
+});
+
+// Profit margin calculation for add product modal
+function calculateProfitMargin() {
+    const costPrice = parseFloat(document.getElementById('add-cost-price').value) || 0;
+    const sellingPrice = parseFloat(document.getElementById('add-selling-price').value) || 0;
+    const profitDisplay = document.getElementById('profit-margin-display');
+    const profitAmount = document.getElementById('profit-amount');
+    const profitPercentage = document.getElementById('profit-percentage');
+
+    if (costPrice > 0 && sellingPrice > 0) {
+        const profit = sellingPrice - costPrice;
+        const marginPercentage = ((profit / costPrice) * 100).toFixed(1);
+
+        // Update display
+        profitAmount.textContent = `${profit >= 0 ? '+' : ''}UGX ${profit.toLocaleString()}`;
+        profitPercentage.textContent = `${marginPercentage}% margin`;
+
+        // Color coding based on profit
+        if (profit > 0) {
+            profitDisplay.className = 'bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-3';
+            profitAmount.className = 'text-sm font-bold text-green-800';
+            profitPercentage.className = 'text-xs text-green-600';
+        } else if (profit < 0) {
+            profitDisplay.className = 'bg-gradient-to-r from-red-50 to-red-50 border border-red-200 rounded-lg p-3';
+            profitAmount.className = 'text-sm font-bold text-red-800';
+            profitPercentage.className = 'text-xs text-red-600';
+        } else {
+            profitDisplay.className = 'bg-gradient-to-r from-gray-50 to-gray-50 border border-gray-200 rounded-lg p-3';
+            profitAmount.className = 'text-sm font-bold text-gray-800';
+            profitPercentage.className = 'text-xs text-gray-600';
+        }
+
+        profitDisplay.classList.remove('hidden');
+    } else {
+        profitDisplay.classList.add('hidden');
+    }
+}
+
+// Profit margin calculation for edit product modal
+function calculateEditProfitMargin() {
+    const costPrice = parseFloat(document.getElementById('edit-cost-price').value) || 0;
+    const sellingPrice = parseFloat(document.getElementById('edit-price').value) || 0;
+    const profitDisplay = document.getElementById('edit-profit-margin-display');
+    const profitAmount = document.getElementById('edit-profit-amount');
+    const profitPercentage = document.getElementById('edit-profit-percentage');
+
+    if (costPrice > 0 && sellingPrice > 0) {
+        const profit = sellingPrice - costPrice;
+        const marginPercentage = ((profit / costPrice) * 100).toFixed(1);
+
+        // Update display
+        profitAmount.textContent = `${profit >= 0 ? '+' : ''}UGX ${profit.toLocaleString()}`;
+        profitPercentage.textContent = `${marginPercentage}% margin`;
+
+        // Color coding based on profit
+        if (profit > 0) {
+            profitDisplay.className = 'bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-3 md:col-span-2';
+            profitAmount.className = 'text-sm font-bold text-green-800';
+            profitPercentage.className = 'text-xs text-green-600';
+        } else if (profit < 0) {
+            profitDisplay.className = 'bg-gradient-to-r from-red-50 to-red-50 border border-red-200 rounded-lg p-3 md:col-span-2';
+            profitAmount.className = 'text-sm font-bold text-red-800';
+            profitPercentage.className = 'text-xs text-red-600';
+        } else {
+            profitDisplay.className = 'bg-gradient-to-r from-gray-50 to-gray-50 border border-gray-200 rounded-lg p-3 md:col-span-2';
+            profitAmount.className = 'text-sm font-bold text-gray-800';
+            profitPercentage.className = 'text-xs text-gray-600';
+        }
+
+        profitDisplay.classList.remove('hidden');
+    } else {
+        profitDisplay.classList.add('hidden');
+    }
+}
+
+// Global variable to store product info for deletion
+let productToDelete = null;
+
+function deleteProduct(productId) {
+    console.log('Deleting product:', productId);
+
+    try {
+        // Find the product in the current loaded data
+        const productRow = document.querySelector(`button[onclick="deleteProduct('${productId}')"]`).closest('tr');
+        console.log('Found product row:', productRow);
+
+        if (!productRow) {
+            console.error('Could not find product row');
+            showToast('Error: Could not find product information', 'error');
+            return;
+        }
+
+        // Extract product information from the table row
+        const productNameElement = productRow.querySelector('td:nth-child(1) .font-medium');
+        const productSkuElement = productRow.querySelector('td:nth-child(3)'); // SKU is in the 3rd column
+
+        const productName = productNameElement ? productNameElement.textContent.trim() : 'Unknown Product';
+        const productSku = productSkuElement ? productSkuElement.textContent.trim() : '';
+
+        console.log('Product details:', { productName, productSku });
+
+        // Store product info globally for the modal
+        productToDelete = {
+            id: productId,
+            name: productName,
+            sku: productSku
+        };
+
+        // Update modal content
+        document.getElementById('delete-product-name').textContent = productName;
+        document.getElementById('delete-product-sku').textContent = productSku ? `SKU: ${productSku}` : 'No SKU';
+
+        // Clear previous input and errors
+        document.getElementById('delete-confirmation-input').value = '';
+        document.getElementById('delete-input-error').classList.add('hidden');
+
+        // Show the modal with animation
+        const modal = document.getElementById('delete-product-modal');
+        modal.classList.remove('hidden');
+
+        // Add entrance animation
+        setTimeout(() => {
+            modal.querySelector('.bg-white').style.transform = 'scale(1)';
+            modal.querySelector('.bg-white').style.opacity = '1';
+        }, 10);
+
+        // Focus on the input field
+        setTimeout(() => {
+            document.getElementById('delete-confirmation-input').focus();
+        }, 150);
+
+    } catch (error) {
+        console.error('Error in deleteProduct:', error);
+        showToast('Error preparing product deletion', 'error');
+    }
+}
+
+function closeDeleteModal() {
+    document.getElementById('delete-product-modal').classList.add('hidden');
+    document.getElementById('delete-confirmation-input').value = '';
+    document.getElementById('delete-input-error').classList.add('hidden');
+    productToDelete = null;
+}
+
+function confirmDelete() {
+    const confirmationInput = document.getElementById('delete-confirmation-input').value.trim();
+    const errorElement = document.getElementById('delete-input-error');
+
+    if (confirmationInput !== 'DELETE') {
+        errorElement.classList.remove('hidden');
+        document.getElementById('delete-confirmation-input').focus();
+        return;
+    }
+
+    if (!productToDelete) {
+        showToast('Error: No product selected for deletion', 'error');
+        closeDeleteModal();
+        return;
+    }
+
+    // Hide error and proceed with deletion
+    errorElement.classList.add('hidden');
+
+    // Close modal
+    closeDeleteModal();
+
+    // Perform the deletion
+    performDeleteProduct(productToDelete.id, productToDelete.name);
+}
+
+// Add keyboard support for the delete modal
+document.addEventListener('keydown', function(event) {
+    const modal = document.getElementById('delete-product-modal');
+    if (!modal.classList.contains('hidden')) {
+        if (event.key === 'Escape') {
+            closeDeleteModal();
+        } else if (event.key === 'Enter') {
+            event.preventDefault();
+            confirmDelete();
+        }
+    }
+});
+
+// Add input event listener for real-time validation
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmationInput = document.getElementById('delete-confirmation-input');
+    const errorElement = document.getElementById('delete-input-error');
+
+    if (confirmationInput) {
+        confirmationInput.addEventListener('input', function() {
+            if (this.value.trim() === 'DELETE') {
+                errorElement.classList.add('hidden');
+            }
+        });
+    }
+});
+
+function performDeleteProduct(productId, productName) {
+    console.log('Performing delete for product:', productId);
+
+    // Make API call to delete
+    fetch(`/api/products/${productId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => {
+                throw new Error(err.detail || 'Failed to delete product');
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Product deleted successfully:', data);
+        showToast(data.message || `Product "${productName}" deleted successfully!`, 'success');
+
+        // Refresh data
+        loadProducts();
+        loadStats();
+    })
+    .catch(error => {
+        console.error('Delete error:', error);
+        showToast(error.message || 'Failed to delete product', 'error');
+    });
+}
+
+
+
+function refreshData() {
+    loadProductStats();
+    loadProducts();
+    loadCategories();
+    showToast('Data refreshed successfully', 'success');
+}
+
+function exportProducts() {
+    showToast('Export functionality coming soon', 'info');
+}
+
+// Load products on page load
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM Content Loaded - initializing page');
+
+    // Load initial data
+    console.log('Loading product stats...');
+    loadProductStats();
+
+    console.log('Loading products...');
+    loadProducts();
+
+    console.log('Loading categories...');
+    loadCategories();
+
+    // Add event listeners for real-time filtering
+    const searchInput = document.getElementById('search-products');
+    const categoryFilter = document.getElementById('category-filter');
+    const stockFilter = document.getElementById('stock-filter');
+
+    // Debounce search input
+    let searchTimeout;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            loadProducts();
+        }, 500); // Wait 500ms after user stops typing
+    });
+
+    // Filter on dropdown changes
+    categoryFilter.addEventListener('change', function() {
+        loadProducts();
+    });
+
+    stockFilter.addEventListener('change', function() {
+        loadProducts();
+    });
+
+    // Check for success/error messages in URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const successMessage = urlParams.get('success');
+    const errorMessage = urlParams.get('error');
+
+    if (successMessage) {
+        showToast(successMessage, 'success');
+        // Reload data after successful creation
+        loadProductStats();
+        loadProducts();
+        // Clean up URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    if (errorMessage) {
+        showToast(errorMessage, 'error');
+        // Clean up URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+});
+</script>
+{% endblock %}

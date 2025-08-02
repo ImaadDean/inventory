@@ -1,0 +1,1441 @@
+{% extends "base.html" %}
+
+{% block title %}Point of Sale - Inventory Management System{% endblock %}
+
+{% block content %}
+<div class="space-y-4 animate-fade-in">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-green-500 to-emerald-600 shadow-lg rounded-xl p-4 text-white">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div class="mb-2 md:mb-0">
+                <div class="flex items-center mb-1">
+                    <div class="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                        <i class="fas fa-cash-register text-white text-sm"></i>
+                    </div>
+                    <h1 class="text-xl md:text-2xl font-bold">Point of Sale</h1>
+                </div>
+                <p class="text-green-100 text-sm">Process sales transactions efficiently</p>
+            </div>
+            <div class="text-left md:text-right">
+                <div class="flex items-center justify-start md:justify-end mb-1">
+                    <div class="w-5 h-5 bg-white bg-opacity-20 rounded-md flex items-center justify-center mr-2">
+                        <i id="user-role-icon" class="fas fa-user text-white text-xs"></i>
+                    </div>
+                    <p class="text-green-100 text-xs" id="user-role-display">{{ user.role }}</p>
+                </div>
+                <p class="text-lg font-semibold">{{ user.full_name }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- POS Interface -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <!-- Product Search and Cart -->
+        <div class="lg:col-span-2 space-y-4">
+            <!-- Product Search -->
+            <div class="bg-white shadow-md rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300">
+                <div class="px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-600">
+                    <div class="flex items-center">
+                        <div class="w-7 h-7 bg-white bg-opacity-20 rounded-md flex items-center justify-center mr-2">
+                            <i class="fas fa-search text-white text-sm"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-semibold text-white">Product Search</h3>
+                            <p class="text-blue-100 text-xs">Find products by name, SKU, or barcode</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <div class="relative">
+                        <input type="text"
+                               id="product-search"
+                               placeholder="Search by name, SKU, or barcode..."
+                               class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 pr-20">
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 space-x-2">
+                            <button type="button" id="barcode-camera-btn"
+                                    class="p-1 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-all duration-200"
+                                    title="Scan barcode with camera">
+                                <i class="fas fa-camera text-sm"></i>
+                            </button>
+                            <i class="fas fa-search text-gray-400 text-sm"></i>
+                        </div>
+                    </div>
+                    <div id="search-results" class="mt-3 space-y-2 max-h-48 overflow-y-auto"></div>
+                </div>
+            </div>
+
+            <!-- Shopping Cart -->
+            <div class="bg-white shadow-md rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300">
+                <div class="px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-600">
+                    <div class="flex items-center">
+                        <div class="w-7 h-7 bg-white bg-opacity-20 rounded-md flex items-center justify-center mr-2">
+                            <i class="fas fa-shopping-cart text-white text-sm"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-semibold text-white">Shopping Cart</h3>
+                            <p class="text-purple-100 text-xs">Review selected items</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <div id="cart-items" class="space-y-2">
+                        <div class="text-center py-6 text-gray-500">
+                            <i class="fas fa-shopping-cart text-2xl mb-2"></i>
+                            <p class="text-sm">Cart is empty</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Summary and Payment -->
+        <div class="space-y-4">
+            <!-- Order Summary -->
+            <div class="bg-white shadow-md rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300">
+                <div class="px-4 py-3 bg-gradient-to-r from-orange-500 to-red-600">
+                    <div class="flex items-center">
+                        <div class="w-7 h-7 bg-white bg-opacity-20 rounded-md flex items-center justify-center mr-2">
+                            <i class="fas fa-calculator text-white text-sm"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-semibold text-white">Order Summary</h3>
+                            <p class="text-orange-100 text-xs">Transaction totals & discount settings</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <div class="space-y-4">
+                        <!-- Discount Settings -->
+                        <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-3 border border-green-200">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center">
+                                    <div class="w-5 h-5 bg-gradient-to-r from-green-400 to-emerald-500 rounded-md flex items-center justify-center mr-2">
+                                        <i class="fas fa-percent text-white text-xs"></i>
+                                    </div>
+                                    <span class="text-sm font-semibold text-gray-800">Discount Settings</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <span id="discount-toggle-status" class="text-xs text-gray-600 mr-2">Off</span>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" id="discount-toggle" class="sr-only peer">
+                                        <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500"></div>
+                                    </label>
+                                </div>
+                            </div>
+                            <div id="discount-controls" class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3" style="display: none;">
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-700 mb-1">Discount Type</label>
+                                    <select id="discount-type"
+                                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200">
+                                        <option value="fixed" selected>Fixed Amount (UGX)</option>
+                                        <option value="percentage">Percentage (%)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-700 mb-1">Discount Value</label>
+                                    <input type="number"
+                                           id="discount-value"
+                                           step="1"
+                                           min="0"
+                                           placeholder="e.g. 5000"
+                                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Transaction Totals -->
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center p-2 bg-gray-50 rounded-lg">
+                                <span class="text-gray-600 text-sm font-medium">Subtotal:</span>
+                                <span id="subtotal" class="font-semibold text-gray-900 text-sm">UGX 0</span>
+                            </div>
+                            <div class="flex justify-between items-center p-2 bg-green-50 rounded-lg">
+                                <span class="text-gray-600 text-sm font-medium">Discount:</span>
+                                <span id="discount" class="font-semibold text-green-600 text-sm">UGX 0</span>
+                            </div>
+                            <div class="border-t border-gray-200 pt-3">
+                                <div class="flex justify-between items-center p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
+                                    <span class="text-base font-bold text-gray-900">Total:</span>
+                                    <span id="total" class="text-lg font-bold text-blue-600">UGX 0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Client Info -->
+            <div class="bg-white shadow-md rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300">
+                <div class="px-4 py-3 bg-gradient-to-r from-teal-500 to-cyan-600">
+                    <div class="flex items-center">
+                        <div class="w-7 h-7 bg-white bg-opacity-20 rounded-md flex items-center justify-center mr-2">
+                            <i class="fas fa-user text-white text-sm"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-semibold text-white">Client Information</h3>
+                            <p class="text-teal-100 text-xs">Select or add customer</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <div class="space-y-3">
+                        <div class="flex gap-2">
+                            <input type="text"
+                                   id="client-search"
+                                   placeholder="Search client by name, email, or phone..."
+                                   class="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200">
+                            <button type="button"
+                                    id="add-client-btn"
+                                    class="px-3 py-2 bg-gradient-to-r from-teal-500 to-cyan-600 text-white rounded-lg hover:from-teal-600 hover:to-cyan-700 text-sm font-semibold shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300">
+                                <i class="fas fa-plus mr-1"></i>New
+                            </button>
+                        </div>
+                        <div id="client-results" class="hidden space-y-2 max-h-32 overflow-y-auto">
+                            <!-- Client search results will appear here -->
+                        </div>
+                        <div id="selected-client" class="hidden p-3 bg-gradient-to-r from-teal-50 to-cyan-50 border border-teal-200 rounded-lg">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <p class="font-semibold text-teal-900 text-sm" id="selected-client-name"></p>
+                                    <p class="text-xs text-teal-600" id="selected-client-details"></p>
+                                </div>
+                                <button type="button" id="clear-client" class="w-6 h-6 bg-teal-200 hover:bg-teal-300 rounded-md flex items-center justify-center text-teal-600 transition-colors duration-200">
+                                    <i class="fas fa-times text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Section -->
+            <div class="bg-white shadow-md rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300">
+                <div class="px-4 py-3 bg-gradient-to-r from-indigo-500 to-purple-600">
+                    <div class="flex items-center">
+                        <div class="w-7 h-7 bg-white bg-opacity-20 rounded-md flex items-center justify-center mr-2">
+                            <i class="fas fa-credit-card text-white text-sm"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-semibold text-white">Payment</h3>
+                            <p class="text-indigo-100 text-xs">Select payment method</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <div class="space-y-4">
+                        <!-- Payment Method -->
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-2">Payment Method</label>
+                            <select id="payment-method" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200">
+                                <option value="cash">Cash</option>
+                                <option value="mobile_money">Mobile Money</option>
+                                <option value="not_paid">Not Paid</option>
+                            </select>
+                        </div>
+
+                        <!-- Amount Received (for cash payments) -->
+                        <div id="cash-payment-fields">
+                            <label class="block text-xs font-semibold text-gray-700 mb-2">Amount Received</label>
+                            <input type="number" id="amount-received" placeholder="0" min="0" step="0.01"
+                                   class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200">
+                            <div class="flex justify-between items-center p-2 bg-indigo-50 rounded-lg mt-2">
+                                <span class="text-gray-600 text-sm font-medium">Change:</span>
+                                <span id="change" class="text-sm font-bold text-gray-900">UGX 0</span>
+                            </div>
+                        </div>
+
+                        <!-- Process Sale Button -->
+                        <button type="button"
+                                id="process-sale"
+                                disabled
+                                class="w-full px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed font-semibold text-sm shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300">
+                            <i class="fas fa-credit-card mr-2"></i>Process Sale
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Client Modal -->
+<div id="add-client-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300">
+            <div class="px-4 py-3 bg-gradient-to-r from-teal-500 to-cyan-600 rounded-t-xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                            <i class="fas fa-user-plus text-white text-xs"></i>
+                        </div>
+                        <h3 class="text-base font-semibold text-white">Add New Customer</h3>
+                    </div>
+                    <button type="button" id="close-client-modal" class="text-white hover:text-gray-200 transition-colors duration-200">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
+            <form id="add-client-form" class="p-4 space-y-3">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                            <i class="fas fa-user text-gray-400 mr-1"></i>Full Name *
+                        </label>
+                        <input type="text" id="client-name-input" required
+                               class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                               placeholder="Enter customer's full name">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                            <i class="fas fa-phone text-gray-400 mr-1"></i>Phone Number *
+                        </label>
+                        <input type="tel" id="client-phone-input" required
+                               class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                               placeholder="Enter phone number">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                        <i class="fas fa-envelope text-gray-400 mr-1"></i>Email Address
+                    </label>
+                    <input type="email" id="client-email-input"
+                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                           placeholder="Enter email address (optional)">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                        <i class="fas fa-map-marker-alt text-gray-400 mr-1"></i>Address
+                    </label>
+                    <textarea id="client-address-input" rows="2"
+                              class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                              placeholder="Enter address (optional)"></textarea>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                            <i class="fas fa-city text-gray-400 mr-1"></i>City
+                        </label>
+                        <input type="text" id="client-city-input"
+                               class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                               placeholder="Enter city">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                            <i class="fas fa-flag text-gray-400 mr-1"></i>Country
+                        </label>
+                        <input type="text" id="client-country-input"
+                               class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                               placeholder="Enter country">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                        <i class="fas fa-sticky-note text-gray-400 mr-1"></i>Notes
+                    </label>
+                    <textarea id="client-notes-input" rows="2"
+                              class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                              placeholder="Additional notes (optional)"></textarea>
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t border-gray-200">
+                    <button type="button" id="cancel-client" class="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200">
+                        Cancel
+                    </button>
+                    <button type="submit" id="submit-client" class="px-3 py-2 text-xs font-medium text-white bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
+                        <i class="fas fa-user-plus mr-1"></i>Add Customer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Receipt Modal -->
+<div id="receipt-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300">
+            <div class="px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-t-xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                            <i class="fas fa-receipt text-white text-xs"></i>
+                        </div>
+                        <h3 class="text-base font-semibold text-white">Order Receipt</h3>
+                    </div>
+                    <button type="button" id="close-receipt-modal" class="text-white hover:text-gray-200 transition-colors duration-200">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-4">
+                <div id="receipt-content" class="border-2 border-gray-200 rounded-xl p-4 bg-white font-mono text-sm shadow-inner mb-4">
+                    <!-- Receipt content will be generated here -->
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t border-gray-200">
+                    <button id="close-receipt" class="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200">
+                        <i class="fas fa-times mr-1"></i>Close
+                    </button>
+                    <button id="print-receipt" class="px-3 py-2 text-xs font-medium text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
+                        <i class="fas fa-print mr-1"></i>Print Receipt
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Barcode Camera Scanner Modal -->
+<div id="barcode-camera-modal" class="fixed inset-0 bg-black bg-opacity-75 backdrop-blur-sm hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all duration-300">
+            <div class="px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-t-xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                            <i class="fas fa-camera text-white text-xs"></i>
+                        </div>
+                        <h3 class="text-base font-semibold text-white">Barcode Scanner</h3>
+                    </div>
+                    <button type="button" id="close-camera-modal" class="text-white hover:text-gray-200 transition-colors duration-200">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-4">
+                <div class="relative bg-black rounded-lg overflow-hidden mb-4" style="aspect-ratio: 4/3;">
+                    <video id="barcode-video" class="w-full h-full object-cover" autoplay muted playsinline></video>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <div class="w-48 h-32 border-2 border-blue-500 rounded-lg opacity-75">
+                            <div class="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-blue-500"></div>
+                            <div class="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-blue-500"></div>
+                            <div class="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-blue-500"></div>
+                            <div class="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-blue-500"></div>
+                        </div>
+                    </div>
+                    <div id="camera-loading" class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                        <div class="text-white text-center">
+                            <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                            <p class="text-sm">Starting camera...</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center">
+                    <p class="text-sm text-gray-600 mb-3">
+                        <i class="fas fa-info-circle text-blue-500 mr-1"></i>
+                        Position the barcode within the frame to scan
+                    </p>
+                    <div id="scan-result" class="hidden mb-3 p-2 rounded-lg"></div>
+                    <div class="flex justify-center space-x-2">
+                        <button id="close-camera" class="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200">
+                            <i class="fas fa-times mr-1"></i>Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Barcode Scanner Modal -->
+<div id="barcode-scanner-modal" class="fixed inset-0 bg-black bg-opacity-75 backdrop-blur-sm hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all duration-300">
+            <div class="px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-t-xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                            <i class="fas fa-camera text-white text-xs"></i>
+                        </div>
+                        <h3 class="text-base font-semibold text-white">Barcode Scanner</h3>
+                    </div>
+                    <button type="button" id="close-scanner-modal" class="text-white hover:text-gray-200 transition-colors duration-200">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-4">
+                <div class="relative bg-black rounded-lg overflow-hidden mb-4" style="aspect-ratio: 4/3;">
+                    <video id="barcode-video" class="w-full h-full object-cover" autoplay muted playsinline></video>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <div class="w-48 h-32 border-2 border-blue-500 rounded-lg opacity-75">
+                            <div class="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-blue-500"></div>
+                            <div class="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-blue-500"></div>
+                            <div class="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-blue-500"></div>
+                            <div class="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-blue-500"></div>
+                        </div>
+                    </div>
+                    <div id="scanner-loading" class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                        <div class="text-white text-center">
+                            <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                            <p class="text-sm">Starting camera...</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center">
+                    <p class="text-sm text-gray-600 mb-2">Position the barcode within the frame</p>
+                    <div id="scanner-status" class="text-xs text-blue-600">
+                        <i class="fas fa-info-circle mr-1"></i>Ready to scan
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t border-gray-200 mt-4">
+                    <button id="close-scanner" class="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200">
+                        <i class="fas fa-times mr-1"></i>Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// POS System JavaScript
+let cart = [];
+let subtotal = 0;
+let discount = 0;
+let total = 0;
+let selectedClient = null;
+
+// Initialize POS system
+document.addEventListener('DOMContentLoaded', function() {
+    initializePOS();
+});
+
+function initializePOS() {
+    // Event listeners
+    document.getElementById('product-search').addEventListener('input', searchProducts);
+    document.getElementById('barcode-camera-btn').addEventListener('click', openBarcodeScanner);
+    document.getElementById('discount-toggle').addEventListener('change', toggleDiscount);
+    document.getElementById('discount-type').addEventListener('change', updateTotals);
+    document.getElementById('discount-value').addEventListener('input', updateTotals);
+    document.getElementById('payment-method').addEventListener('change', handlePaymentMethodChange);
+    document.getElementById('amount-received').addEventListener('input', updateChange);
+    document.getElementById('process-sale').addEventListener('click', processSale);
+    document.getElementById('client-search').addEventListener('input', searchClients);
+    document.getElementById('add-client-btn').addEventListener('click', openAddClientModal);
+    document.getElementById('clear-client').addEventListener('click', clearSelectedClient);
+
+    // Modal event listeners
+    document.getElementById('close-client-modal').addEventListener('click', closeAddClientModal);
+    document.getElementById('cancel-client').addEventListener('click', closeAddClientModal);
+    document.getElementById('add-client-form').addEventListener('submit', addNewClient);
+
+    // Receipt modal event listeners
+    document.getElementById('close-receipt-modal').addEventListener('click', closeReceiptModal);
+    document.getElementById('close-receipt').addEventListener('click', closeReceiptModal);
+    document.getElementById('print-receipt').addEventListener('click', printReceipt);
+
+    // Barcode scanner modal event listeners
+    document.getElementById('close-scanner-modal').addEventListener('click', closeBarcodeScanner);
+    document.getElementById('close-scanner').addEventListener('click', closeBarcodeScanner);
+
+    // Initialize payment method display
+    handlePaymentMethodChange();
+}
+
+// Product search functionality
+async function searchProducts() {
+    const query = document.getElementById('product-search').value.trim();
+    const resultsContainer = document.getElementById('search-results');
+
+    if (query.length < 2) {
+        resultsContainer.innerHTML = '';
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/pos/products/search?query=${encodeURIComponent(query)}&limit=10`, {
+            credentials: 'include'
+        });
+
+        if (response.ok) {
+            const products = await response.json(); // POS API returns direct array of products
+            console.log('Products received:', products); // Debug log
+            console.log('Response status:', response.status); // Debug log
+            displaySearchResults(products);
+        } else {
+            console.error('Response not OK:', response.status, response.statusText); // Debug log
+            console.error('Product search failed:', response.status);
+            resultsContainer.innerHTML = `
+                <div class="text-center py-4 px-3 bg-gradient-to-r from-red-50 to-red-100 border border-red-200 rounded-xl">
+                    <div class="w-8 h-8 bg-red-300 rounded-lg flex items-center justify-center mx-auto mb-2">
+                        <i class="fas fa-exclamation-triangle text-red-600 text-sm"></i>
+                    </div>
+                    <p class="text-sm text-red-700 font-medium">Error searching products</p>
+                    <p class="text-xs text-red-600">Please try again</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Product search error:', error);
+        resultsContainer.innerHTML = `
+            <div class="text-center py-4 px-3 bg-gradient-to-r from-red-50 to-red-100 border border-red-200 rounded-xl">
+                <div class="w-8 h-8 bg-red-300 rounded-lg flex items-center justify-center mx-auto mb-2">
+                    <i class="fas fa-exclamation-triangle text-red-600 text-sm"></i>
+                </div>
+                <p class="text-sm text-red-700 font-medium">Error searching products</p>
+                <p class="text-xs text-red-600">Please try again</p>
+            </div>
+        `;
+    }
+}
+
+function displaySearchResults(products) {
+    try {
+        const resultsContainer = document.getElementById('search-results');
+
+        console.log('Displaying products:', products); // Debug log
+        console.log('Products length:', products ? products.length : 'products is null/undefined'); // Debug log
+        console.log('Results container:', resultsContainer); // Debug log
+
+        if (!resultsContainer) {
+            console.error('Results container not found!');
+            return;
+        }
+
+        if (!products || products.length === 0) {
+            resultsContainer.innerHTML = `
+                <div class="text-center py-4 px-3 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-xl">
+                    <div class="w-8 h-8 bg-gray-300 rounded-lg flex items-center justify-center mx-auto mb-2">
+                        <i class="fas fa-search text-gray-500 text-sm"></i>
+                    </div>
+                    <p class="text-sm text-gray-600 font-medium">No products found</p>
+                    <p class="text-xs text-gray-500">Try searching with different keywords</p>
+                </div>
+            `;
+            return;
+        }
+
+        resultsContainer.innerHTML = products.map(product => `
+            <div class="group bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200 hover:border-blue-300 rounded-xl p-3 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5" onclick="addToCart('${product.id}', '${product.name}', ${product.price}, '${product.sku}')">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1 mr-3">
+                        <div class="flex items-center mb-1">
+                            <div class="w-4 h-4 bg-blue-500 rounded-md flex items-center justify-center mr-2">
+                                <i class="fas fa-box text-white text-xs"></i>
+                            </div>
+                            <p class="font-semibold text-sm text-gray-900 group-hover:text-blue-900">${product.name}</p>
+                        </div>
+                        <div class="flex items-center space-x-3 text-xs text-gray-600">
+                            <span class="flex items-center">
+                                <i class="fas fa-barcode text-gray-400 mr-1"></i>
+                                ${product.sku}
+                            </span>
+                            <span class="flex items-center">
+                                <i class="fas fa-warehouse text-gray-400 mr-1"></i>
+                                ${product.stock_quantity} ${product.unit}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-bold text-sm text-blue-600 mb-1">UGX ${product.price.toLocaleString()}</p>
+                        <button class="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-3 py-1 rounded-lg text-xs font-medium shadow-sm hover:shadow-md transition-all duration-200 transform hover:scale-105">
+                            <i class="fas fa-plus mr-1"></i>Add
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+        console.log('Products displayed successfully'); // Debug log
+    } catch (error) {
+        console.error('Error in displaySearchResults:', error);
+    }
+}
+
+// Camera-based barcode scanner functionality
+let barcodeStream = null;
+let barcodeScanner = null;
+
+async function openBarcodeScanner() {
+    const modal = document.getElementById('barcode-scanner-modal');
+    const video = document.getElementById('barcode-video');
+    const loading = document.getElementById('scanner-loading');
+    const status = document.getElementById('scanner-status');
+
+    modal.classList.remove('hidden');
+
+    try {
+        // Request camera access
+        barcodeStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: 'environment', // Use back camera if available
+                width: { ideal: 640 },
+                height: { ideal: 480 }
+            }
+        });
+
+        video.srcObject = barcodeStream;
+        loading.style.display = 'none';
+
+        // Initialize barcode detection (using a simple approach)
+        startBarcodeDetection(video);
+
+    } catch (error) {
+        console.error('Camera access error:', error);
+        loading.innerHTML = `
+            <div class="text-white text-center">
+                <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+                <p class="text-sm">Camera access denied</p>
+                <p class="text-xs">Please allow camera access to scan barcodes</p>
+            </div>
+        `;
+        status.innerHTML = '<i class="fas fa-exclamation-triangle mr-1"></i>Camera access required';
+        status.className = 'text-xs text-red-600';
+    }
+}
+
+function startBarcodeDetection(video) {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    const status = document.getElementById('scanner-status');
+
+    // Simple barcode detection simulation
+    // In a real implementation, you would use a library like QuaggaJS or ZXing
+    const detectInterval = setInterval(() => {
+        if (video.videoWidth > 0 && video.videoHeight > 0) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0);
+
+            // Simulate barcode detection
+            // In reality, you would process the canvas data to detect barcodes
+            // For demo purposes, we'll show a manual input option
+            status.innerHTML = `
+                <div class="flex items-center justify-center space-x-2">
+                    <i class="fas fa-camera mr-1"></i>
+                    <span>Scanning for barcodes...</span>
+                    <button onclick="showManualBarcodeInput()" class="text-blue-600 hover:text-blue-800 underline ml-2">
+                        Enter manually
+                    </button>
+                </div>
+            `;
+        }
+    }, 1000);
+
+    // Store interval for cleanup
+    barcodeScanner = detectInterval;
+}
+
+function showManualBarcodeInput() {
+    const status = document.getElementById('scanner-status');
+    status.innerHTML = `
+        <div class="flex items-center space-x-2">
+            <input type="text" id="manual-barcode-input" placeholder="Enter barcode..."
+                   class="px-2 py-1 text-xs border border-gray-300 rounded flex-1">
+            <button onclick="processManualBarcode()" class="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600">
+                Add
+            </button>
+        </div>
+    `;
+    document.getElementById('manual-barcode-input').focus();
+}
+
+async function processManualBarcode() {
+    const input = document.getElementById('manual-barcode-input');
+    const barcode = input.value.trim();
+
+    if (!barcode) return;
+
+    try {
+        const response = await fetch(`/api/pos/products/search?query=${encodeURIComponent(barcode)}&limit=1`, {
+            credentials: 'include'
+        });
+
+        if (response.ok) {
+            const products = await response.json();
+
+            if (products && products.length > 0) {
+                const product = products[0];
+                addToCart(product.id, product.name, product.price, product.sku);
+                closeBarcodeScanner();
+                showToast(`Added "${product.name}" to cart`, 'success');
+            } else {
+                showToast('No product found for this barcode', 'error');
+            }
+        } else {
+            showToast('Error searching for product', 'error');
+        }
+    } catch (error) {
+        console.error('Barcode search error:', error);
+        showToast('Error processing barcode', 'error');
+    }
+}
+
+function closeBarcodeScanner() {
+    const modal = document.getElementById('barcode-scanner-modal');
+    const loading = document.getElementById('scanner-loading');
+    const status = document.getElementById('scanner-status');
+
+    // Stop camera stream
+    if (barcodeStream) {
+        barcodeStream.getTracks().forEach(track => track.stop());
+        barcodeStream = null;
+    }
+
+    // Clear detection interval
+    if (barcodeScanner) {
+        clearInterval(barcodeScanner);
+        barcodeScanner = null;
+    }
+
+    // Reset modal state
+    loading.style.display = 'flex';
+    loading.innerHTML = `
+        <div class="text-white text-center">
+            <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+            <p class="text-sm">Starting camera...</p>
+        </div>
+    `;
+    status.innerHTML = '<i class="fas fa-info-circle mr-1"></i>Ready to scan';
+    status.className = 'text-xs text-blue-600';
+
+    modal.classList.add('hidden');
+}
+
+// Cart functionality
+function addToCart(id, name, price, sku) {
+    const existingItem = cart.find(item => item.id === id);
+
+    if (existingItem) {
+        existingItem.quantity += 1;
+    } else {
+        cart.push({
+            id: id,
+            name: name,
+            price: price,
+            sku: sku,
+            quantity: 1
+        });
+    }
+
+    updateCartDisplay();
+    updateTotals();
+
+    // Clear search
+    document.getElementById('product-search').value = '';
+    document.getElementById('search-results').innerHTML = '';
+}
+
+function updateCartDisplay() {
+    const cartContainer = document.getElementById('cart-items');
+
+    if (cart.length === 0) {
+        cartContainer.innerHTML = `
+            <div class="text-center py-6 text-gray-500">
+                <i class="fas fa-shopping-cart text-2xl mb-2"></i>
+                <p class="text-sm">Cart is empty</p>
+            </div>
+        `;
+        return;
+    }
+
+    cartContainer.innerHTML = cart.map(item => `
+        <div class="group bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 border border-purple-200 hover:border-purple-300 rounded-xl p-3 transition-all duration-200 shadow-sm hover:shadow-md">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center flex-1 mr-3">
+                    <div class="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg flex items-center justify-center mr-3 shadow-sm">
+                        <i class="fas fa-box text-white text-xs"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="font-semibold text-sm text-gray-900 group-hover:text-purple-900 mb-1">${item.name}</p>
+                        <div class="flex items-center space-x-3 text-xs text-gray-600">
+                            <span class="flex items-center">
+                                <i class="fas fa-barcode text-gray-400 mr-1"></i>
+                                ${item.sku}
+                            </span>
+                            <span class="flex items-center">
+                                <i class="fas fa-tag text-gray-400 mr-1"></i>
+                                UGX ${item.price.toLocaleString()}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="flex items-center bg-white rounded-lg border border-purple-200 shadow-sm">
+                        <button onclick="updateQuantity('${item.id}', ${item.quantity - 1})"
+                                class="w-7 h-7 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-l-lg text-xs font-medium transition-all duration-200 flex items-center justify-center">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <span class="text-sm font-bold px-3 py-1 bg-white text-gray-900 min-w-[2rem] text-center">${item.quantity}</span>
+                        <button onclick="updateQuantity('${item.id}', ${item.quantity + 1})"
+                                class="w-7 h-7 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-r-lg text-xs font-medium transition-all duration-200 flex items-center justify-center">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                    <button onclick="removeFromCart('${item.id}')"
+                            class="w-7 h-7 bg-gradient-to-r from-gray-500 to-gray-600 hover:from-red-500 hover:to-red-600 text-white rounded-lg text-xs font-medium transition-all duration-200 flex items-center justify-center shadow-sm hover:shadow-md"
+                            title="Remove item">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="mt-2 pt-2 border-t border-purple-200 flex justify-between items-center">
+                <span class="text-xs text-gray-600">Item Total:</span>
+                <span class="text-sm font-bold text-purple-600">UGX ${(item.price * item.quantity).toLocaleString()}</span>
+            </div>
+        </div>
+    `).join('');
+}
+
+function updateQuantity(id, newQuantity) {
+    if (newQuantity <= 0) {
+        removeFromCart(id);
+        return;
+    }
+
+    const item = cart.find(item => item.id === id);
+    if (item) {
+        item.quantity = newQuantity;
+        updateCartDisplay();
+        updateTotals();
+    }
+}
+
+function removeFromCart(id) {
+    cart = cart.filter(item => item.id !== id);
+    updateCartDisplay();
+    updateTotals();
+}
+
+// Discount functionality
+function toggleDiscount() {
+    const toggle = document.getElementById('discount-toggle');
+    const controls = document.getElementById('discount-controls');
+    const status = document.getElementById('discount-toggle-status');
+
+    if (toggle.checked) {
+        controls.style.display = 'grid';
+        status.textContent = 'On';
+    } else {
+        controls.style.display = 'none';
+        status.textContent = 'Off';
+        document.getElementById('discount-value').value = '';
+    }
+
+    updateTotals();
+}
+
+// Calculate totals
+function updateTotals() {
+    subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+    // Calculate discount
+    const discountToggle = document.getElementById('discount-toggle');
+    const discountType = document.getElementById('discount-type').value;
+    const discountValue = parseFloat(document.getElementById('discount-value').value) || 0;
+
+    if (discountToggle.checked && discountValue > 0) {
+        if (discountType === 'percentage') {
+            discount = (subtotal * discountValue) / 100;
+        } else {
+            discount = Math.min(discountValue, subtotal);
+        }
+    } else {
+        discount = 0;
+    }
+
+    total = subtotal - discount;
+
+    // Update display
+    document.getElementById('subtotal').textContent = `UGX ${Math.round(subtotal).toLocaleString()}`;
+    document.getElementById('discount').textContent = `UGX ${Math.round(discount).toLocaleString()}`;
+    document.getElementById('total').textContent = `UGX ${Math.round(total).toLocaleString()}`;
+
+    // Enable/disable process sale button
+    document.getElementById('process-sale').disabled = cart.length === 0;
+
+    // Update change calculation
+    updateChange();
+}
+
+// Payment method handling
+function handlePaymentMethodChange() {
+    const paymentMethod = document.getElementById('payment-method').value;
+    const cashFields = document.getElementById('cash-payment-fields');
+
+    if (paymentMethod === 'cash') {
+        cashFields.style.display = 'block';
+    } else {
+        cashFields.style.display = 'none';
+        document.getElementById('amount-received').value = '';
+        updateChange();
+    }
+}
+
+function updateChange() {
+    const paymentMethod = document.getElementById('payment-method').value;
+    const amountReceived = parseFloat(document.getElementById('amount-received').value) || 0;
+    const changeElement = document.getElementById('change');
+
+    if (paymentMethod === 'cash') {
+        const change = Math.max(0, amountReceived - total);
+        changeElement.textContent = `UGX ${Math.round(change).toLocaleString()}`;
+    } else {
+        changeElement.textContent = 'UGX 0';
+    }
+}
+
+// Client functionality
+async function searchClients() {
+    const query = document.getElementById('client-search').value.trim();
+    const resultsContainer = document.getElementById('client-results');
+
+    if (query.length < 2) {
+        resultsContainer.classList.add('hidden');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/pos/customers/search?query=${encodeURIComponent(query)}&limit=10`, {
+            credentials: 'include'
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            const clients = data.customers || []; // POS API returns customers array
+            displayClientResults(clients);
+        } else {
+            console.error('Client search failed:', response.status);
+            resultsContainer.innerHTML = `
+                <div class="text-center py-4 px-3 bg-gradient-to-r from-red-50 to-red-100 border border-red-200 rounded-xl">
+                    <div class="w-8 h-8 bg-red-300 rounded-lg flex items-center justify-center mx-auto mb-2">
+                        <i class="fas fa-exclamation-triangle text-red-600 text-sm"></i>
+                    </div>
+                    <p class="text-sm text-red-700 font-medium">Error searching clients</p>
+                    <p class="text-xs text-red-600">Please try again</p>
+                </div>
+            `;
+            resultsContainer.classList.remove('hidden');
+        }
+    } catch (error) {
+        console.error('Client search error:', error);
+        resultsContainer.innerHTML = `
+            <div class="text-center py-4 px-3 bg-gradient-to-r from-red-50 to-red-100 border border-red-200 rounded-xl">
+                <div class="w-8 h-8 bg-red-300 rounded-lg flex items-center justify-center mx-auto mb-2">
+                    <i class="fas fa-exclamation-triangle text-red-600 text-sm"></i>
+                </div>
+                <p class="text-sm text-red-700 font-medium">Error searching clients</p>
+                <p class="text-xs text-red-600">Please try again</p>
+            </div>
+        `;
+        resultsContainer.classList.remove('hidden');
+    }
+}
+
+function displayClientResults(clients) {
+    const resultsContainer = document.getElementById('client-results');
+
+    if (clients.length === 0) {
+        resultsContainer.innerHTML = `
+            <div class="text-center py-4 px-3 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-xl">
+                <div class="w-8 h-8 bg-gray-300 rounded-lg flex items-center justify-center mx-auto mb-2">
+                    <i class="fas fa-user-slash text-gray-500 text-sm"></i>
+                </div>
+                <p class="text-sm text-gray-600 font-medium">No clients found</p>
+                <p class="text-xs text-gray-500">Try searching with different keywords</p>
+            </div>
+        `;
+        resultsContainer.classList.remove('hidden');
+        return;
+    }
+
+    resultsContainer.innerHTML = clients.map(client => `
+        <div class="group bg-gradient-to-r from-teal-50 to-cyan-50 hover:from-teal-100 hover:to-cyan-100 border border-teal-200 hover:border-teal-300 rounded-xl p-3 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5" onclick="selectClient('${client.id}', '${client.name}', '${client.email || ''}', '${client.phone || ''}')">
+            <div class="flex items-center">
+                <div class="w-8 h-8 bg-gradient-to-r from-teal-500 to-cyan-600 rounded-lg flex items-center justify-center mr-3 shadow-sm">
+                    <i class="fas fa-user text-white text-sm"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="font-semibold text-sm text-gray-900 group-hover:text-teal-900 mb-1">${client.name}</p>
+                    <div class="flex items-center text-xs text-gray-600">
+                        ${client.phone ? `
+                        <span class="flex items-center mr-3">
+                            <i class="fas fa-phone text-gray-400 mr-1"></i>
+                            ${client.phone}
+                        </span>
+                        ` : ''}
+                        ${client.email ? `
+                        <span class="flex items-center">
+                            <i class="fas fa-envelope text-gray-400 mr-1"></i>
+                            ${client.email}
+                        </span>
+                        ` : ''}
+                    </div>
+                </div>
+                <div class="text-teal-600 group-hover:text-teal-700">
+                    <i class="fas fa-chevron-right text-xs"></i>
+                </div>
+            </div>
+        </div>
+    `).join('');
+
+    resultsContainer.classList.remove('hidden');
+}
+
+function selectClient(id, name, email, phone) {
+    selectedClient = { id, name, email, phone };
+
+    document.getElementById('selected-client-name').textContent = name;
+    document.getElementById('selected-client-details').textContent = phone || email || '';
+    document.getElementById('selected-client').classList.remove('hidden');
+    document.getElementById('client-results').classList.add('hidden');
+    document.getElementById('client-search').value = '';
+}
+
+function clearSelectedClient() {
+    selectedClient = null;
+    document.getElementById('selected-client').classList.add('hidden');
+    document.getElementById('client-search').value = '';
+}
+
+function openAddClientModal() {
+    document.getElementById('add-client-modal').classList.remove('hidden');
+    // Clear form
+    document.getElementById('add-client-form').reset();
+}
+
+function closeAddClientModal() {
+    document.getElementById('add-client-modal').classList.add('hidden');
+    // Clear form
+    document.getElementById('add-client-form').reset();
+}
+
+async function addNewClient(event) {
+    event.preventDefault();
+
+    const submitButton = document.getElementById('submit-client');
+    const originalText = submitButton.innerHTML;
+
+    // Show loading state
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Adding...';
+
+    const clientData = {
+        name: document.getElementById('client-name-input').value.trim(),
+        phone: document.getElementById('client-phone-input').value.trim(),
+        email: document.getElementById('client-email-input').value.trim() || null,
+        address: document.getElementById('client-address-input').value.trim() || null,
+        city: document.getElementById('client-city-input').value.trim() || null,
+        country: document.getElementById('client-country-input').value.trim() || null,
+        notes: document.getElementById('client-notes-input').value.trim() || null
+    };
+
+    try {
+        const response = await fetch('/api/pos/customers', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(clientData)
+        });
+
+        if (response.ok) {
+            const newClient = await response.json();
+
+            // Select the newly created client
+            selectClient(newClient.id, newClient.name, newClient.email || '', newClient.phone || '');
+
+            // Close modal
+            closeAddClientModal();
+
+            // Show success message
+            showToast('Customer added successfully!', 'success');
+        } else {
+            const error = await response.json();
+            showToast(error.detail || 'Failed to add customer', 'error');
+        }
+    } catch (error) {
+        console.error('Add client error:', error);
+        showToast('Failed to add customer', 'error');
+    } finally {
+        // Reset button state
+        submitButton.disabled = false;
+        submitButton.innerHTML = originalText;
+    }
+}
+
+// Simple toast notification function
+function showToast(message, type = 'info') {
+    // For now, use alert - can be replaced with a proper toast system later
+    alert(message);
+}
+
+// Process sale
+async function processSale() {
+    if (cart.length === 0) {
+        alert('Please add items to cart before processing sale');
+        return;
+    }
+
+    const paymentMethod = document.getElementById('payment-method').value;
+    const amountReceived = paymentMethod === 'cash' ? (parseFloat(document.getElementById('amount-received').value) || 0) : total;
+
+    if (paymentMethod === 'cash' && amountReceived < total) {
+        alert('Insufficient payment amount');
+        return;
+    }
+
+    const saleData = {
+        client_id: selectedClient ? selectedClient.id : null,
+        client_name: selectedClient ? selectedClient.name : "Walk-in Client",
+        client_email: selectedClient ? selectedClient.email : "",
+        client_phone: selectedClient ? selectedClient.phone : "",
+        is_guest_client: !selectedClient,
+        items: cart.map(item => ({
+            product_id: item.id,
+            name: item.name,
+            sku: item.sku,
+            price: item.price,
+            quantity: item.quantity,
+            total: item.price * item.quantity
+        })),
+        subtotal: subtotal,
+        tax: 0,
+        discount: discount,
+        total: total,
+        payment_method: paymentMethod,
+        notes: '',
+        created_by: '{{ user.id }}'
+    };
+
+    try {
+        const response = await fetch('/api/pos/orders', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(saleData)
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+
+            // Save data for receipt before clearing
+            const receiptData = {
+                orderNumber: result.order_number,
+                cart: [...cart], // Create a copy of the cart
+                subtotal: subtotal,
+                discount: discount,
+                total: total,
+                paymentMethod: paymentMethod,
+                amountReceived: amountReceived,
+                change: paymentMethod === 'cash' ? Math.max(0, amountReceived - total) : 0,
+                client: selectedClient,
+                date: new Date().toLocaleString()
+            };
+
+            // Reset form
+            cart = [];
+            updateCartDisplay();
+            clearSelectedClient();
+            document.getElementById('amount-received').value = '';
+            document.getElementById('payment-method').value = 'cash';
+            handlePaymentMethodChange();
+
+            // Reset discount settings
+            document.getElementById('discount-toggle').checked = false;
+            document.getElementById('discount-type').value = 'fixed';
+            document.getElementById('discount-value').value = '';
+            document.getElementById('discount-controls').style.display = 'none';
+            document.getElementById('discount-toggle-status').textContent = 'Off';
+
+            updateTotals();
+
+            // Show receipt modal
+            showReceipt(receiptData);
+        } else {
+            const error = await response.json();
+            alert(error.detail || 'Failed to process sale');
+        }
+    } catch (error) {
+        console.error('Sale processing error:', error);
+        alert('Failed to process sale');
+    }
+}
+
+// Receipt functions
+function showReceipt(receiptData) {
+    const receiptContent = document.getElementById('receipt-content');
+
+    const orderDate = new Date(receiptData.date);
+    const receiptDate = orderDate.toLocaleDateString('en-UG', {
+        timeZone: 'Africa/Kampala'
+    });
+    const receiptTime = orderDate.toLocaleTimeString('en-UG', {
+        timeZone: 'Africa/Kampala',
+        hour12: false
+    });
+
+    receiptContent.innerHTML = `
+        <div class="receipt-print" id="receipt-print">
+            <div class="receipt-header text-center mb-4">
+                <h2 class="text-xl font-bold">INVENTORY SYSTEM</h2>
+                <p class="text-sm text-gray-600">Order Receipt</p>
+                <div class="border-b border-gray-300 my-2"></div>
+            </div>
+
+            <div class="receipt-info text-sm mb-4">
+                <div class="flex justify-between">
+                    <span>Date:</span>
+                    <span>${receiptDate}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Time:</span>
+                    <span>${receiptTime}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Order #:</span>
+                    <span>${receiptData.orderNumber}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Status:</span>
+                    <span>${receiptData.paymentMethod === 'not_paid' ? 'Pending' : 'Completed'}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Processed by:</span>
+                    <span>{{ user.full_name }}</span>
+                </div>
+                ${receiptData.client && receiptData.client.name !== 'Walk-in Client' ? `
+                <div class="flex justify-between">
+                    <span>Client:</span>
+                    <span>${receiptData.client.name}</span>
+                </div>
+                ` : ''}
+                ${receiptData.client && receiptData.client.phone ? `
+                <div class="flex justify-between">
+                    <span>Phone:</span>
+                    <span>${receiptData.client.phone}</span>
+                </div>
+                ` : ''}
+                <div class="border-b border-gray-300 my-2"></div>
+            </div>
+
+            <div class="receipt-items mb-4">
+                <div class="text-sm font-semibold mb-2">ITEMS:</div>
+                ${receiptData.cart.map(item => `
+                    <div class="text-sm mb-2">
+                        <div class="flex justify-between">
+                            <div class="flex-1">
+                                <div class="font-medium">${item.name}</div>
+                                <div class="text-xs text-gray-500">${item.sku}</div>
+                            </div>
+                        </div>
+                        <div class="flex justify-between mt-1">
+                            <div>${item.quantity} x UGX ${Math.round(item.price).toLocaleString('en-UG')}</div>
+                            <div class="font-medium">UGX ${Math.round(item.price * item.quantity).toLocaleString('en-UG')}</div>
+                        </div>
+                    </div>
+                `).join('')}
+                <div class="border-b border-gray-300 my-2"></div>
+            </div>
+
+            <div class="receipt-totals text-sm mb-4">
+                <div class="flex justify-between">
+                    <span>Subtotal:</span>
+                    <span>UGX ${Math.round(receiptData.subtotal || 0).toLocaleString('en-UG')}</span>
+                </div>
+                ${receiptData.discount && receiptData.discount > 0 ? `
+                <div class="flex justify-between text-green-600">
+                    <span>Discount:</span>
+                    <span>-UGX ${Math.round(receiptData.discount).toLocaleString('en-UG')}</span>
+                </div>
+                ` : ''}
+                <div class="flex justify-between font-bold text-lg border-t border-gray-300 pt-2">
+                    <span>TOTAL:</span>
+                    <span>UGX ${Math.round(receiptData.total || 0).toLocaleString('en-UG')}</span>
+                </div>
+            </div>
+
+            <div class="receipt-payment text-sm mb-4">
+                <div class="border-b border-gray-300 my-2"></div>
+                <div class="flex justify-between">
+                    <span>Payment Method:</span>
+                    <span class="capitalize">${receiptData.paymentMethod.replace('_', ' ')}</span>
+                </div>
+                ${receiptData.paymentMethod === 'cash' ? `
+                <div class="flex justify-between">
+                    <span>Amount Received:</span>
+                    <span>UGX ${Math.round(receiptData.amountReceived).toLocaleString('en-UG')}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Change:</span>
+                    <span>UGX ${Math.round(receiptData.change).toLocaleString('en-UG')}</span>
+                </div>
+                ` : ''}
+            </div>
+
+            <div class="receipt-footer text-center text-xs text-gray-500 mt-4">
+                <div class="border-b border-gray-300 my-2"></div>
+                <p>Thank you for your business!</p>
+                <p>Please keep this receipt for your records</p>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('receipt-modal').classList.remove('hidden');
+}
+
+function closeReceiptModal() {
+    document.getElementById('receipt-modal').classList.add('hidden');
+}
+
+function printReceipt() {
+    const receiptContent = document.getElementById('receipt-print').innerHTML;
+    const printWindow = window.open('', '_blank');
+
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Receipt</title>
+            <style>
+                body {
+                    font-family: 'Courier New', monospace;
+                    font-size: 12px;
+                    line-height: 1.4;
+                    margin: 0;
+                    padding: 20px;
+                    max-width: 300px;
+                }
+                .text-center { text-align: center; }
+                .text-sm { font-size: 11px; }
+                .text-xs { font-size: 10px; }
+                .font-bold { font-weight: bold; }
+                .font-semibold { font-weight: 600; }
+                .font-medium { font-weight: 500; }
+                .text-gray-600 { color: #666; }
+                .text-gray-500 { color: #888; }
+                .text-green-600 { color: #059669; }
+                .mb-1 { margin-bottom: 4px; }
+                .mb-2 { margin-bottom: 8px; }
+                .mb-4 { margin-bottom: 16px; }
+                .mt-2 { margin-top: 8px; }
+                .mt-4 { margin-top: 16px; }
+                .pt-2 { padding-top: 8px; }
+                .pt-4 { padding-top: 16px; }
+                .py-2 { padding-top: 8px; padding-bottom: 8px; }
+                .border-t { border-top: 1px solid #ccc; }
+                .border-b { border-bottom: 1px solid #ccc; }
+                .flex { display: flex; }
+                .justify-between { justify-content: space-between; }
+                .flex-1 { flex: 1; }
+                .capitalize { text-transform: capitalize; }
+                @media print {
+                    body { margin: 0; padding: 10px; }
+                }
+            </style>
+        </head>
+        <body>
+            ${receiptContent}
+        </body>
+        </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+}
+</script>
+{% endblock %}

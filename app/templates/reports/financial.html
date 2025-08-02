@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Financial Reports - Inventory Management System{% endblock %}
+
+{% block content %}
+<div class="space-y-6 animate-fade-in">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-orange-500 to-red-600 shadow-lg rounded-xl p-6 text-white">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div class="mb-4 md:mb-0">
+                <h1 class="text-2xl md:text-3xl font-bold">💰 Financial Reports</h1>
+                <p class="text-orange-100 text-sm mt-1">Profit & loss, expenses, and financial summaries</p>
+            </div>
+            <div class="flex space-x-2">
+                <a href="/reports" class="px-4 py-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg text-white text-sm font-medium transition-all duration-200">
+                    <i class="fas fa-arrow-left mr-2"></i>Back to Reports
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Financial Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Total Revenue</p>
+                    <p class="text-2xl font-bold text-green-600">UGX 0</p>
+                </div>
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-arrow-up text-green-600 text-lg"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Total Expenses</p>
+                    <p class="text-2xl font-bold text-red-600">UGX 0</p>
+                </div>
+                <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-arrow-down text-red-600 text-lg"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Net Profit</p>
+                    <p class="text-2xl font-bold text-blue-600">UGX 0</p>
+                </div>
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-chart-line text-blue-600 text-lg"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Profit Margin</p>
+                    <p class="text-2xl font-bold text-purple-600">0%</p>
+                </div>
+                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-percentage text-purple-600 text-lg"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Categories -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Profit & Loss -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">Profit & Loss</h3>
+                <i class="fas fa-balance-scale text-blue-600 text-xl"></i>
+            </div>
+            <p class="text-sm text-gray-600 mb-4">Comprehensive P&L statement and analysis</p>
+            <button onclick="generatePLReport()" class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200">
+                Generate Report
+            </button>
+        </div>
+
+        <!-- Expense Analysis -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">Expense Analysis</h3>
+                <i class="fas fa-receipt text-red-600 text-xl"></i>
+            </div>
+            <p class="text-sm text-gray-600 mb-4">Detailed expense breakdown and trends</p>
+            <button onclick="generateExpenseReport()" class="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors duration-200">
+                Generate Report
+            </button>
+        </div>
+
+        <!-- Cash Flow -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">Cash Flow</h3>
+                <i class="fas fa-water text-green-600 text-xl"></i>
+            </div>
+            <p class="text-sm text-gray-600 mb-4">Cash flow analysis and projections</p>
+            <button onclick="generateCashFlowReport()" class="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors duration-200">
+                Generate Report
+            </button>
+        </div>
+    </div>
+
+    <!-- Financial Chart -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Financial Overview</h3>
+        <div class="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
+            <div class="text-center">
+                <i class="fas fa-chart-bar text-gray-400 text-4xl mb-2"></i>
+                <p class="text-gray-500">Financial chart will appear here</p>
+                <p class="text-sm text-gray-400">Generate a report to view data</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function generatePLReport() {
+    alert('Profit & Loss report generation coming soon!');
+}
+
+function generateExpenseReport() {
+    alert('Expense analysis report generation coming soon!');
+}
+
+function generateCashFlowReport() {
+    alert('Cash flow report generation coming soon!');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  inventory:
+    build: .
+    container_name: inventory
+    ports:
+      - "8001:8001"
+    depends_on:
+      - mongodb
+    environment:
+      - MONGODB_HOST=mongodb
+      - MONGODB_PORT=27017
+      - MONGODB_DATABASE=inventory
+      - MONGODB_USERNAME=imaad
+    restart: always
+    networks:
+      - inventory-network
+
+  mongodb:
+    image: mongo
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=imaad
+      - MONGO_INITDB_ROOT_PASSWORD=Ertdfgxc
+      - MONGO_INITDB_DATABASE=inventory
+    volumes:
+      - mongodb_data:/data/db
+    restart: always
+    networks:
+      - inventory-network
+
+networks:
+  inventory-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:

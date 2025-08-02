@@ -1,0 +1,948 @@
+{% extends "base.html" %}
+
+{% block title %}Categories - Inventory Management System{% endblock %}
+
+{% block content %}
+<div class="space-y-6 animate-fade-in">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-purple-500 to-pink-600 shadow-lg rounded-xl p-4 text-white">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div class="mb-2 md:mb-0">
+                <h1 class="text-xl md:text-2xl font-bold">Category Management</h1>
+                <p class="text-purple-100 text-sm">Organize your products with categories and subcategories</p>
+            </div>
+            <button onclick="openAddCategoryModal()" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-all duration-200 text-sm">
+                <i class="fas fa-plus"></i>
+                <span class="font-medium">Add Category</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <!-- Total Categories -->
+        <div class="bg-white overflow-hidden shadow-md rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+            <div class="p-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-gradient-to-r from-blue-400 to-blue-600 rounded-lg flex items-center justify-center shadow-md">
+                            <i class="fas fa-tags text-white text-xs"></i>
+                        </div>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <dt class="text-xs font-medium text-gray-500 truncate">Total Categories</dt>
+                        <dd class="text-base font-bold text-gray-900 mt-0.5" id="total-categories">0</dd>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gradient-to-r from-blue-50 to-blue-100 px-4 py-2">
+                <div class="text-xs">
+                    <span class="text-blue-700 font-medium">All categories</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Categories -->
+        <div class="bg-white overflow-hidden shadow-md rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+            <div class="p-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-gradient-to-r from-green-400 to-green-600 rounded-lg flex items-center justify-center shadow-md">
+                            <i class="fas fa-check-circle text-white text-xs"></i>
+                        </div>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <dt class="text-xs font-medium text-gray-500 truncate">Active Categories</dt>
+                        <dd class="text-base font-bold text-gray-900 mt-0.5" id="active-categories">0</dd>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gradient-to-r from-green-50 to-green-100 px-4 py-2">
+                <div class="text-xs">
+                    <span class="text-green-700 font-medium">Currently in use</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Parent Categories -->
+        <div class="bg-white overflow-hidden shadow-md rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+            <div class="p-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-gradient-to-r from-purple-400 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
+                            <i class="fas fa-sitemap text-white text-xs"></i>
+                        </div>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <dt class="text-xs font-medium text-gray-500 truncate">Parent Categories</dt>
+                        <dd class="text-base font-bold text-gray-900 mt-0.5" id="parent-categories">0</dd>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gradient-to-r from-purple-50 to-purple-100 px-4 py-2">
+                <div class="text-xs">
+                    <span class="text-purple-700 font-medium">Main categories</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subcategories -->
+        <div class="bg-white overflow-hidden shadow-md rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+            <div class="p-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center shadow-md">
+                            <i class="fas fa-layer-group text-white text-xs"></i>
+                        </div>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <dt class="text-xs font-medium text-gray-500 truncate">Subcategories</dt>
+                        <dd class="text-base font-bold text-gray-900 mt-0.5" id="subcategories">0</dd>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gradient-to-r from-yellow-50 to-orange-100 px-4 py-2">
+                <div class="text-xs">
+                    <span class="text-orange-700 font-medium">Nested categories</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Categories Table -->
+    <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300" id="table-view">
+        <!-- Table Header with Search & Filters -->
+        <div class="px-4 py-3 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-3 lg:space-y-0">
+                <div class="flex items-center">
+                    <div class="w-6 h-6 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center mr-2">
+                        <i class="fas fa-table text-white text-xs"></i>
+                    </div>
+                    <h3 class="text-base font-semibold text-gray-900">Categories</h3>
+                    <span id="results-count" class="text-xs text-gray-500 ml-2"></span>
+                </div>
+
+                <!-- Compact Search & Filter Controls -->
+                <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                    <div class="relative">
+                        <input type="text" id="search-categories" placeholder="Search categories..."
+                               class="pl-7 pr-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent w-full sm:w-40 text-xs transition-all duration-200">
+                        <i class="fas fa-search absolute left-2 top-2 text-gray-400 text-xs"></i>
+                    </div>
+                    <select id="status-filter" class="px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-xs transition-all duration-200">
+                        <option value="">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                    <select id="type-filter" class="px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-xs transition-all duration-200">
+                        <option value="">All Types</option>
+                        <option value="parent">Parent Categories</option>
+                        <option value="child">Subcategories</option>
+                    </select>
+                    <div class="flex space-x-1">
+                        <button onclick="clearFilters()" class="bg-gray-500 hover:bg-gray-600 text-white px-2 py-1.5 rounded-lg flex items-center space-x-1 text-xs transition-all duration-200">
+                            <i class="fas fa-times text-xs"></i>
+                            <span>Clear</span>
+                        </button>
+                        <button onclick="toggleTreeView()" id="tree-view-btn" class="bg-purple-500 hover:bg-purple-600 text-white px-2 py-1.5 rounded-lg flex items-center space-x-1 text-xs transition-all duration-200">
+                            <i class="fas fa-sitemap text-xs"></i>
+                            <span>Tree View</span>
+                        </button>
+                        <button onclick="exportCategories()" class="bg-green-500 hover:bg-green-600 text-white px-2 py-1.5 rounded-lg flex items-center space-x-1 text-xs transition-all duration-200">
+                            <i class="fas fa-download text-xs"></i>
+                            <span>Export</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
+                    <tr>
+                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Category</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Description</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Parent</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Products</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Created</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="categories-table-body" class="bg-white divide-y divide-gray-100">
+                    <!-- Categories will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Tree View -->
+    <div class="bg-white rounded-2xl shadow-lg p-6 hidden hover:shadow-xl transition-all duration-300" id="tree-view">
+        <div class="border-b border-gray-200 pb-4 mb-6">
+            <div class="flex items-center">
+                <div class="w-8 h-8 bg-gradient-to-r from-green-500 to-teal-600 rounded-lg flex items-center justify-center mr-3">
+                    <i class="fas fa-sitemap text-white text-sm"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900">Category Tree Structure</h3>
+            </div>
+        </div>
+        <div id="category-tree" class="space-y-3">
+            <!-- Tree structure will be loaded here -->
+        </div>
+    </div>
+</div>
+
+<!-- Add Category Modal -->
+<div id="add-category-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full transform transition-all duration-300">
+            <div class="px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-600 rounded-t-xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                            <i class="fas fa-plus text-white text-xs"></i>
+                        </div>
+                        <h3 class="text-base font-semibold text-white">Add New Category</h3>
+                    </div>
+                    <button type="button" onclick="closeAddCategoryModal()" class="text-white hover:text-gray-200 transition-colors duration-200">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
+            <form id="add-category-form" method="POST" action="/categories/" class="p-4 space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                        <i class="fas fa-tag text-gray-400 mr-1"></i>Category Name
+                    </label>
+                    <input type="text" name="name" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200" placeholder="Enter category name">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                        <i class="fas fa-align-left text-gray-400 mr-1"></i>Description
+                    </label>
+                    <textarea name="description" rows="2" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 resize-none" placeholder="Enter category description (optional)"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                        <i class="fas fa-sitemap text-gray-400 mr-1"></i>Parent Category
+                    </label>
+                    <select name="parent_id" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200">
+                        <option value="">None (Root Category)</option>
+                        <!-- Parent categories will be loaded here -->
+                    </select>
+                </div>
+                <div class="flex items-center p-3 bg-purple-50 rounded-lg border border-purple-200">
+                    <input type="checkbox" name="is_active" checked class="h-3 w-3 text-purple-600 focus:ring-purple-500 border-gray-300 rounded">
+                    <label class="ml-2 block text-xs font-medium text-purple-900">
+                        <i class="fas fa-check-circle text-purple-600 mr-1"></i>Active Category
+                    </label>
+                    <span class="ml-2 text-xs text-purple-600">Category will be available for use</span>
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t border-gray-200">
+                    <button type="button" onclick="closeAddCategoryModal()" class="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-3 py-2 text-xs font-medium text-white bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
+                        <i class="fas fa-plus mr-1"></i>Add Category
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Category Modal -->
+<div id="edit-category-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full transform transition-all duration-300">
+            <div class="px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-t-xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                            <i class="fas fa-edit text-white text-xs"></i>
+                        </div>
+                        <h3 class="text-base font-semibold text-white">Edit Category</h3>
+                    </div>
+                    <button type="button" onclick="closeEditCategoryModal()" class="text-white hover:text-gray-200 transition-colors duration-200">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
+            <form id="edit-category-form" class="p-4 space-y-3">
+                <input type="hidden" id="edit-category-id">
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                        <i class="fas fa-tag text-gray-400 mr-1"></i>Category Name
+                    </label>
+                    <input type="text" id="edit-category-name" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Enter category name">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                        <i class="fas fa-align-left text-gray-400 mr-1"></i>Description
+                    </label>
+                    <textarea id="edit-category-description" rows="2" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none" placeholder="Enter category description (optional)"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                        <i class="fas fa-sitemap text-gray-400 mr-1"></i>Parent Category
+                    </label>
+                    <select id="edit-category-parent" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
+                        <option value="">None (Root Category)</option>
+                        <!-- Parent categories will be loaded here -->
+                    </select>
+                </div>
+                <div class="flex items-center p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <input type="checkbox" id="edit-category-active" class="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                    <label class="ml-2 block text-xs font-medium text-blue-900">
+                        <i class="fas fa-check-circle text-blue-600 mr-1"></i>Active Category
+                    </label>
+                    <span class="ml-2 text-xs text-blue-600">Category will be available for use</span>
+                </div>
+
+                <div class="flex justify-end space-x-2 pt-3 border-t border-gray-200">
+                    <button type="button" onclick="closeEditCategoryModal()" class="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-3 py-2 text-xs font-medium text-white bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
+                        <i class="fas fa-save mr-1"></i>Update Category
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Category Confirmation Modal -->
+<div id="delete-category-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all duration-300">
+            <div class="px-4 py-3 bg-gradient-to-r from-red-500 to-red-600 rounded-t-xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                            <i class="fas fa-exclamation-triangle text-white text-xs"></i>
+                        </div>
+                        <h3 class="text-base font-semibold text-white">Delete Category</h3>
+                    </div>
+                    <button type="button" onclick="closeDeleteCategoryModal()" class="text-white hover:text-gray-200 transition-colors duration-200">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-4">
+                <div class="mb-4">
+                    <div class="flex items-center mb-3">
+                        <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center mr-3">
+                            <i class="fas fa-trash text-red-600"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-900">Are you sure?</h4>
+                            <p class="text-xs text-gray-600">This action cannot be undone.</p>
+                        </div>
+                    </div>
+                    <p class="text-sm text-gray-700 mb-2">
+                        You are about to delete the category:
+                    </p>
+                    <div class="bg-gray-50 rounded-lg p-3 mb-3">
+                        <p class="font-semibold text-gray-900" id="delete-category-name">Category Name</p>
+                        <p class="text-xs text-gray-600" id="delete-category-description">Category description</p>
+                    </div>
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                        <div class="flex items-start">
+                            <i class="fas fa-info-circle text-yellow-600 mt-0.5 mr-2"></i>
+                            <div>
+                                <p class="text-xs font-medium text-yellow-800">Important:</p>
+                                <p class="text-xs text-yellow-700">This will deactivate the category. Products in this category will remain but show "No Category".</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="closeDeleteCategoryModal()"
+                            class="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200">
+                        Cancel
+                    </button>
+                    <button type="button" onclick="confirmDeleteCategory()"
+                            class="px-3 py-2 text-xs font-medium text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
+                        <i class="fas fa-trash mr-1"></i>Delete Category
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let isTreeView = false;
+
+// Load category stats for dashboard cards
+function loadCategoryStats() {
+    fetch('/api/categories/stats', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Category stats loaded:', data);
+
+        // Update stats cards
+        const stats = [
+            { id: 'total-categories', value: data.total_categories || 0 },
+            { id: 'active-categories', value: data.active_categories || 0 },
+            { id: 'parent-categories', value: data.parent_categories || 0 },
+            { id: 'subcategories', value: data.subcategories || 0 }
+        ];
+
+        stats.forEach(stat => {
+            const element = document.getElementById(stat.id);
+            if (element) {
+                element.textContent = stat.value;
+            }
+        });
+    })
+    .catch(error => {
+        console.error('Error loading category stats:', error);
+
+        // Set default values on error
+        ['total-categories', 'active-categories', 'parent-categories', 'subcategories'].forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = '0';
+            }
+        });
+    });
+}
+
+// Category management functionality
+function openAddCategoryModal() {
+    loadParentCategories();
+    document.getElementById('add-category-modal').classList.remove('hidden');
+}
+
+function closeAddCategoryModal() {
+    document.getElementById('add-category-modal').classList.add('hidden');
+    document.getElementById('add-category-form').reset();
+}
+
+// Edit category functionality
+function editCategory(categoryId) {
+    console.log('Editing category:', categoryId);
+
+    // Fetch category details
+    fetch(`/api/categories/${categoryId}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => {
+        console.log('GET category response status:', response.status);
+        if (!response.ok) {
+            return response.text().then(text => {
+                console.error('GET category error response:', text);
+                throw new Error(`Failed to fetch category details: ${response.status} ${text}`);
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        // Populate the edit form
+        document.getElementById('edit-category-id').value = data.id;
+        document.getElementById('edit-category-name').value = data.name;
+        document.getElementById('edit-category-description').value = data.description || '';
+        document.getElementById('edit-category-parent').value = data.parent_id || '';
+        document.getElementById('edit-category-active').checked = data.is_active;
+
+        // Load parent categories for the dropdown
+        loadParentCategoriesForEdit(data.id);
+
+        // Show the modal
+        document.getElementById('edit-category-modal').classList.remove('hidden');
+
+        // Focus on name input
+        setTimeout(() => {
+            document.getElementById('edit-category-name').focus();
+        }, 100);
+    })
+    .catch(error => {
+        console.error('Error fetching category:', error);
+        showToast('Failed to load category details', 'error');
+    });
+}
+
+function closeEditCategoryModal() {
+    document.getElementById('edit-category-modal').classList.add('hidden');
+    document.getElementById('edit-category-form').reset();
+}
+
+function loadParentCategoriesForEdit(excludeCategoryId) {
+    const parentSelect = document.getElementById('edit-category-parent');
+
+    // Clear existing options
+    parentSelect.innerHTML = '<option value="">None (Root Category)</option>';
+
+    // Load categories for the dropdown (excluding the current category)
+    fetch('/api/categories/simple', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.categories) {
+            data.categories.forEach(category => {
+                // Exclude the current category from parent options
+                if (category.id !== excludeCategoryId) {
+                    const option = new Option(category.name, category.id);
+                    parentSelect.appendChild(option);
+                }
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error loading parent categories:', error);
+    });
+}
+
+// Handle edit form submission
+function handleEditCategorySubmit(event) {
+    event.preventDefault();
+
+    const categoryId = document.getElementById('edit-category-id').value;
+    const name = document.getElementById('edit-category-name').value.trim();
+    const description = document.getElementById('edit-category-description').value.trim();
+    const parentId = document.getElementById('edit-category-parent').value;
+    const isActive = document.getElementById('edit-category-active').checked;
+
+    if (!name) {
+        showToast('Category name is required', 'error');
+        return;
+    }
+
+    const updateData = {
+        name: name,
+        description: description || null,
+        parent_id: parentId || null,
+        is_active: isActive
+    };
+
+    console.log('Updating category:', categoryId, updateData);
+
+    // Show loading state
+    const submitButton = document.querySelector('#edit-category-form button[type="submit"]');
+    const originalText = submitButton.innerHTML;
+    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Updating...';
+    submitButton.disabled = true;
+
+    // Make API call
+    fetch(`/api/categories/${categoryId}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData)
+    })
+    .then(response => {
+        console.log('PUT category response status:', response.status);
+        if (!response.ok) {
+            return response.text().then(text => {
+                console.error('PUT category error response:', text);
+                let errorMessage = 'Failed to update category';
+                try {
+                    const errorData = JSON.parse(text);
+                    errorMessage = errorData.detail || errorMessage;
+                } catch (e) {
+                    errorMessage = text || errorMessage;
+                }
+                throw new Error(errorMessage);
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Category updated successfully:', data);
+        showToast(data.message || 'Category updated successfully!', 'success');
+
+        // Close modal
+        closeEditCategoryModal();
+
+        // Refresh data
+        loadCategoryStats();
+        loadCategories();
+    })
+    .catch(error => {
+        console.error('Update error:', error);
+        showToast(error.message || 'Failed to update category', 'error');
+    })
+    .finally(() => {
+        // Restore button state
+        submitButton.innerHTML = originalText;
+        submitButton.disabled = false;
+    });
+}
+
+function toggleTreeView() {
+    const tableView = document.getElementById('table-view');
+    const treeView = document.getElementById('tree-view');
+    const btn = document.getElementById('tree-view-btn');
+    
+    if (isTreeView) {
+        tableView.classList.remove('hidden');
+        treeView.classList.add('hidden');
+        btn.innerHTML = '<i class="fas fa-sitemap"></i><span>Tree View</span>';
+        isTreeView = false;
+    } else {
+        tableView.classList.add('hidden');
+        treeView.classList.remove('hidden');
+        btn.innerHTML = '<i class="fas fa-table"></i><span>Table View</span>';
+        loadCategoryTree();
+        isTreeView = true;
+    }
+}
+
+function loadCategories() {
+    // Get current filter values
+    const searchTerm = document.getElementById('search-categories').value.toLowerCase().trim();
+    const statusFilter = document.getElementById('status-filter').value;
+    const typeFilter = document.getElementById('type-filter').value;
+
+    // Build query parameters
+    const params = new URLSearchParams();
+    if (searchTerm) params.append('search', searchTerm);
+    if (statusFilter) params.append('status', statusFilter);
+    if (typeFilter) params.append('type', typeFilter);
+
+    const queryString = params.toString();
+    const url = `/api/categories/${queryString ? '?' + queryString : ''}`;
+
+    // Load categories from the API with credentials
+    fetch(url, {
+        method: 'GET',
+        credentials: 'include',  // Include cookies for authentication
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            }
+            throw new Error('Failed to load categories');
+        })
+        .then(data => {
+            displayCategories(data.categories || []);
+            updateResultsCount(data.total || 0, searchTerm, statusFilter, typeFilter);
+            // Only show success toast on initial load, not on search/filter
+            if (!searchTerm && !statusFilter && !typeFilter) {
+                showToast('Categories loaded successfully', 'success');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading categories:', error);
+            showToast('Failed to load categories', 'error');
+        });
+}
+
+function displayCategories(categories) {
+    const tableBody = document.querySelector('#categories-table-body');
+    if (!tableBody) return;
+
+    if (categories.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="6" class="px-6 py-4 text-center text-gray-500">
+                    <div class="flex flex-col items-center">
+                        <i class="fas fa-tags text-gray-300 text-4xl mb-2"></i>
+                        <p>No categories found</p>
+                        <p class="text-sm">Create your first category to get started</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tableBody.innerHTML = categories.map(category => `
+        <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                    <i class="fas fa-tag text-primary-500 mr-2"></i>
+                    <span class="text-sm font-medium text-gray-900">${category.name}</span>
+                </div>
+            </td>
+            <td class="px-6 py-4">
+                <span class="text-sm text-gray-600">${category.description || 'No description'}</span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <span class="text-sm text-gray-600">${category.parent_name || 'Root Category'}</span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                    ${category.product_count || 0} products
+                </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${category.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                    ${category.is_active ? 'Active' : 'Inactive'}
+                </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                ${new Date(category.created_at).toLocaleDateString()}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <div class="flex items-center justify-end space-x-2">
+                    <button onclick="editCategory('${category.id}')"
+                            class="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50 transition-colors duration-200"
+                            title="Edit Category">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button onclick="deleteCategory('${category.id}')"
+                            class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 transition-colors duration-200"
+                            title="Delete Category">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function loadParentCategories() {
+    // This would load parent categories for the dropdown
+    console.log('Loading parent categories...');
+}
+
+function loadCategoryTree() {
+    // This would load the hierarchical tree structure
+    console.log('Loading category tree...');
+}
+
+// Delete category functionality
+let currentDeleteCategoryId = null;
+
+function deleteCategory(categoryId) {
+    // First, get category details to show in confirmation
+    fetch(`/api/categories/${categoryId}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to fetch category details');
+        }
+        return response.json();
+    })
+    .then(data => {
+        // Store category ID for deletion
+        currentDeleteCategoryId = categoryId;
+
+        // Populate modal with category details
+        document.getElementById('delete-category-name').textContent = data.name;
+        document.getElementById('delete-category-description').textContent = data.description || 'No description';
+
+        // Show the modal
+        document.getElementById('delete-category-modal').classList.remove('hidden');
+    })
+    .catch(error => {
+        console.error('Error fetching category:', error);
+        showToast('Failed to load category details', 'error');
+    });
+}
+
+function closeDeleteCategoryModal() {
+    document.getElementById('delete-category-modal').classList.add('hidden');
+    currentDeleteCategoryId = null;
+}
+
+function confirmDeleteCategory() {
+    if (!currentDeleteCategoryId) {
+        showToast('No category selected for deletion', 'error');
+        return;
+    }
+
+    performDeleteCategory(currentDeleteCategoryId);
+}
+
+function performDeleteCategory(categoryId) {
+    console.log('Deleting category:', categoryId);
+
+    const deleteButton = document.querySelector('#delete-category-modal button[onclick="confirmDeleteCategory()"]');
+    const originalText = deleteButton.innerHTML;
+
+    // Show loading state
+    deleteButton.disabled = true;
+    deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Deleting...';
+
+    // Make API call to delete
+    fetch(`/api/categories/${categoryId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => {
+                throw new Error(err.detail || 'Failed to delete category');
+            });
+        }
+        // For 204 No Content, there's no JSON to parse
+        return response.status === 204 ? {} : response.json();
+    })
+    .then(data => {
+        console.log('Category deleted successfully:', data);
+        showToast('Category deleted successfully!', 'success');
+
+        // Close modal
+        closeDeleteCategoryModal();
+
+        // Refresh data
+        loadCategoryStats();
+        loadCategories();
+    })
+    .catch(error => {
+        console.error('Delete error:', error);
+        showToast(error.message || 'Failed to delete category', 'error');
+    })
+    .finally(() => {
+        // Restore button state
+        deleteButton.innerHTML = originalText;
+        deleteButton.disabled = false;
+    });
+}
+
+function refreshCategoryData() {
+    loadCategoryStats();
+    loadCategories();
+    showToast('Category data refreshed successfully', 'success');
+}
+
+function exportCategories() {
+    showToast('Export functionality coming soon', 'info');
+}
+
+function clearFilters() {
+    // Clear all filter inputs
+    document.getElementById('search-categories').value = '';
+    document.getElementById('status-filter').value = '';
+    document.getElementById('type-filter').value = '';
+
+    // Reload categories with cleared filters
+    loadCategories();
+
+    showToast('Filters cleared', 'success');
+}
+
+function updateResultsCount(total, searchTerm, statusFilter, typeFilter) {
+    const resultsCountElement = document.getElementById('results-count');
+    if (!resultsCountElement) return;
+
+    // Check if any filters are active
+    const hasFilters = searchTerm || statusFilter || typeFilter;
+
+    if (hasFilters) {
+        let filterText = [];
+        if (searchTerm) filterText.push(`search: "${searchTerm}"`);
+        if (statusFilter) filterText.push(`status: ${statusFilter}`);
+        if (typeFilter) filterText.push(`type: ${typeFilter}`);
+
+        resultsCountElement.textContent = `(${total} results with ${filterText.join(', ')})`;
+        resultsCountElement.classList.remove('hidden');
+    } else {
+        resultsCountElement.textContent = `(${total} total)`;
+        resultsCountElement.classList.remove('hidden');
+    }
+}
+
+
+
+// Load categories on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Load initial data
+    loadCategoryStats();
+    loadCategories();
+
+    // Add event listener for edit form submission
+    const editForm = document.getElementById('edit-category-form');
+    if (editForm) {
+        editForm.addEventListener('submit', handleEditCategorySubmit);
+    }
+
+    // Add event listeners for search and filters
+    const searchInput = document.getElementById('search-categories');
+    const statusFilter = document.getElementById('status-filter');
+    const typeFilter = document.getElementById('type-filter');
+
+    // Search input with debounce
+    let searchTimeout;
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                loadCategories();
+            }, 300); // 300ms debounce
+        });
+
+        // Handle Enter key for immediate search
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                clearTimeout(searchTimeout);
+                loadCategories();
+            }
+        });
+    }
+
+    // Status filter
+    if (statusFilter) {
+        statusFilter.addEventListener('change', function() {
+            loadCategories();
+        });
+    }
+
+    // Type filter
+    if (typeFilter) {
+        typeFilter.addEventListener('change', function() {
+            loadCategories();
+        });
+    }
+
+    // Check for success/error messages in URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const successMessage = urlParams.get('success');
+    const errorMessage = urlParams.get('error');
+
+    if (successMessage) {
+        showToast(successMessage, 'success');
+        // Reload data after successful creation
+        loadCategoryStats();
+        loadCategories();
+        // Clean up URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    if (errorMessage) {
+        showToast(errorMessage, 'error');
+        // Clean up URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+});
+</script>
+{% endblock %}

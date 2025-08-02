@@ -1,0 +1,206 @@
+from fastapi import APIRouter, HTTPException, status, Depends, Query
+from typing import Optional
+from datetime import datetime, timedelta
+from ...utils.timezone import now_kampala, kampala_to_utc, get_day_start, get_week_start, get_month_start, get_year_start
+from bson import ObjectId
+from ...config.database import get_database
+from ...schemas.dashboard import (
+    ReportPeriod, SalesReport, InventoryReport, DashboardSummary,
+    SalesOverview, InventoryOverview, TopSellingProduct, LowStockProduct
+)
+from ...models import User
+from ...utils.auth import get_current_user
+
+router = APIRouter(prefix="/api/dashboard", tags=["Dashboard & Reports API"])
+
+
+def get_date_range(period: ReportPeriod, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None):
+    """Get start and end dates for the specified period in Kampala timezone"""
+    now = now_kampala()
+
+    if period == ReportPeriod.TODAY:
+        start = get_day_start(now)
+        end = now
+    elif period == ReportPeriod.YESTERDAY:
+        yesterday = now - timedelta(days=1)
+        start = get_day_start(yesterday)
+        end = yesterday.replace(hour=23, minute=59, second=59, microsecond=999999)
+    elif period == ReportPeriod.THIS_WEEK:
+        start = get_week_start(now)
+        end = now
+    elif period == ReportPeriod.LAST_WEEK:
+        last_week = now - timedelta(days=7)
+        start = get_week_start(last_week)
+        end = start + timedelta(days=6, hours=23, minutes=59, seconds=59)
+    elif period == ReportPeriod.THIS_MONTH:
+        start = get_month_start(now)
+        end = now
+    elif period == ReportPeriod.LAST_MONTH:
+        last_month = now - timedelta(days=30)
+        start = get_month_start(last_month)
+        # Get last day of that month
+        next_month = start.replace(month=start.month + 1) if start.month < 12 else start.replace(year=start.year + 1, month=1)
+        end = next_month - timedelta(days=1)
+        end = end.replace(hour=23, minute=59, second=59, microsecond=999999)
+    elif period == ReportPeriod.CUSTOM:
+        if not start_date or not end_date:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Start date and end date are required for custom period"
+            )
+        start = start_date
+        end = end_date
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid period"
+        )
+
+    # Convert Kampala timezone dates to UTC for database queries
+    start_utc = kampala_to_utc(start)
+    end_utc = kampala_to_utc(end)
+
+    return start_utc, end_utc
+
+
+@router.get("/summary")
+async def get_dashboard_summary():
+    """Get dashboard summary with key metrics"""
+    db = await get_database()
+
+    # Get today's date range
+    today_start, today_end = get_date_range(ReportPeriod.TODAY)
+
+    # Sales overview for today
+    sales_pipeline = [
+        {"$match": {"created_at": {"$gte": today_start, "$lte": today_end}}},
+        {"$group": {
+            "_id": None,
+            "total_sales": {"$sum": "$total"},
+            "total_transactions": {"$sum": 1},
+            "total_items": {"$sum": {"$sum": "$items.quantity"}}
+        }}
+    ]
+
+    sales_cursor = db.orders.aggregate(sales_pipeline)
+    sales_data = await sales_cursor.to_list(length=1)
+
+    if sales_data:
+        sales_info = sales_data[0]
+        avg_transaction = sales_info["total_sales"] / sales_info["total_transactions"] if sales_info["total_transactions"] > 0 else 0
+        sales_overview = {
+            "total_sales": sales_info["total_sales"],
+            "total_transactions": sales_info["total_transactions"],
+            "average_transaction_value": avg_transaction,
+            "total_items_sold": sales_info["total_items"]
+        }
+    else:
+        sales_overview = {
+            "total_sales": 0.0,
+            "total_transactions": 0,
+            "average_transaction_value": 0.0,
+            "total_items_sold": 0
+        }
+
+    # Inventory overview
+    inventory_pipeline = [
+        {"$group": {
+            "_id": None,
+            "total_products": {"$sum": 1},
+            "active_products": {"$sum": {"$cond": [{"$eq": ["$is_active", True]}, 1, 0]}},
+            "low_stock_products": {"$sum": {"$cond": [{"$lte": ["$stock_quantity", "$min_stock_level"]}, 1, 0]}},
+            "out_of_stock_products": {"$sum": {"$cond": [{"$eq": ["$stock_quantity", 0]}, 1, 0]}},
+            "total_inventory_value": {"$sum": {"$multiply": ["$stock_quantity", "$price"]}}
+        }}
+    ]
+
+    inventory_cursor = db.products.aggregate(inventory_pipeline)
+    inventory_data = await inventory_cursor.to_list(length=1)
+
+    if inventory_data:
+        inv_info = inventory_data[0]
+        inventory_overview = {
+            "total_products": inv_info["total_products"],
+            "active_products": inv_info["active_products"],
+            "low_stock_products": inv_info["low_stock_products"],
+            "out_of_stock_products": inv_info["out_of_stock_products"],
+            "total_inventory_value": inv_info["total_inventory_value"]
+        }
+    else:
+        inventory_overview = {
+            "total_products": 0,
+            "active_products": 0,
+            "low_stock_products": 0,
+            "out_of_stock_products": 0,
+            "total_inventory_value": 0.0
+        }
+
+    # Recent activity (last 24 hours)
+    twenty_four_hours_ago = datetime.utcnow() - timedelta(hours=24)
+
+    # Recent sales count
+    recent_sales_count = await db.orders.count_documents({
+        "created_at": {"$gte": twenty_four_hours_ago}
+    })
+
+    # Recent products added
+    recent_products_count = await db.products.count_documents({
+        "created_at": {"$gte": twenty_four_hours_ago}
+    })
+
+    # Recent clients added
+    recent_clients_count = await db.customers.count_documents({
+        "created_at": {"$gte": twenty_four_hours_ago}
+    })
+
+    # Products that went out of stock recently
+    out_of_stock_count = await db.products.count_documents({
+        "stock_quantity": 0,
+        "is_active": True
+    })
+
+    # Products restocked recently (stock increased in last 24 hours)
+    # This would require tracking stock changes, for now we'll use a placeholder
+    recent_restocks_count = 0
+
+    # Top selling products (last 30 days)
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    top_products_pipeline = [
+        {"$match": {"created_at": {"$gte": thirty_days_ago}}},
+        {"$unwind": "$items"},
+        {"$group": {
+            "_id": "$items.product_id",
+            "product_name": {"$first": "$items.name"},
+            "sku": {"$first": "$items.sku"},
+            "quantity_sold": {"$sum": "$items.quantity"},
+            "total_revenue": {"$sum": "$items.total"}
+        }},
+        {"$sort": {"quantity_sold": -1}},
+        {"$limit": 4}
+    ]
+
+    top_products_cursor = db.orders.aggregate(top_products_pipeline)
+    top_products_data = await top_products_cursor.to_list(length=5)
+
+    top_selling_products = [
+        {
+            "product_id": str(product["_id"]),
+            "product_name": product["product_name"],
+            "sku": product["sku"],
+            "quantity_sold": product["quantity_sold"],
+            "total_revenue": product["total_revenue"]
+        }
+        for product in top_products_data
+    ]
+
+    return {
+        "sales_overview": sales_overview,
+        "inventory_overview": inventory_overview,
+        "recent_sales_count": recent_sales_count,
+        "recent_products_count": recent_products_count,
+        "recent_clients_count": recent_clients_count,
+        "out_of_stock_count": out_of_stock_count,
+        "recent_restocks_count": recent_restocks_count,
+        "low_stock_alerts": inventory_overview["low_stock_products"],
+        "top_selling_products": top_selling_products
+    }
