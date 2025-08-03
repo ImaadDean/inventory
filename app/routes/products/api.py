@@ -34,25 +34,10 @@ async def get_current_user_hybrid(request: Request) -> User:
                     user = await get_user_by_username(username)
                     if user and user.is_active:
                         return user
-        except Exception as e:
-            print(f"Cookie auth failed: {e}")
+        except Exception:
+            pass
 
-    # Try JWT token authentication (for API clients)
-    auth_header = request.headers.get("Authorization")
-    if auth_header and auth_header.startswith("Bearer "):
-        try:
-            token = auth_header.split(" ")[1]
-            payload = verify_token(token)
-            if payload:
-                username = payload.get("sub")
-                if username:
-                    user = await get_user_by_username(username)
-                    if user and user.is_active:
-                        return user
-        except Exception as e:
-            print(f"JWT auth failed: {e}")
-
-    # If both methods fail, raise authentication error
+    # If no valid authentication found, raise HTTPException
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -61,7 +46,10 @@ async def get_current_user_hybrid(request: Request) -> User:
 
 
 @router.get("/stats", response_model=dict)
-async def get_product_stats():
+async def get_product_stats(
+    request: Request,
+    current_user: User = Depends(get_current_user_hybrid)
+):
     """Get product statistics for dashboard cards"""
     db = await get_database()
 
@@ -199,87 +187,6 @@ async def update_supplier_on_restock(db, supplier_name: str, product_id: str, pr
         # Don't raise exception as this is supplementary functionality
 
 
-@router.get("/{product_id}", response_model=dict)
-async def get_product_by_id(product_id: str):
-    """Get a single product by ID"""
-    try:
-        db = await get_database()
-
-        # Validate product ID
-        if not ObjectId.is_valid(product_id):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid product ID"
-            )
-
-        # Find the product with category information
-        pipeline = [
-            {"$match": {"_id": ObjectId(product_id)}},
-            {"$lookup": {
-                "from": "categories",
-                "localField": "category_id",
-                "foreignField": "_id",
-                "as": "category"
-            }}
-        ]
-
-        cursor = db.products.aggregate(pipeline)
-        products_data = await cursor.to_list(length=1)
-
-        if not products_data:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Product not found"
-            )
-
-        product = products_data[0]
-        category_name = product["category"][0]["name"] if product["category"] else "No Category"
-
-        # Calculate profit margin
-        profit_margin = None
-        if product.get("cost_price") and product["cost_price"] > 0:
-            profit_margin = ((product["price"] - product["cost_price"]) / product["cost_price"]) * 100
-
-        # Determine stock status
-        min_stock_level = product.get("min_stock_level", 10)
-        is_low_stock = product["stock_quantity"] <= min_stock_level and product["stock_quantity"] > 0
-        stock_status = "out-of-stock" if product["stock_quantity"] == 0 else ("low-stock" if is_low_stock else "in-stock")
-
-        return {
-            "id": str(product["_id"]),
-            "name": product["name"],
-            "description": product.get("description", ""),
-            "sku": product["sku"],
-            "barcode": product.get("barcode", ""),
-            "category_id": str(product["category_id"]) if product.get("category_id") else None,
-            "category_name": category_name,
-            "price": product["price"],
-            "cost_price": product.get("cost_price"),
-            "stock_quantity": product["stock_quantity"],
-            "min_stock_level": product["min_stock_level"],
-            "max_stock_level": product.get("max_stock_level"),
-            "unit": product["unit"],
-            "supplier": product.get("supplier", ""),
-            "location": product.get("location", ""),
-            "is_active": product["is_active"],
-            "is_low_stock": is_low_stock,
-            "stock_status": stock_status,
-            "profit_margin": profit_margin,
-            "created_at": product["created_at"],
-            "updated_at": product.get("updated_at")
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get product: {str(e)}"
-        )
-
-
-
-
 @router.get("/auth-test", response_model=dict)
 async def test_authentication(request: Request, current_user: User = Depends(get_current_user_hybrid)):
     """Test endpoint to verify authentication is working"""
@@ -294,17 +201,116 @@ async def test_authentication(request: Request, current_user: User = Depends(get
         "message": "Authentication successful!"
     }
 
+@router.get("/debug-supplier", response_model=dict)
+async def debug_supplier_products(
+    request: Request,
+    supplier: str = Query(...),
+    current_user: User = Depends(get_current_user_hybrid)
+):
+    """Debug endpoint to check supplier product matching"""
+    try:
+        db = await get_database()
+
+        # Get all products to see what suppliers exist
+        all_products = await db.products.find({}).to_list(length=None)
+        supplier_names = set()
+        for product in all_products:
+            if product.get('supplier'):
+                supplier_names.add(product['supplier'])
+
+        # Test the exact query that would be used
+        filter_query = {"supplier": {"$regex": f"^{supplier}$", "$options": "i"}}
+        matching_products = await db.products.find(filter_query).to_list(length=None)
+
+        return {
+            "requested_supplier": supplier,
+            "all_supplier_names": list(supplier_names),
+            "filter_query": filter_query,
+            "matching_products_count": len(matching_products),
+            "matching_products": [
+                {
+                    "name": p["name"],
+                    "supplier": p.get("supplier", "None"),
+                    "active": p.get("is_active", True)
+                }
+                for p in matching_products
+            ]
+        }
+    except Exception as e:
+        return {
+            "error": str(e),
+            "requested_supplier": supplier
+        }
+
+@router.post("/fix-supplier-links", response_model=dict)
+async def fix_supplier_product_links(
+    request: Request,
+    current_user: User = Depends(get_current_user_hybrid)
+):
+    """Fix products that should be linked to suppliers but aren't"""
+    try:
+        db = await get_database()
+
+        # Get all suppliers
+        suppliers = await db.suppliers.find({}).to_list(length=None)
+        fixed_count = 0
+
+        for supplier in suppliers:
+            supplier_name = supplier["name"]
+
+            # Find products in restock_history that were restocked with this supplier
+            # but don't have the supplier field set
+            restock_records = await db.restock_history.find({
+                "supplier_name": supplier_name
+            }).to_list(length=None)
+
+            product_ids_to_fix = set()
+            for record in restock_records:
+                product_id = record.get("product_id")
+                if product_id:
+                    # Check if the product exists and doesn't have supplier set
+                    product = await db.products.find_one({"_id": product_id})
+                    if product and not product.get("supplier"):
+                        product_ids_to_fix.add(product_id)
+
+            # Update products to set the supplier field
+            if product_ids_to_fix:
+                result = await db.products.update_many(
+                    {"_id": {"$in": list(product_ids_to_fix)}},
+                    {
+                        "$set": {
+                            "supplier": supplier_name,
+                            "updated_at": kampala_to_utc(now_kampala())
+                        }
+                    }
+                )
+                fixed_count += result.modified_count
+
+        return {
+            "success": True,
+            "message": f"Fixed {fixed_count} product-supplier links",
+            "fixed_count": fixed_count
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
 
 @router.get("/", response_model=dict)
 async def get_products(
+    request: Request,
     page: int = Query(1, ge=1),
-    size: int = Query(10, ge=1, le=100),
+    size: int = Query(10, ge=1, le=1000),
     search: Optional[str] = Query(None),
     category_id: Optional[str] = Query(None),
     stock_status: Optional[str] = Query(None),  # "in-stock", "low-stock", "out-of-stock"
     is_active: Optional[bool] = Query(None),
     low_stock_only: Optional[bool] = Query(False),
-    supplier: Optional[str] = Query(None)  # Filter by supplier name
+    supplier: Optional[str] = Query(None),  # Filter by supplier name
+    current_user: User = Depends(get_current_user_hybrid)
 ):
     """Get all products with pagination and filtering"""
     db = await get_database()
@@ -455,6 +461,10 @@ async def restock_product(
             "updated_at": kampala_to_utc(now_kampala()),
             "last_restocked": kampala_to_utc(now_kampala())
         }
+
+        # If supplier is provided, update the product's supplier field
+        if stock_update.supplier_name:
+            update_data["supplier"] = stock_update.supplier_name
 
         result = await db.products.update_one(
             {"_id": ObjectId(product_id)},

@@ -37,8 +37,12 @@ async def get_current_user_hybrid(request: Request) -> User:
         except Exception:
             pass
     
-    # Fallback to standard JWT authentication
-    return await get_current_user(request)
+    # If no valid authentication found, raise HTTPException
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
 
 @router.get("/api/expenses/", response_model=dict)
 async def get_expenses(
@@ -73,14 +77,87 @@ async def get_expenses(
         if status:
             query["status"] = status
             
+        # Enhanced date filtering to handle different date storage formats
         if date_from or date_to:
-            date_query = {}
+            date_conditions = []
+
+            # Method 1: Try datetime object comparison
+            if date_from and date_to:
+                try:
+                    start_date = datetime.strptime(date_from, "%Y-%m-%d")
+                    end_date = datetime.strptime(date_to, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+                    date_conditions.append({
+                        "expense_date": {
+                            "$gte": start_date,
+                            "$lte": end_date
+                        }
+                    })
+                except ValueError:
+                    pass
+            elif date_from:
+                try:
+                    start_date = datetime.strptime(date_from, "%Y-%m-%d")
+                    date_conditions.append({"expense_date": {"$gte": start_date}})
+                except ValueError:
+                    pass
+            elif date_to:
+                try:
+                    end_date = datetime.strptime(date_to, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+                    date_conditions.append({"expense_date": {"$lte": end_date}})
+                except ValueError:
+                    pass
+
+            # Method 2: Try string-based date comparison (for dates stored as strings)
+            if date_from and date_to:
+                # Convert YYYY-MM-DD to M/D/YYYY format for string comparison
+                try:
+                    from_parts = date_from.split('-')
+                    to_parts = date_to.split('-')
+                    from_str = f"{int(from_parts[1])}/{int(from_parts[2])}/{from_parts[0]}"
+                    to_str = f"{int(to_parts[1])}/{int(to_parts[2])}/{to_parts[0]}"
+
+                    date_conditions.append({
+                        "$expr": {
+                            "$and": [
+                                {"$gte": [{"$dateFromString": {"dateString": "$expense_date", "onError": None}},
+                                         {"$dateFromString": {"dateString": from_str, "onError": None}}]},
+                                {"$lte": [{"$dateFromString": {"dateString": "$expense_date", "onError": None}},
+                                         {"$dateFromString": {"dateString": to_str, "onError": None}}]}
+                            ]
+                        }
+                    })
+                except:
+                    pass
+
+            # Method 3: Simple string pattern matching for common date formats
             if date_from:
-                date_query["$gte"] = datetime.strptime(date_from, "%Y-%m-%d")
-            if date_to:
-                date_query["$lte"] = datetime.strptime(date_to, "%Y-%m-%d")
-            if date_query:
-                query["expense_date"] = date_query
+                try:
+                    # Convert 2025-08-03 to match patterns like "8/3/2025"
+                    year, month, day = date_from.split('-')
+                    patterns = [
+                        f"{int(month)}/{int(day)}/{year}",  # 8/3/2025
+                        f"{month}/{day}/{year}",            # 08/03/2025
+                        f"{int(month)}/{day}/{year}",       # 8/03/2025
+                        f"{month}/{int(day)}/{year}",       # 08/3/2025
+                        date_from                           # 2025-08-03
+                    ]
+
+                    pattern_conditions = []
+                    for pattern in patterns:
+                        escaped_pattern = pattern.replace('/', '\\/')
+                        pattern_conditions.append({"expense_date": {"$regex": f"^{escaped_pattern}"}})
+
+                    if pattern_conditions:
+                        date_conditions.append({"$or": pattern_conditions})
+                except:
+                    pass
+
+            # Apply date conditions
+            if date_conditions:
+                if len(date_conditions) == 1:
+                    query.update(date_conditions[0])
+                else:
+                    query["$or"] = date_conditions
         
         # Get total count
         total = await expenses_collection.count_documents(query)
@@ -112,7 +189,6 @@ async def get_expenses(
         total_amount = total_result[0]["total"] if total_result else 0
         
         # This month stats
-        from datetime import datetime
         current_month = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         month_pipeline = [
             {"$match": {"expense_date": {"$gte": current_month}}},
@@ -470,3 +546,36 @@ async def delete_expense_category(
     except Exception as e:
         logger.error(f"Error deleting expense category: {e}")
         raise HTTPException(status_code=500, detail="Failed to delete expense category")
+
+@router.get("/debug-dates", response_model=dict)
+async def debug_expense_dates(
+    request: Request,
+    user: User = Depends(get_current_user_hybrid)
+):
+    """Debug endpoint to check how dates are stored in expenses"""
+    try:
+        db = await get_database()
+        expenses_collection = db.expenses
+
+        # Get a few sample expenses to see date formats
+        sample_expenses = await expenses_collection.find({}).limit(5).to_list(length=5)
+
+        date_info = []
+        for expense in sample_expenses:
+            date_info.append({
+                "id": str(expense["_id"]),
+                "description": expense.get("description", ""),
+                "expense_date": expense.get("expense_date"),
+                "expense_date_type": type(expense.get("expense_date")).__name__,
+                "expense_date_str": str(expense.get("expense_date"))
+            })
+
+        return {
+            "sample_expenses": date_info,
+            "total_expenses": await expenses_collection.count_documents({})
+        }
+
+    except Exception as e:
+        return {
+            "error": str(e)
+        }

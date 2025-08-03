@@ -35,8 +35,12 @@ async def get_current_user_hybrid(request: Request) -> User:
         except Exception:
             pass
 
-    # Fallback to standard JWT authentication
-    return await get_current_user(request)
+    # If no valid authentication found, raise HTTPException
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
 
 @router.get("/api/suppliers/", response_model=dict)
 async def get_suppliers(

@@ -1038,6 +1038,25 @@ document.getElementById('status-filter').addEventListener('change', function(e) 
     loadExpenses(1, searchTerm, categoryFilter, statusFilter, dateFrom, dateTo);
 });
 
+// Date filter event listeners
+document.getElementById('date-from').addEventListener('change', function(e) {
+    const dateFrom = e.target.value;
+    const searchTerm = document.getElementById('search-expenses').value;
+    const categoryFilter = document.getElementById('category-filter').value;
+    const statusFilter = document.getElementById('status-filter').value;
+    const dateTo = document.getElementById('date-to').value;
+    loadExpenses(1, searchTerm, categoryFilter, statusFilter, dateFrom, dateTo);
+});
+
+document.getElementById('date-to').addEventListener('change', function(e) {
+    const dateTo = e.target.value;
+    const searchTerm = document.getElementById('search-expenses').value;
+    const categoryFilter = document.getElementById('category-filter').value;
+    const statusFilter = document.getElementById('status-filter').value;
+    const dateFrom = document.getElementById('date-from').value;
+    loadExpenses(1, searchTerm, categoryFilter, statusFilter, dateFrom, dateTo);
+});
+
 // Handle Add Expense Form Submission
 document.getElementById('add-expense-form').addEventListener('submit', async function(e) {
     e.preventDefault();
