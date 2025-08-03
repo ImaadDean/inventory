@@ -583,6 +583,104 @@ async def get_customer(
         )
 
 
+@router.get("/{customer_id}/orders", response_model=dict)
+async def get_customer_orders(
+    customer_id: str,
+    page: int = Query(1, ge=1),
+    size: int = Query(10, ge=1, le=50),
+    user: User = Depends(get_current_user_hybrid)
+):
+    """Get orders for a specific customer with pagination"""
+    db = await get_database()
+
+    try:
+        # Validate ObjectId format
+        if not ObjectId.is_valid(customer_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid customer ID format"
+            )
+
+        # Verify customer exists
+        customer = await db.customers.find_one({"_id": ObjectId(customer_id)})
+        if not customer:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Customer not found"
+            )
+
+        # Build filter query for orders
+        filter_query = {"client_id": ObjectId(customer_id)}
+
+        # Get total count
+        total = await db.orders.count_documents(filter_query)
+
+        # Get orders with pagination
+        skip = (page - 1) * size
+        cursor = db.orders.find(filter_query).skip(skip).limit(size).sort("created_at", -1)
+        orders_data = await cursor.to_list(length=size)
+
+        orders = []
+        for order in orders_data:
+            # Get user information for created_by field
+            created_by_name = "System"
+            if order.get("created_by"):
+                try:
+                    created_by_id = order["created_by"]
+                    if isinstance(created_by_id, str) and created_by_id:
+                        created_by_id = ObjectId(created_by_id)
+                    elif isinstance(created_by_id, ObjectId):
+                        pass  # Already an ObjectId
+                    else:
+                        created_by_id = None
+
+                    if created_by_id:
+                        user_doc = await db.users.find_one({"_id": created_by_id})
+                        if user_doc:
+                            created_by_name = user_doc.get("full_name", "Staff Member")
+                except:
+                    created_by_name = "Staff Member"
+
+            orders.append({
+                "id": str(order["_id"]),
+                "order_number": order["order_number"],
+                "client_id": str(order.get("client_id", "")),
+                "client_name": order.get("client_name", "Walk-in Client"),
+                "items": order["items"],
+                "subtotal": order["subtotal"],
+                "tax": order["tax"],
+                "discount": order.get("discount", 0),
+                "total": order["total"],
+                "status": order["status"],
+                "payment_method": order.get("payment_method", "cash"),
+                "payment_status": order.get("payment_status", "paid"),
+                "notes": order.get("notes", ""),
+                "created_at": order["created_at"].isoformat(),
+                "updated_at": order.get("updated_at", order["created_at"]).isoformat(),
+                "created_by": str(order.get("created_by", "")),
+                "created_by_name": created_by_name
+            })
+
+        return {
+            "success": True,
+            "orders": orders,
+            "total": total,
+            "page": page,
+            "size": size,
+            "total_pages": (total + size - 1) // size,
+            "has_next": page * size < total,
+            "has_prev": page > 1
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch customer orders: {str(e)}"
+        )
+
+
 @router.put("/{customer_id}", response_model=CustomerResponse)
 async def update_customer(
     customer_id: str,
