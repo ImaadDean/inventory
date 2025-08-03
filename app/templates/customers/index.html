@@ -153,10 +153,10 @@
                         <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Client</th>
                         <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Email</th>
                         <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Phone</th>
-                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Orders</th>
-                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Total Spent</th>
-                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                        <th class="px-3 py-2 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Orders</th>
+                        <th class="px-3 py-2 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Total Spent</th>
+                        <th class="px-3 py-2 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                        <th class="px-3 py-2 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="clients-table-body" class="bg-white divide-y divide-gray-100">
@@ -256,18 +256,226 @@
     </div>
 </div>
 
+<!-- View Client Modal -->
+<div id="view-client-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300">
+            <div class="px-6 py-4 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-t-xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                            <i class="fas fa-user text-white"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-white">Client Details</h3>
+                            <p class="text-emerald-100 text-sm">View client information and order history</p>
+                        </div>
+                    </div>
+                    <button onclick="closeViewClientModal()" class="text-white hover:text-emerald-200 transition-colors duration-200">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-6">
+                <!-- Client Information -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <!-- Basic Info -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h4 class="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+                            <i class="fas fa-user text-emerald-600 mr-2"></i>
+                            Basic Information
+                        </h4>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="text-sm font-medium text-gray-600">Name</label>
+                                <p id="view-client-name" class="text-sm text-gray-900 font-medium">-</p>
+                            </div>
+                            <div>
+                                <label class="text-sm font-medium text-gray-600">Email</label>
+                                <p id="view-client-email" class="text-sm text-gray-900">-</p>
+                            </div>
+                            <div>
+                                <label class="text-sm font-medium text-gray-600">Phone</label>
+                                <p id="view-client-phone" class="text-sm text-gray-900">-</p>
+                            </div>
+                            <div>
+                                <label class="text-sm font-medium text-gray-600">Status</label>
+                                <span id="view-client-status" class="inline-flex px-2 py-1 text-xs font-medium rounded-full">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Statistics -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h4 class="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+                            <i class="fas fa-chart-bar text-emerald-600 mr-2"></i>
+                            Statistics
+                        </h4>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="text-center">
+                                <div id="view-client-orders" class="text-2xl font-bold text-emerald-600">0</div>
+                                <div class="text-sm text-gray-600">Total Orders</div>
+                            </div>
+                            <div class="text-center">
+                                <div id="view-client-spent" class="text-2xl font-bold text-emerald-600">UGX 0</div>
+                                <div class="text-sm text-gray-600">Total Spent</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notes -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+                        <i class="fas fa-sticky-note text-emerald-600 mr-2"></i>
+                        Notes
+                    </h4>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <p id="view-client-notes" class="text-sm text-gray-700">No notes available</p>
+                    </div>
+                </div>
+
+                <!-- Orders History -->
+                <div>
+                    <h4 class="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+                        <i class="fas fa-shopping-cart text-emerald-600 mr-2"></i>
+                        Order History
+                    </h4>
+                    <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                        <div id="client-orders-loading" class="p-4 text-center text-gray-500">
+                            <i class="fas fa-spinner fa-spin mr-2"></i>Loading orders...
+                        </div>
+                        <div id="client-orders-content" class="hidden">
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
+                                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
+                                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="client-orders-table" class="bg-white divide-y divide-gray-200">
+                                        <!-- Orders will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div id="client-orders-empty" class="hidden p-8 text-center text-gray-500">
+                            <i class="fas fa-shopping-cart text-gray-300 text-4xl mb-3"></i>
+                            <p>No orders found for this client</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-200">
+                    <button onclick="closeViewClientModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200">
+                        Close
+                    </button>
+                    <button onclick="editClientFromView()" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all duration-200">
+                        <i class="fas fa-edit mr-2"></i>Edit Client
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+// Toast notification function
+function showToast(message, type = 'info') {
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-300 translate-x-full opacity-0`;
+
+    // Set color based on type
+    switch(type) {
+        case 'success':
+            toast.classList.add('bg-green-500');
+            break;
+        case 'error':
+            toast.classList.add('bg-red-500');
+            break;
+        case 'warning':
+            toast.classList.add('bg-yellow-500');
+            break;
+        default:
+            toast.classList.add('bg-blue-500');
+    }
+
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    // Show toast
+    setTimeout(() => {
+        toast.classList.remove('translate-x-full', 'opacity-0');
+    }, 100);
+
+    // Hide toast after 3 seconds
+    setTimeout(() => {
+        toast.classList.add('translate-x-full', 'opacity-0');
+        setTimeout(() => {
+            document.body.removeChild(toast);
+        }, 300);
+    }, 3000);
+}
+
 // Client management functionality
 function openAddClientModal() {
-    document.getElementById('add-client-modal').classList.remove('hidden');
+    const modal = document.getElementById('add-client-modal');
+    const form = document.getElementById('add-client-form');
+
+    // Reset form to add mode
+    form.reset();
+    delete form.dataset.editId;
+
+    // Reset modal title and button
+    document.querySelector('#add-client-modal h3').textContent = 'Add New Client';
+    const submitButton = document.querySelector('#add-client-modal button[type="submit"]');
+    submitButton.innerHTML = '<i class="fas fa-user-plus mr-1"></i>Add Client';
+    submitButton.disabled = false;
+
+    // Clear any previous error states
+    clearFormErrors(form);
+
+    // Show modal with animation
+    modal.classList.remove('hidden');
+
+    // Focus on first input after animation
+    setTimeout(() => {
+        const firstInput = form.querySelector('input[name="name"]');
+        if (firstInput) firstInput.focus();
+    }, 100);
 }
 
 function closeAddClientModal() {
-    document.getElementById('add-client-modal').classList.add('hidden');
-    document.getElementById('add-client-form').reset();
+    const modal = document.getElementById('add-client-modal');
+    const form = document.getElementById('add-client-form');
+
+    // Hide modal
+    modal.classList.add('hidden');
+
+    // Reset form
+    form.reset();
+    delete form.dataset.editId;
+
+    // Clear any error states
+    clearFormErrors(form);
+
+    // Reset form to add mode
+    document.querySelector('#add-client-modal h3').textContent = 'Add New Client';
+    const submitButton = document.querySelector('#add-client-modal button[type="submit"]');
+    submitButton.innerHTML = '<i class="fas fa-user-plus mr-1"></i>Add Client';
+    submitButton.disabled = false;
 }
 
 function loadClients() {
+    console.log('Loading clients...');
+
     // Load clients from the API
     fetch('/api/customers/', {
         method: 'GET',
@@ -276,20 +484,55 @@ function loadClients() {
             'Content-Type': 'application/json',
         }
     })
-        .then(response => {
-            if (response.ok) {
-                return response.json();
+        .then(async response => {
+            console.log(`Load clients API Response Status: ${response.status}`);
+
+            if (!response.ok) {
+                let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+
+                try {
+                    const errorData = await response.json();
+                    if (errorData.detail) {
+                        errorMessage = errorData.detail;
+                    }
+                } catch (e) {
+                    console.log('Could not parse error response as JSON');
+                }
+
+                throw new Error(errorMessage);
             }
-            throw new Error('Failed to load clients');
+
+            const data = await response.json();
+            console.log('Clients data received:', data);
+            return data;
         })
         .then(data => {
-            displayClients(data.customers || []);
-            updateClientStats(data.customers || []);
+            if (!data || !Array.isArray(data.customers)) {
+                console.error('Invalid data structure received:', data);
+                throw new Error('Invalid data structure received from server');
+            }
+
+            console.log(`Displaying ${data.customers.length} clients`);
+            displayClients(data.customers);
+            updateClientStats(data.customers);
             showToast(`Loaded ${data.total || 0} clients`, 'success');
         })
         .catch(error => {
             console.error('Error loading clients:', error);
-            showToast('Failed to load clients', 'error');
+            console.error('Error details:', {
+                message: error.message,
+                stack: error.stack
+            });
+
+            let errorMessage = 'Failed to load clients. Please try again.';
+
+            if (error.message.includes('401') || error.message.includes('403')) {
+                errorMessage = 'You are not authorized to view clients.';
+            } else if (error.message.includes('500')) {
+                errorMessage = 'Server error. Please try again later.';
+            }
+
+            showToast(errorMessage, 'error');
         });
 }
 
@@ -313,44 +556,53 @@ function displayClients(clients) {
     }
 
     tableBody.innerHTML = clients.map(client => `
-        <tr class="hover:bg-gray-50">
-            <td class="px-6 py-4 whitespace-nowrap">
-                <div class="flex items-center">
-                    <i class="fas fa-user text-primary-500 mr-2"></i>
-                    <div>
-                        <div class="text-sm font-medium text-gray-900">${client.name}</div>
-                        <div class="text-sm text-gray-500">${client.notes || 'No notes'}</div>
+        <tr class="hover:bg-gray-50 transition-colors duration-150">
+            <td class="px-3 py-2">
+                <div class="flex items-center space-x-2">
+                    <div class="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center">
+                        <i class="fas fa-user text-white text-xs"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <div class="text-sm font-medium text-gray-900 truncate">${client.name}</div>
+                        <div class="text-xs text-gray-500 truncate">${client.notes || 'No notes'}</div>
                     </div>
                 </div>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900">${client.email || 'No email'}</div>
+            <td class="px-3 py-2">
+                <div class="text-sm text-gray-900 truncate">${client.email || 'No email'}</div>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap">
+            <td class="px-3 py-2">
                 <div class="text-sm text-gray-900">${client.phone || 'No phone'}</div>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                ${client.total_orders}
+            <td class="px-3 py-2 text-center">
+                <span class="inline-flex items-center justify-center w-8 h-8 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">
+                    ${client.total_orders}
+                </span>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                UGX ${Math.round(client.total_purchases).toLocaleString('en-UG')}
+            <td class="px-3 py-2 text-right">
+                <div class="text-sm font-medium text-gray-900">UGX ${Math.round(client.total_purchases).toLocaleString('en-UG')}</div>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${client.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+            <td class="px-3 py-2 text-center">
+                <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full ${client.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
                     ${client.is_active ? 'Active' : 'Inactive'}
                 </span>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <div class="flex items-center justify-end space-x-2">
+            <td class="px-3 py-2">
+                <div class="flex items-center justify-center space-x-1">
+                    <button onclick="viewClient('${client.id}')"
+                            class="text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 p-1 rounded transition-colors duration-150"
+                            title="View Client Details">
+                        <i class="fas fa-eye text-xs"></i>
+                    </button>
                     <button onclick="editClient('${client.id}')"
-                            class="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50 transition-colors duration-200"
+                            class="text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-1 rounded transition-colors duration-150"
                             title="Edit Client">
-                        <i class="fas fa-edit"></i>
+                        <i class="fas fa-edit text-xs"></i>
                     </button>
                     <button onclick="deleteClient('${client.id}')"
-                            class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 transition-colors duration-200"
+                            class="text-red-600 hover:text-red-800 hover:bg-red-50 p-1 rounded transition-colors duration-150"
                             title="Delete Client">
-                        <i class="fas fa-trash"></i>
+                        <i class="fas fa-trash text-xs"></i>
                     </button>
                 </div>
             </td>
@@ -390,6 +642,73 @@ function exportClients() {
     showToast('Export functionality coming soon', 'info');
 }
 
+// Form submission handler
+document.getElementById('add-client-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const form = e.target;
+    const submitButton = form.querySelector('button[type="submit"]');
+    const originalButtonText = submitButton.innerHTML;
+
+    // Clear any previous errors
+    clearFormErrors(form);
+
+    // Validate form
+    if (!validateClientForm(form)) {
+        return;
+    }
+
+    // Show loading state
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Saving...';
+
+    const formData = new FormData(form);
+    const clientData = Object.fromEntries(formData.entries());
+
+    // Clean up empty strings
+    Object.keys(clientData).forEach(key => {
+        if (clientData[key] === '') {
+            clientData[key] = null;
+        }
+    });
+
+    // Check if we're editing or adding
+    const isEdit = form.dataset.editId;
+    const url = isEdit ? `/api/customers/${form.dataset.editId}` : '/api/customers/';
+    const method = isEdit ? 'PUT' : 'POST';
+
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(clientData)
+    })
+    .then(response => {
+        if (response.ok) {
+            return response.json();
+        }
+        return response.json().then(errorData => {
+            throw new Error(errorData.detail || `Failed to ${isEdit ? 'update' : 'create'} client`);
+        });
+    })
+    .then(data => {
+        showToast(`Client ${isEdit ? 'updated' : 'created'} successfully`, 'success');
+        closeAddClientModal();
+        loadClients(); // Reload the clients list
+    })
+    .catch(error => {
+        console.error(`Error ${isEdit ? 'updating' : 'creating'} client:`, error);
+        showToast(error.message || `Failed to ${isEdit ? 'update' : 'create'} client`, 'error');
+    })
+    .finally(() => {
+        // Reset button state
+        submitButton.disabled = false;
+        submitButton.innerHTML = originalButtonText;
+    });
+});
+
 // Load clients on page load
 document.addEventListener('DOMContentLoaded', function() {
     loadClients();
@@ -412,6 +731,758 @@ document.addEventListener('DOMContentLoaded', function() {
         // Clean up URL
         window.history.replaceState({}, document.title, window.location.pathname);
     }
+
+    // Add keyboard event handlers
+    setupKeyboardHandlers();
 });
+
+// Setup keyboard event handlers
+function setupKeyboardHandlers() {
+    // ESC key to close modals
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            // Close add/edit client modal
+            const addModal = document.getElementById('add-client-modal');
+            if (!addModal.classList.contains('hidden')) {
+                closeAddClientModal();
+                return;
+            }
+
+            // Close view client modal
+            const viewModal = document.getElementById('view-client-modal');
+            if (!viewModal.classList.contains('hidden')) {
+                closeViewClientModal();
+                return;
+            }
+        }
+    });
+
+    // Click outside modal to close
+    const addModal = document.getElementById('add-client-modal');
+    const viewModal = document.getElementById('view-client-modal');
+
+    [addModal, viewModal].forEach(modal => {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                if (modal === addModal) {
+                    closeAddClientModal();
+                } else {
+                    closeViewClientModal();
+                }
+            }
+        });
+    });
+}
+
+// View Client Functions
+let currentClientId = null;
+
+function viewClient(clientId) {
+    if (!clientId) {
+        showToast('Invalid client ID', 'error');
+        return;
+    }
+
+    currentClientId = clientId;
+    const modal = document.getElementById('view-client-modal');
+
+    // Show modal first
+    modal.classList.remove('hidden');
+
+    // Show loading state
+    document.getElementById('client-orders-loading').classList.remove('hidden');
+    document.getElementById('client-orders-content').classList.add('hidden');
+    document.getElementById('client-orders-empty').classList.add('hidden');
+
+    // Reset client info to loading state
+    resetClientViewInfo();
+
+    // Fetch client details
+    fetch(`/api/customers/${clientId}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(async response => {
+        console.log(`API Response Status: ${response.status}`);
+
+        if (!response.ok) {
+            let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+
+            try {
+                const errorData = await response.json();
+                if (errorData.detail) {
+                    errorMessage = errorData.detail;
+                }
+            } catch (e) {
+                console.log('Could not parse error response as JSON');
+            }
+
+            throw new Error(errorMessage);
+        }
+
+        const data = await response.json();
+        console.log('Client data received:', data);
+        return data;
+    })
+    .then(client => {
+        // Validate client data
+        if (!client || !client.id) {
+            throw new Error('Invalid client data received from server');
+        }
+
+        // Populate client information
+        populateClientViewInfo(client);
+
+        // Load client orders
+        loadClientOrders(clientId);
+    })
+    .catch(error => {
+        console.error('Error loading client details:', error);
+        console.error('Client ID:', clientId);
+        console.error('Error details:', {
+            message: error.message,
+            stack: error.stack
+        });
+
+        let errorMessage = 'Failed to load client details. Please try again.';
+
+        if (error.message.includes('404')) {
+            errorMessage = 'Client not found. It may have been deleted.';
+        } else if (error.message.includes('401') || error.message.includes('403')) {
+            errorMessage = 'You are not authorized to view this client.';
+        } else if (error.message.includes('500')) {
+            errorMessage = 'Server error. Please try again later.';
+        } else if (error.message.includes('Invalid client ID format')) {
+            errorMessage = 'Invalid client ID format.';
+        }
+
+        showToast(errorMessage, 'error');
+        closeViewClientModal();
+    });
+}
+
+function loadClientOrders(clientId) {
+    fetch(`/api/orders/?customer_id=${clientId}&size=50`, {
+        method: 'GET',
+        credentials: 'include'
+    })
+    .then(response => {
+        if (response.ok) {
+            return response.json();
+        }
+        throw new Error('Failed to fetch orders');
+    })
+    .then(data => {
+        const orders = data.orders || [];
+
+        // Hide loading
+        document.getElementById('client-orders-loading').classList.add('hidden');
+
+        if (orders.length === 0) {
+            document.getElementById('client-orders-empty').classList.remove('hidden');
+        } else {
+            document.getElementById('client-orders-content').classList.remove('hidden');
+            displayClientOrders(orders);
+        }
+    })
+    .catch(error => {
+        console.error('Error loading client orders:', error);
+        document.getElementById('client-orders-loading').classList.add('hidden');
+        document.getElementById('client-orders-empty').classList.remove('hidden');
+    });
+}
+
+function displayClientOrders(orders) {
+    const tbody = document.getElementById('client-orders-table');
+    tbody.innerHTML = orders.map(order => `
+        <tr class="hover:bg-gray-50">
+            <td class="px-4 py-3 text-sm font-medium text-gray-900">#${order.id.slice(-8)}</td>
+            <td class="px-4 py-3 text-sm text-gray-900">${new Date(order.created_at).toLocaleDateString()}</td>
+            <td class="px-4 py-3 text-sm text-gray-900">${order.items?.length || 0} items</td>
+            <td class="px-4 py-3 text-sm font-medium text-gray-900 text-right">UGX ${Math.round(order.total_amount || 0).toLocaleString('en-UG')}</td>
+            <td class="px-4 py-3 text-center">
+                <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full ${getOrderStatusClass(order.status)}">
+                    ${order.status || 'pending'}
+                </span>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function getOrderStatusClass(status) {
+    switch(status?.toLowerCase()) {
+        case 'completed': return 'bg-green-100 text-green-800';
+        case 'pending': return 'bg-yellow-100 text-yellow-800';
+        case 'cancelled': return 'bg-red-100 text-red-800';
+        default: return 'bg-gray-100 text-gray-800';
+    }
+}
+
+function closeViewClientModal() {
+    document.getElementById('view-client-modal').classList.add('hidden');
+    currentClientId = null;
+}
+
+// Helper function to clear form errors
+function clearFormErrors(form) {
+    const errorElements = form.querySelectorAll('.error-message');
+    errorElements.forEach(el => el.remove());
+
+    const inputElements = form.querySelectorAll('input, textarea, select');
+    inputElements.forEach(el => {
+        el.classList.remove('border-red-500', 'focus:ring-red-500');
+        el.classList.add('border-gray-300', 'focus:ring-emerald-500');
+    });
+}
+
+// Helper function to populate client form
+function populateClientForm(form, client) {
+    const fields = ['name', 'email', 'phone', 'address', 'city', 'postal_code', 'notes'];
+
+    fields.forEach(field => {
+        const input = form.querySelector(`[name="${field}"]`);
+        if (input) {
+            input.value = client[field] || '';
+        }
+    });
+
+    // Handle country field if it exists
+    const countryField = form.querySelector('[name="country"]');
+    if (countryField) {
+        countryField.value = client.country || '';
+    }
+}
+
+// Helper function to reset client view info to loading state
+function resetClientViewInfo() {
+    const loadingText = 'Loading...';
+    document.getElementById('view-client-name').textContent = loadingText;
+    document.getElementById('view-client-email').textContent = loadingText;
+    document.getElementById('view-client-phone').textContent = loadingText;
+    document.getElementById('view-client-orders').textContent = '0';
+    document.getElementById('view-client-spent').textContent = 'UGX 0';
+    document.getElementById('view-client-notes').textContent = loadingText;
+
+    const statusElement = document.getElementById('view-client-status');
+    statusElement.textContent = 'Loading...';
+    statusElement.className = 'inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800';
+}
+
+// Helper function to populate client view info
+function populateClientViewInfo(client) {
+    document.getElementById('view-client-name').textContent = client.name || 'N/A';
+    document.getElementById('view-client-email').textContent = client.email || 'No email';
+    document.getElementById('view-client-phone').textContent = client.phone || 'No phone';
+    document.getElementById('view-client-orders').textContent = client.total_orders || 0;
+    document.getElementById('view-client-spent').textContent = `UGX ${Math.round(client.total_purchases || 0).toLocaleString('en-UG')}`;
+    document.getElementById('view-client-notes').textContent = client.notes || 'No notes available';
+
+    // Update status badge
+    const statusElement = document.getElementById('view-client-status');
+    statusElement.textContent = client.is_active ? 'Active' : 'Inactive';
+    statusElement.className = `inline-flex px-2 py-1 text-xs font-medium rounded-full ${client.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+}
+
+// Helper function to validate client form
+function validateClientForm(form) {
+    let isValid = true;
+
+    // Validate required fields
+    const nameField = form.querySelector('[name="name"]');
+    if (!nameField.value.trim()) {
+        showFieldError(nameField, 'Client name is required');
+        isValid = false;
+    }
+
+    // Validate email format if provided
+    const emailField = form.querySelector('[name="email"]');
+    if (emailField.value.trim()) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(emailField.value.trim())) {
+            showFieldError(emailField, 'Please enter a valid email address');
+            isValid = false;
+        }
+    }
+
+    // Validate phone format if provided
+    const phoneField = form.querySelector('[name="phone"]');
+    if (phoneField.value.trim()) {
+        const phoneRegex = /^[\+]?[0-9\s\-\(\)]{10,}$/;
+        if (!phoneRegex.test(phoneField.value.trim())) {
+            showFieldError(phoneField, 'Please enter a valid phone number');
+            isValid = false;
+        }
+    }
+
+    return isValid;
+}
+
+// Helper function to show field error
+function showFieldError(field, message) {
+    // Remove existing error
+    const existingError = field.parentNode.querySelector('.error-message');
+    if (existingError) {
+        existingError.remove();
+    }
+
+    // Add error styling to field
+    field.classList.remove('border-gray-300', 'focus:ring-emerald-500');
+    field.classList.add('border-red-500', 'focus:ring-red-500');
+
+    // Create error message element
+    const errorElement = document.createElement('div');
+    errorElement.className = 'error-message text-red-600 text-xs mt-1';
+    errorElement.textContent = message;
+
+    // Insert error message after the field
+    field.parentNode.appendChild(errorElement);
+
+    // Focus on the first error field
+    if (field.parentNode.querySelector('.error-message') === errorElement) {
+        field.focus();
+    }
+}
+
+function editClientFromView() {
+    if (currentClientId) {
+        closeViewClientModal();
+        editClient(currentClientId);
+    }
+}
+
+// Edit Client Function
+function editClient(clientId) {
+    if (!clientId) {
+        showToast('Invalid client ID', 'error');
+        return;
+    }
+
+    const modal = document.getElementById('add-client-modal');
+    const form = document.getElementById('add-client-form');
+    const submitButton = form.querySelector('button[type="submit"]');
+
+    // Show loading state
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Loading...';
+
+    // Clear any previous error states
+    clearFormErrors(form);
+
+    // Show modal first
+    modal.classList.remove('hidden');
+
+    // Fetch client details for editing
+    fetch(`/api/customers/${clientId}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(async response => {
+        console.log(`Edit API Response Status: ${response.status}`);
+
+        if (!response.ok) {
+            let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+
+            try {
+                const errorData = await response.json();
+                if (errorData.detail) {
+                    errorMessage = errorData.detail;
+                }
+            } catch (e) {
+                console.log('Could not parse error response as JSON');
+            }
+
+            throw new Error(errorMessage);
+        }
+
+        const data = await response.json();
+        console.log('Client data for editing received:', data);
+        return data;
+    })
+    .then(client => {
+        // Validate client data
+        if (!client || !client.id) {
+            throw new Error('Invalid client data received from server');
+        }
+
+        // Populate the form with existing data
+        populateClientForm(form, client);
+
+        // Change form to edit mode
+        form.dataset.editId = clientId;
+        document.querySelector('#add-client-modal h3').textContent = 'Edit Client';
+        submitButton.innerHTML = '<i class="fas fa-save mr-1"></i>Update Client';
+        submitButton.disabled = false;
+
+        // Focus on first input
+        setTimeout(() => {
+            const firstInput = form.querySelector('input[name="name"]');
+            if (firstInput) firstInput.focus();
+        }, 100);
+    })
+    .catch(error => {
+        console.error('Error loading client for editing:', error);
+        console.error('Client ID:', clientId);
+        console.error('Error details:', {
+            message: error.message,
+            stack: error.stack
+        });
+
+        let errorMessage = 'Failed to load client details for editing. Please try again.';
+
+        if (error.message.includes('404')) {
+            errorMessage = 'Client not found. It may have been deleted.';
+        } else if (error.message.includes('401') || error.message.includes('403')) {
+            errorMessage = 'You are not authorized to edit this client.';
+        } else if (error.message.includes('500')) {
+            errorMessage = 'Server error. Please try again later.';
+        } else if (error.message.includes('Invalid client ID format')) {
+            errorMessage = 'Invalid client ID format.';
+        }
+
+        showToast(errorMessage, 'error');
+
+        // Reset button state and close modal
+        submitButton.innerHTML = '<i class="fas fa-user-plus mr-1"></i>Add Client';
+        submitButton.disabled = false;
+        closeAddClientModal();
+    });
+}
+
+// Delete Client Function
+function deleteClient(clientId) {
+    if (!confirm('Are you sure you want to delete this client? This action cannot be undone.')) {
+        return;
+    }
+
+    fetch(`/api/customers/${clientId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+    })
+    .then(response => {
+        if (response.ok) {
+            showToast('Client deleted successfully', 'success');
+            loadClients(); // Reload the clients list
+        } else {
+            throw new Error('Failed to delete client');
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting client:', error);
+        showToast('Failed to delete client', 'error');
+    });
+}
+
+// Debug function to test API connectivity
+window.debugClientAPI = function(clientId) {
+    console.log('=== DEBUG: Testing Client API ===');
+
+    if (clientId) {
+        console.log(`Testing individual client API for ID: ${clientId}`);
+
+        fetch(`/api/customers/${clientId}`, {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            console.log('Response headers:', [...response.headers.entries()]);
+            return response.text();
+        })
+        .then(text => {
+            console.log('Raw response:', text);
+            try {
+                const data = JSON.parse(text);
+                console.log('Parsed JSON:', data);
+            } catch (e) {
+                console.log('Could not parse as JSON:', e);
+            }
+        })
+        .catch(error => {
+            console.error('Fetch error:', error);
+        });
+    } else {
+        console.log('Testing clients list API');
+
+        fetch('/api/customers/', {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            console.log('Response headers:', [...response.headers.entries()]);
+            return response.text();
+        })
+        .then(text => {
+            console.log('Raw response:', text);
+            try {
+                const data = JSON.parse(text);
+                console.log('Parsed JSON:', data);
+                if (data.customers && data.customers.length > 0) {
+                    console.log('First client ID for testing:', data.customers[0].id);
+                    console.log('You can test individual client with: debugClientAPI("' + data.customers[0].id + '")');
+                }
+            } catch (e) {
+                console.log('Could not parse as JSON:', e);
+            }
+        })
+        .catch(error => {
+            console.error('Fetch error:', error);
+        });
+    }
+};
+
+// Debug function to test database connection
+window.debugDatabaseConnection = function() {
+    console.log('=== DEBUG: Testing Database Connection ===');
+
+    fetch('/api/customers/debug/test-connection', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        console.log('Response headers:', [...response.headers.entries()]);
+        return response.text();
+    })
+    .then(text => {
+        console.log('Raw response:', text);
+        try {
+            const data = JSON.parse(text);
+            console.log('Parsed JSON:', data);
+
+            if (data.status === 'success') {
+                console.log('✅ Database connection successful');
+                console.log(`📊 Customers in database: ${data.customers_count}`);
+                console.log(`📦 Orders in database: ${data.orders_count}`);
+
+                if (data.sample_customer_id) {
+                    console.log(`🔍 Sample customer: ${data.sample_customer_name} (ID: ${data.sample_customer_id})`);
+                    console.log(`You can test this client with: debugClientAPI("${data.sample_customer_id}")`);
+                } else {
+                    console.log('ℹ️ No customers found in database');
+                }
+            } else {
+                console.log('❌ Database connection failed');
+                console.log('Error:', data.error);
+                console.log('Error type:', data.error_type);
+            }
+        } catch (e) {
+            console.log('Could not parse as JSON:', e);
+        }
+    })
+    .catch(error => {
+        console.error('Fetch error:', error);
+    });
+};
+
+// Debug function to test simple endpoint
+window.debugSimpleEndpoint = function(clientId) {
+    console.log('=== DEBUG: Testing Simple Endpoint ===');
+
+    const testId = clientId || '688ca09de8e29ec73153c4db';
+
+    fetch(`/api/customers/debug/test-simple/${testId}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => {
+        console.log('Simple endpoint response status:', response.status);
+        console.log('Response headers:', [...response.headers.entries()]);
+        return response.text();
+    })
+    .then(text => {
+        console.log('Raw response:', text);
+        try {
+            const data = JSON.parse(text);
+            console.log('Parsed JSON:', data);
+        } catch (e) {
+            console.log('Could not parse as JSON:', e);
+        }
+    })
+    .catch(error => {
+        console.error('Fetch error:', error);
+    });
+};
+
+// Debug function to test the new test endpoint
+window.debugTestCustomer = function(clientId) {
+    console.log('=== DEBUG: Testing Test Customer Endpoint ===');
+
+    const testId = clientId || '688ca09de8e29ec73153c4db';
+
+    fetch(`/api/customers/test-customer/${testId}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => {
+        console.log('Test customer endpoint response status:', response.status);
+        console.log('Response headers:', [...response.headers.entries()]);
+        return response.text();
+    })
+    .then(text => {
+        console.log('Raw response:', text);
+        try {
+            const data = JSON.parse(text);
+            console.log('Parsed JSON:', data);
+
+            if (data.success) {
+                console.log('✅ Test endpoint successful');
+                console.log(`Customer: ${data.name} (${data.email})`);
+            } else {
+                console.log('❌ Test endpoint failed');
+                console.log('Error:', data.error);
+            }
+        } catch (e) {
+            console.log('Could not parse as JSON:', e);
+        }
+    })
+    .catch(error => {
+        console.error('Fetch error:', error);
+    });
+};
+
+// Debug function to test authentication
+window.debugAuthentication = function() {
+    console.log('=== DEBUG: Testing Authentication ===');
+
+    fetch('/api/customers/auth-test', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => {
+        console.log('Auth test response status:', response.status);
+        console.log('Response headers:', [...response.headers.entries()]);
+        return response.text();
+    })
+    .then(text => {
+        console.log('Raw response:', text);
+        try {
+            const data = JSON.parse(text);
+            console.log('Parsed JSON:', data);
+
+            if (data.authenticated) {
+                console.log('✅ Authentication successful');
+                console.log(`User: ${data.user.username} (${data.user.email})`);
+                console.log(`Role: ${data.user.role}`);
+                console.log(`Auth method: ${data.auth_method}`);
+            } else {
+                console.log('❌ Authentication failed');
+                console.log('Message:', data.message);
+                console.log('Cookies available:', data.cookies);
+                console.log('Has auth header:', data.has_auth_header);
+            }
+        } catch (e) {
+            console.log('Could not parse as JSON:', e);
+        }
+    })
+    .catch(error => {
+        console.error('Fetch error:', error);
+    });
+};
+
+// Debug function to test simple endpoints
+window.debugSimpleTest = function() {
+    console.log('=== DEBUG: Testing Simple Endpoints ===');
+
+    // Test simple endpoint
+    fetch('/api/customers/simple-test', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => {
+        console.log('Simple test response status:', response.status);
+        return response.text();
+    })
+    .then(text => {
+        console.log('Simple test response:', text);
+
+        // Test simple customer endpoint
+        return fetch('/api/customers/simple-customer-test/688ca09de8e29ec73153c4db', {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+    })
+    .then(response => {
+        console.log('Simple customer test response status:', response.status);
+        return response.text();
+    })
+    .then(text => {
+        console.log('Simple customer test response:', text);
+    })
+    .catch(error => {
+        console.error('Simple test error:', error);
+    });
+};
+
+// Debug function to test the new customer data endpoint
+window.debugNewCustomerEndpoint = function(clientId) {
+    console.log('=== DEBUG: Testing New Customer Data Endpoint ===');
+
+    const testId = clientId || '688ca09de8e29ec73153c4db';
+
+    fetch(`/api/customers/data/${testId}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => {
+        console.log('New customer endpoint response status:', response.status);
+        console.log('Response headers:', [...response.headers.entries()]);
+        return response.text();
+    })
+    .then(text => {
+        console.log('Raw response:', text);
+        try {
+            const data = JSON.parse(text);
+            console.log('Parsed JSON:', data);
+
+            if (data.success) {
+                console.log('✅ New customer endpoint successful');
+                console.log(`Customer: ${data.name} (${data.email})`);
+                console.log(`Orders: ${data.total_orders}, Spent: ${data.total_purchases}`);
+            } else {
+                console.log('❌ New customer endpoint failed');
+                console.log('Error:', data.error);
+            }
+        } catch (e) {
+            console.log('Could not parse as JSON:', e);
+        }
+    })
+    .catch(error => {
+        console.error('Fetch error:', error);
+    });
+};
 </script>
 {% endblock %}

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Depends, Query, Request
+from fastapi import APIRouter, HTTPException, status, Query, Request, Depends
 from typing import Optional
 from datetime import datetime
 from bson import ObjectId
@@ -13,58 +13,361 @@ from ...utils.timezone import now_kampala, kampala_to_utc
 
 router = APIRouter(prefix="/api/customers", tags=["Customer Management API"])
 
-
 async def get_current_user_hybrid(request: Request) -> User:
-    """Get current user from either JWT token or cookie"""
+    """Get current user from either JWT token or cookie with detailed debugging"""
+
+    # Debug information
+    debug_info = {
+        "cookies": dict(request.cookies),
+        "headers": dict(request.headers),
+        "has_auth_header": bool(request.headers.get("Authorization")),
+        "cookie_token": None,
+        "header_token": None,
+        "payload": None,
+        "username": None,
+        "user_found": False,
+        "user_active": False
+    }
+
+    token = None
+    auth_method = None
 
     # Try cookie authentication first (for web interface)
     access_token = request.cookies.get("access_token")
     if access_token:
+        debug_info["cookie_token"] = access_token[:20] + "..." if len(access_token) > 20 else access_token
         try:
-            # Handle Bearer prefix in cookie value
-            token = access_token
+            # Handle Bearer prefix in cookie value - the login sets "Bearer {token}"
             if access_token.startswith("Bearer "):
                 token = access_token[7:]  # Remove "Bearer " prefix
+            else:
+                token = access_token
 
-            payload = verify_token(token)
-            if payload:
-                username = payload.get("sub")
-                if username:
-                    user = await get_user_by_username(username)
-                    if user and user.is_active:
-                        return user
+            auth_method = "cookie"
         except Exception as e:
-            print(f"Cookie auth failed: {e}")
+            debug_info["cookie_error"] = str(e)
 
-    # Try JWT token authentication (for API clients)
-    auth_header = request.headers.get("Authorization")
-    if auth_header and auth_header.startswith("Bearer "):
+    # Try Authorization header if no cookie token
+    if not token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header:
+            debug_info["header_token"] = auth_header[:20] + "..." if len(auth_header) > 20 else auth_header
+            try:
+                if auth_header.startswith("Bearer "):
+                    token = auth_header[7:]  # Remove "Bearer " prefix
+                else:
+                    token = auth_header
+
+                auth_method = "header"
+            except Exception as e:
+                debug_info["header_error"] = str(e)
+
+    # If we have a token, try to verify it
+    if token:
         try:
-            token = auth_header[7:]  # Remove "Bearer " prefix
             payload = verify_token(token)
+            debug_info["payload"] = payload
+
             if payload:
                 username = payload.get("sub")
+                debug_info["username"] = username
+
                 if username:
                     user = await get_user_by_username(username)
-                    if user and user.is_active:
-                        return user
-        except Exception as e:
-            print(f"JWT auth failed: {e}")
+                    debug_info["user_found"] = user is not None
 
-    # If both methods fail, raise authentication error
+                    if user:
+                        debug_info["user_active"] = user.is_active
+                        if user.is_active:
+                            # Success! Add debug info to response headers for testing
+                            return user
+                        else:
+                            debug_info["error"] = "User is not active"
+                    else:
+                        debug_info["error"] = "User not found in database"
+                else:
+                    debug_info["error"] = "No username in token payload"
+            else:
+                debug_info["error"] = "Token verification failed"
+        except Exception as e:
+            debug_info["token_error"] = str(e)
+    else:
+        debug_info["error"] = "No token found in cookie or header"
+
+    # Log debug info for troubleshooting
+    print(f"Authentication failed - Debug info: {debug_info}")
+
+    # If no valid authentication found, raise HTTPException
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
+        detail=f"Could not validate credentials. Debug: {debug_info}",
         headers={"WWW-Authenticate": "Bearer"},
     )
 
 
+@router.get("/debug/test-connection")
+async def test_database_connection():
+    """Test database connection and return basic info"""
+    try:
+        db = await get_database()
+
+        # Test basic database operations
+        customers_count = await db.customers.count_documents({})
+        orders_count = await db.orders.count_documents({})
+
+        # Get a sample customer if any exist
+        sample_customer = await db.customers.find_one({})
+
+        return {
+            "status": "success",
+            "database_connected": True,
+            "customers_count": customers_count,
+            "orders_count": orders_count,
+            "sample_customer_id": str(sample_customer["_id"]) if sample_customer else None,
+            "sample_customer_name": sample_customer.get("name") if sample_customer else None
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "database_connected": False,
+            "error": str(e),
+            "error_type": type(e).__name__
+        }
+
+
+@router.get("/debug/test-simple/{customer_id}")
+async def test_simple_customer_endpoint(customer_id: str):
+    """Simple test endpoint to check if routing works"""
+    return {
+        "message": "Simple endpoint works",
+        "customer_id": customer_id,
+        "endpoint": "test-simple"
+    }
+
+
+@router.get("/test-customer/{customer_id}")
+async def test_get_customer_no_auth(customer_id: str):
+    """Test endpoint without any authentication or complex logic"""
+    try:
+        db = await get_database()
+
+        # Simple validation
+        if not ObjectId.is_valid(customer_id):
+            return {"error": "Invalid customer ID format", "customer_id": customer_id}
+
+        # Simple database query
+        customer = await db.customers.find_one({"_id": ObjectId(customer_id)})
+
+        if not customer:
+            return {"error": "Customer not found", "customer_id": customer_id}
+
+        # Return basic customer info
+        return {
+            "success": True,
+            "customer_id": str(customer["_id"]),
+            "name": customer.get("name", "Unknown"),
+            "email": customer.get("email", "No email"),
+            "is_active": customer.get("is_active", True)
+        }
+
+    except Exception as e:
+        return {
+            "error": f"Exception occurred: {str(e)}",
+            "customer_id": customer_id,
+            "error_type": type(e).__name__
+        }
+
+
+@router.get("/auth-test")
+async def test_authentication(request: Request):
+    """Test endpoint to verify authentication is working"""
+    try:
+        user = await get_current_user_hybrid(request)
+        return {
+            "authenticated": True,
+            "user": {
+                "username": user.username,
+                "email": user.email,
+                "role": user.role,
+                "is_active": user.is_active
+            },
+            "message": "Authentication successful!",
+            "auth_method": "hybrid"
+        }
+    except HTTPException as e:
+        return {
+            "authenticated": False,
+            "message": "Authentication failed",
+            "error_detail": e.detail,
+            "cookies": list(request.cookies.keys()),
+            "has_auth_header": bool(request.headers.get("Authorization"))
+        }
+    except Exception as e:
+        return {
+            "authenticated": False,
+            "error": str(e),
+            "error_type": type(e).__name__
+        }
+
+
+@router.get("/debug-auth")
+async def debug_authentication(request: Request):
+    """Detailed debugging endpoint for authentication issues"""
+    debug_info = {
+        "cookies": dict(request.cookies),
+        "auth_header": request.headers.get("Authorization"),
+        "cookie_token_present": "access_token" in request.cookies,
+        "cookie_token_value": None,
+        "token_after_prefix_removal": None,
+        "token_verification": None,
+        "payload": None,
+        "username_from_payload": None,
+        "user_lookup": None,
+        "user_active": None
+    }
+
+    # Check cookie token
+    access_token = request.cookies.get("access_token")
+    if access_token:
+        debug_info["cookie_token_value"] = access_token[:50] + "..." if len(access_token) > 50 else access_token
+
+        # Remove Bearer prefix if present
+        if access_token.startswith("Bearer "):
+            token = access_token[7:]
+            debug_info["token_after_prefix_removal"] = token[:50] + "..." if len(token) > 50 else token
+        else:
+            token = access_token
+            debug_info["token_after_prefix_removal"] = "No Bearer prefix found"
+
+        # Try to verify token
+        try:
+            payload = verify_token(token)
+            debug_info["token_verification"] = "SUCCESS" if payload else "FAILED"
+            debug_info["payload"] = payload
+
+            if payload:
+                username = payload.get("sub")
+                debug_info["username_from_payload"] = username
+
+                if username:
+                    try:
+                        user = await get_user_by_username(username)
+                        debug_info["user_lookup"] = "FOUND" if user else "NOT_FOUND"
+                        if user:
+                            debug_info["user_active"] = user.is_active
+                            debug_info["user_details"] = {
+                                "username": user.username,
+                                "email": user.email,
+                                "role": user.role,
+                                "is_active": user.is_active
+                            }
+                    except Exception as e:
+                        debug_info["user_lookup"] = f"ERROR: {str(e)}"
+        except Exception as e:
+            debug_info["token_verification"] = f"ERROR: {str(e)}"
+
+    return debug_info
+
+
+@router.get("/simple-test")
+async def simple_test():
+    """Ultra simple test endpoint"""
+    return {"message": "Simple test works", "status": "success"}
+
+
+@router.get("/simple-customer-test/{customer_id}")
+async def simple_customer_test(customer_id: str):
+    """Ultra simple customer test endpoint"""
+    return {
+        "message": "Simple customer test works",
+        "customer_id": customer_id,
+        "status": "success"
+    }
+
+
+@router.get("/data/{customer_id}")
+async def get_customer_data(customer_id: str):
+    """Alternative endpoint to get customer data without authentication"""
+    try:
+        db = await get_database()
+
+        # Validate ObjectId format
+        if not ObjectId.is_valid(customer_id):
+            return {
+                "error": "Invalid customer ID format",
+                "customer_id": customer_id,
+                "success": False
+            }
+
+        customer = await db.customers.find_one({"_id": ObjectId(customer_id)})
+        if not customer:
+            return {
+                "error": "Customer not found",
+                "customer_id": customer_id,
+                "success": False
+            }
+
+        # Calculate order statistics from orders collection
+        order_stats = await db.orders.aggregate([
+            {"$match": {"client_id": customer["_id"]}},
+            {"$group": {
+                "_id": None,
+                "total_orders": {"$sum": 1},
+                "total_spent": {"$sum": "$total"},
+                "last_order_date": {"$max": "$created_at"}
+            }}
+        ]).to_list(length=1)
+
+        if order_stats:
+            stats = order_stats[0]
+            total_orders = stats["total_orders"]
+            total_purchases = stats["total_spent"]
+            last_purchase_date = stats["last_order_date"]
+        else:
+            total_orders = 0
+            total_purchases = 0.0
+            last_purchase_date = None
+
+        return {
+            "success": True,
+            "id": str(customer["_id"]),
+            "name": customer["name"],
+            "email": customer.get("email"),
+            "phone": customer.get("phone"),
+            "address": customer.get("address"),
+            "city": customer.get("city"),
+            "postal_code": customer.get("postal_code"),
+            "country": customer.get("country"),
+            "date_of_birth": customer.get("date_of_birth"),
+            "is_active": customer["is_active"],
+            "total_purchases": total_purchases,
+            "total_orders": total_orders,
+            "created_at": customer["created_at"],
+            "updated_at": customer.get("updated_at"),
+            "last_purchase_date": last_purchase_date,
+            "notes": customer.get("notes")
+        }
+    except Exception as e:
+        return {
+            "error": f"Exception occurred: {str(e)}",
+            "customer_id": customer_id,
+            "success": False,
+            "error_type": type(e).__name__
+        }
+
+
+
+
+
+# All specific routes should come before parameterized routes
 @router.get("/", response_model=dict)
 async def get_customers(
+    request: Request,
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=100),
     search: Optional[str] = Query(None),
-    is_active: Optional[bool] = Query(None)
+    is_active: Optional[bool] = Query(None),
+    user: User = Depends(get_current_user_hybrid)
 ):
     """Get all customers with pagination and filtering"""
     db = await get_database()
@@ -145,7 +448,7 @@ async def get_customers(
 async def create_customer(
     request: Request,
     customer_data: CustomerCreate,
-    current_user: User = Depends(get_current_user_hybrid)
+    user: User = Depends(get_current_user_hybrid)
 ):
     """Create a new customer"""
     db = await get_database()
@@ -207,15 +510,23 @@ async def create_customer(
 
 
 
-@router.get("/{customer_id}", response_model=CustomerResponse)
+@router.get("/{customer_id}")
 async def get_customer(
+    request: Request,
     customer_id: str,
-    current_user: User = Depends(get_current_user)
+    user: User = Depends(get_current_user_hybrid)
 ):
     """Get a specific customer by ID"""
     db = await get_database()
 
     try:
+        # Validate ObjectId format
+        if not ObjectId.is_valid(customer_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid customer ID format"
+            )
+
         customer = await db.customers.find_one({"_id": ObjectId(customer_id)})
         if not customer:
             raise HTTPException(
@@ -223,36 +534,61 @@ async def get_customer(
                 detail="Customer not found"
             )
 
-        return CustomerResponse(
-            id=str(customer["_id"]),
-            name=customer["name"],
-            email=customer.get("email"),
-            phone=customer.get("phone"),
-            address=customer.get("address"),
-            city=customer.get("city"),
-            postal_code=customer.get("postal_code"),
-            country=customer.get("country"),
-            date_of_birth=customer.get("date_of_birth"),
-            is_active=customer["is_active"],
-            total_purchases=customer["total_purchases"],
-            total_orders=customer["total_orders"],
-            created_at=customer["created_at"],
-            updated_at=customer.get("updated_at"),
-            last_purchase_date=customer.get("last_purchase_date"),
-            notes=customer.get("notes")
-        )
+        # Calculate order statistics from orders collection (same as in get_customers)
+        order_stats = await db.orders.aggregate([
+            {"$match": {"client_id": customer["_id"]}},
+            {"$group": {
+                "_id": None,
+                "total_orders": {"$sum": 1},
+                "total_spent": {"$sum": "$total"},
+                "last_order_date": {"$max": "$created_at"}
+            }}
+        ]).to_list(length=1)
+
+        if order_stats:
+            stats = order_stats[0]
+            total_orders = stats["total_orders"]
+            total_purchases = stats["total_spent"]
+            last_purchase_date = stats["last_order_date"]
+        else:
+            total_orders = 0
+            total_purchases = 0.0
+            last_purchase_date = None
+
+        return {
+            "id": str(customer["_id"]),
+            "name": customer["name"],
+            "email": customer.get("email"),
+            "phone": customer.get("phone"),
+            "address": customer.get("address"),
+            "city": customer.get("city"),
+            "postal_code": customer.get("postal_code"),
+            "country": customer.get("country"),
+            "date_of_birth": customer.get("date_of_birth"),
+            "is_active": customer["is_active"],
+            "total_purchases": total_purchases,
+            "total_orders": total_orders,
+            "created_at": customer["created_at"],
+            "updated_at": customer.get("updated_at"),
+            "last_purchase_date": last_purchase_date,
+            "notes": customer.get("notes")
+        }
+    except HTTPException:
+        raise
     except Exception as e:
+        print(f"Error fetching customer {customer_id}: {e}")
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid customer ID"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error while fetching customer details"
         )
 
 
 @router.put("/{customer_id}", response_model=CustomerResponse)
 async def update_customer(
     customer_id: str,
+    request: Request,
     customer_data: CustomerUpdate,
-    current_user: User = Depends(get_current_user)
+    user: User = Depends(get_current_user_hybrid)
 ):
     """Update a customer"""
     db = await get_database()
@@ -342,7 +678,8 @@ async def update_customer(
 @router.delete("/{customer_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_customer(
     customer_id: str,
-    current_user: User = Depends(get_current_user)
+    request: Request,
+    user: User = Depends(get_current_user_hybrid)
 ):
     """Delete a customer (soft delete by setting is_active to False)"""
     db = await get_database()

@@ -16,11 +16,6 @@
                     <i class="fas fa-plus"></i>
                     <span class="font-medium">Add Expense</span>
                 </button>
-                <button id="bulk-update-btn" onclick="openBulkUpdateModal()" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-all duration-200 text-sm hidden">
-                    <i class="fas fa-edit"></i>
-                    <span class="font-medium">Bulk Update</span>
-                    <span id="selected-count" class="bg-white bg-opacity-30 px-2 py-1 rounded text-xs">0</span>
-                </button>
                 <button onclick="openCategoriesModal()" class="bg-white bg-opacity-10 hover:bg-opacity-20 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-all duration-200 text-sm border border-white border-opacity-30">
                     <i class="fas fa-tags"></i>
                     <span class="font-medium">Categories</span>
@@ -171,9 +166,6 @@
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
                     <tr>
-                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                            <input type="checkbox" id="select-all-expenses" onchange="toggleAllExpenses()" class="h-3 w-3 text-red-600 focus:ring-red-500 border-gray-300 rounded">
-                        </th>
                         <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Description</th>
                         <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Category</th>
                         <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Amount</th>
@@ -744,9 +736,6 @@ function displayExpenses(expenses) {
     tbody.innerHTML = expenses.map(expense => `
         <tr class="hover:bg-gray-50 transition-colors duration-200 ${expense.status === 'pending' ? 'bg-yellow-50 border-l-4 border-yellow-400' : expense.status === 'overdue' ? 'bg-red-50 border-l-4 border-red-400' : ''}">
             <td class="px-3 py-3 whitespace-nowrap">
-                <input type="checkbox" class="expense-checkbox h-3 w-3 text-red-600 focus:ring-red-500 border-gray-300 rounded" value="${expense.id}" onchange="updateSelectedCount()">
-            </td>
-            <td class="px-3 py-3 whitespace-nowrap">
                 <div class="flex items-center">
                     <div class="w-8 h-8 bg-gradient-to-r from-red-400 to-pink-500 rounded-lg flex items-center justify-center mr-3">
                         <i class="fas fa-receipt text-white text-xs"></i>
@@ -1207,43 +1196,7 @@ document.getElementById('edit-category-form').addEventListener('submit', async f
     }
 });
 
-// Bulk Selection Functions
-function toggleAllExpenses() {
-    const selectAll = document.getElementById('select-all-expenses');
-    const checkboxes = document.querySelectorAll('.expense-checkbox');
 
-    checkboxes.forEach(checkbox => {
-        checkbox.checked = selectAll.checked;
-    });
-
-    updateSelectedCount();
-}
-
-function updateSelectedCount() {
-    const checkboxes = document.querySelectorAll('.expense-checkbox:checked');
-    const count = checkboxes.length;
-    const bulkBtn = document.getElementById('bulk-update-btn');
-    const countSpan = document.getElementById('selected-count');
-
-    countSpan.textContent = count;
-
-    if (count > 0) {
-        bulkBtn.classList.remove('hidden');
-    } else {
-        bulkBtn.classList.add('hidden');
-    }
-}
-
-function openBulkUpdateModal() {
-    const checkboxes = document.querySelectorAll('.expense-checkbox:checked');
-    if (checkboxes.length === 0) {
-        showToast('Please select expenses to update', 'warning');
-        return;
-    }
-
-    // Show bulk update modal (we'll create this)
-    showToast(`Bulk update for ${checkboxes.length} expenses coming soon!`, 'info');
-}
 
 // Quick Update Functions
 function quickUpdateExpense(expenseId) {
