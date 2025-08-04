@@ -174,25 +174,42 @@ def calculate_decant_availability(product: Dict[str, Any]) -> Dict[str, Any]:
             "is_decantable": False,
             "available_decants": 0,
             "total_ml_available": 0,
-            "opened_bottle_ml_left": 0
+            "opened_bottle_ml_left": 0,
+            "opened_bottle_decants": 0,
+            "has_opened_bottle": False,
+            "can_open_new_bottle": False
         }
-    
+
     bottle_size_ml = product.get("bottle_size_ml", 0)
     stock_quantity = product.get("stock_quantity", 0)
     decant_size_ml = decant_info.get("decant_size_ml", 0)
     opened_bottle_ml_left = decant_info.get("opened_bottle_ml_left", 0)
-    
+
     # Calculate total ml available
     total_ml_available = (stock_quantity * bottle_size_ml) + opened_bottle_ml_left
-    
-    # Calculate available decants
-    available_decants = int(total_ml_available // decant_size_ml) if decant_size_ml > 0 else 0
-    
+
+    # Calculate total possible decants
+    total_available_decants = int(total_ml_available // decant_size_ml) if decant_size_ml > 0 else 0
+
+    # Calculate decants available from opened bottle only
+    opened_bottle_decants = int(opened_bottle_ml_left // decant_size_ml) if decant_size_ml > 0 else 0
+
+    # Check if there's an opened bottle
+    has_opened_bottle = opened_bottle_ml_left > 0
+
+    # Check if we can open a new bottle (have unopened bottles in stock)
+    can_open_new_bottle = stock_quantity > 0
+
     return {
         "is_decantable": True,
-        "available_decants": available_decants,
+        "available_decants": total_available_decants,  # Total possible decants
+        "opened_bottle_decants": opened_bottle_decants,  # Decants from opened bottle only
         "total_ml_available": total_ml_available,
         "opened_bottle_ml_left": opened_bottle_ml_left,
+        "has_opened_bottle": has_opened_bottle,
+        "can_open_new_bottle": can_open_new_bottle,
         "decant_size_ml": decant_size_ml,
-        "decant_price": decant_info.get("decant_price", 0)
+        "decant_price": decant_info.get("decant_price", 0),
+        "bottle_size_ml": bottle_size_ml,
+        "stock_quantity": stock_quantity
     }

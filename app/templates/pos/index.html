@@ -486,6 +486,59 @@
     </div>
 </div>
 
+<!-- Open New Bottle Confirmation Modal -->
+<div id="open-bottle-modal" class="fixed inset-0 bg-black bg-opacity-75 backdrop-blur-sm hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all duration-300">
+            <div class="px-4 py-3 bg-gradient-to-r from-orange-500 to-red-600 rounded-t-xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                            <i class="fas fa-unlock text-white text-xs"></i>
+                        </div>
+                        <h3 class="text-base font-semibold text-white">Open New Bottle</h3>
+                    </div>
+                    <button type="button" onclick="closeOpenBottleModal()" class="text-white hover:text-gray-200 transition-colors duration-200">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-4">
+                <div class="flex items-start mb-4">
+                    <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-exclamation-triangle text-orange-600"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h4 class="text-sm font-semibold text-gray-900 mb-1">Confirm Opening New Bottle</h4>
+                        <p class="text-xs text-gray-600 mb-2">No opened bottle available for decants. Opening a new bottle will:</p>
+                        <ul class="text-xs text-gray-600 space-y-1 mb-3">
+                            <li>• Reduce bottle stock by 1</li>
+                            <li>• Make <span id="new-bottle-decants" class="font-semibold">0</span> decants available</li>
+                            <li>• Add 1 decant to your cart</li>
+                        </ul>
+                        <div class="bg-orange-50 border border-orange-200 rounded-lg p-2">
+                            <p class="text-xs text-orange-800">
+                                <strong>Product:</strong> <span id="bottle-product-name">-</span><br>
+                                <strong>Bottle Size:</strong> <span id="bottle-size">-</span>ml<br>
+                                <strong>Decant Size:</strong> <span id="decant-size">-</span>ml<br>
+                                <strong>Price per Decant:</strong> UGX <span id="decant-price">-</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="closeOpenBottleModal()" class="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200">
+                        <i class="fas fa-times mr-1"></i>Cancel
+                    </button>
+                    <button type="button" onclick="confirmAndOpenBottle()" class="px-3 py-2 text-xs font-medium text-white bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 rounded-lg transition-all duration-200">
+                        <i class="fas fa-unlock mr-1"></i>Open Bottle & Add Decant
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 // POS System JavaScript
 let cart = [];
@@ -609,7 +662,79 @@ function displaySearchResults(products) {
 
         resultsContainer.innerHTML = products.map(product => {
             // Check if this is a perfume product with decants
-            if (product.is_perfume_with_decants && product.decant && product.available_decants > 0) {
+            if (product.is_perfume_with_decants && product.decant) {
+                // Determine decant option based on opened bottle status
+                let decantOption = '';
+
+                if (product.has_opened_bottle && product.opened_bottle_decants > 0) {
+                    // Has opened bottle with available decants
+                    decantOption = `
+                        <div class="group bg-white hover:bg-purple-50 border border-gray-200 hover:border-purple-300 rounded-lg p-2 cursor-pointer transition-all duration-200" onclick="addToCart('${product.id}', '${product.name} (${product.decant.decant_size_ml}ml Decant)', ${product.decant.decant_price}, '${product.sku}-DECANT', ${product.opened_bottle_decants})">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <i class="fas fa-vial text-purple-500 mr-2"></i>
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900">Decant (${product.decant.decant_size_ml}ml)</p>
+                                        <p class="text-xs text-green-600">
+                                            <i class="fas fa-check-circle mr-1"></i>
+                                            ${product.opened_bottle_decants} decants from opened bottle
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-bold text-sm text-purple-600">UGX ${product.decant.decant_price.toLocaleString()}</p>
+                                    <button class="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white px-2 py-1 rounded text-xs font-medium transition-all duration-200">
+                                        <i class="fas fa-plus mr-1"></i>Add Decant
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else if (product.can_open_new_bottle) {
+                    // No opened bottle but can open new one
+                    const newBottleDecants = Math.floor(product.bottle_size_ml / product.decant.decant_size_ml);
+                    decantOption = `
+                        <div class="group bg-white hover:bg-orange-50 border border-orange-200 hover:border-orange-300 rounded-lg p-2 cursor-pointer transition-all duration-200" onclick="confirmOpenNewBottle('${product.id}', '${product.name}', ${product.bottle_size_ml}, ${product.decant.decant_size_ml}, ${product.decant.decant_price})">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <i class="fas fa-unlock text-orange-500 mr-2"></i>
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900">Open New Bottle for Decants</p>
+                                        <p class="text-xs text-orange-600">
+                                            <i class="fas fa-exclamation-triangle mr-1"></i>
+                                            No opened bottle - will open new (${newBottleDecants} decants)
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-bold text-sm text-orange-600">UGX ${product.decant.decant_price.toLocaleString()}</p>
+                                    <button class="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white px-2 py-1 rounded text-xs font-medium transition-all duration-200">
+                                        <i class="fas fa-unlock mr-1"></i>Open & Add
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // No opened bottle and no stock to open
+                    decantOption = `
+                        <div class="bg-gray-100 border border-gray-200 rounded-lg p-2 opacity-50">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <i class="fas fa-ban text-gray-400 mr-2"></i>
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-500">Decants Unavailable</p>
+                                        <p class="text-xs text-gray-400">No opened bottle, no stock to open</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-sm text-gray-400">Out of Stock</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
                 // Show both bottle and decant options for perfume products
                 return `
                     <div class="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-3 space-y-2">
@@ -650,24 +775,8 @@ function displaySearchResults(products) {
                             </div>
                         </div>
 
-                        <!-- Decant Option -->
-                        <div class="group bg-white hover:bg-purple-50 border border-gray-200 hover:border-purple-300 rounded-lg p-2 cursor-pointer transition-all duration-200" onclick="addToCart('${product.id}', '${product.name} (${product.decant.decant_size_ml}ml Decant)', ${product.decant.decant_price}, '${product.sku}-DECANT', ${product.available_decants})">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center">
-                                    <i class="fas fa-vial text-purple-500 mr-2"></i>
-                                    <div>
-                                        <p class="text-sm font-medium text-gray-900">Decant (${product.decant.decant_size_ml}ml)</p>
-                                        <p class="text-xs text-gray-500">${product.available_decants} decants available</p>
-                                    </div>
-                                </div>
-                                <div class="text-right">
-                                    <p class="font-bold text-sm text-purple-600">UGX ${product.decant.decant_price.toLocaleString()}</p>
-                                    <button class="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white px-2 py-1 rounded text-xs font-medium transition-all duration-200">
-                                        <i class="fas fa-plus mr-1"></i>Add Decant
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                        <!-- Decant Option (Dynamic based on opened bottle status) -->
+                        ${decantOption}
                     </div>
                 `;
             } else {
@@ -964,8 +1073,8 @@ async function refreshCartStockQuantities() {
                     if (products && products.length > 0) {
                         const product = products[0];
                         if (item.isDecant) {
-                            // For decants, use available_decants as stock quantity
-                            item.stockQuantity = product.available_decants || 0;
+                            // For decants, use opened_bottle_decants as stock quantity (only from opened bottle)
+                            item.stockQuantity = product.opened_bottle_decants || 0;
                         } else {
                             // For regular products, use stock_quantity
                             item.stockQuantity = product.stock_quantity;
@@ -1617,6 +1726,86 @@ function printReceipt() {
     printWindow.focus();
     printWindow.print();
     printWindow.close();
+}
+
+// Open New Bottle Confirmation Functions
+let pendingBottleData = null;
+
+function confirmOpenNewBottle(productId, productName, bottleSizeMl, decantSizeMl, decantPrice) {
+    // Store the data for later use
+    pendingBottleData = {
+        productId: productId,
+        productName: productName,
+        bottleSizeMl: bottleSizeMl,
+        decantSizeMl: decantSizeMl,
+        decantPrice: decantPrice
+    };
+
+    // Calculate how many decants the new bottle will provide
+    const newBottleDecants = Math.floor(bottleSizeMl / decantSizeMl);
+
+    // Update modal content
+    document.getElementById('bottle-product-name').textContent = productName;
+    document.getElementById('bottle-size').textContent = bottleSizeMl;
+    document.getElementById('decant-size').textContent = decantSizeMl;
+    document.getElementById('decant-price').textContent = decantPrice.toLocaleString();
+    document.getElementById('new-bottle-decants').textContent = newBottleDecants;
+
+    // Show modal
+    document.getElementById('open-bottle-modal').classList.remove('hidden');
+}
+
+function closeOpenBottleModal() {
+    document.getElementById('open-bottle-modal').classList.add('hidden');
+    pendingBottleData = null;
+}
+
+async function confirmAndOpenBottle() {
+    if (!pendingBottleData) {
+        showToast('Error: No bottle data available', 'error');
+        return;
+    }
+
+    try {
+        // First, open the new bottle via API
+        const response = await fetch(`/api/products/${pendingBottleData.productId}/open-bottle`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+
+            // Add the decant to cart
+            addToCart(
+                pendingBottleData.productId,
+                `${pendingBottleData.productName} (${pendingBottleData.decantSizeMl}ml Decant)`,
+                pendingBottleData.decantPrice,
+                `${pendingBottleData.productId}-DECANT`,
+                Math.floor(pendingBottleData.bottleSizeMl / pendingBottleData.decantSizeMl) - 1 // -1 because we're adding one to cart
+            );
+
+            // Close modal
+            closeOpenBottleModal();
+
+            // Show success message
+            showToast(`Opened new bottle and added decant to cart`, 'success');
+
+            // Refresh search results to show updated stock
+            if (document.getElementById('product-search').value.trim()) {
+                searchProducts();
+            }
+        } else {
+            const error = await response.json();
+            showToast(`Failed to open bottle: ${error.detail}`, 'error');
+        }
+    } catch (error) {
+        console.error('Error opening bottle:', error);
+        showToast('Error opening bottle', 'error');
+    }
 }
 </script>
 {% endblock %}

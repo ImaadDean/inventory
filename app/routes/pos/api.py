@@ -83,6 +83,10 @@ async def search_products(
             "decant": product.get("decant"),
             "is_perfume_with_decants": decant_info["is_decantable"],
             "available_decants": decant_info["available_decants"],
+            "opened_bottle_decants": decant_info.get("opened_bottle_decants", 0),
+            "has_opened_bottle": decant_info.get("has_opened_bottle", False),
+            "can_open_new_bottle": decant_info.get("can_open_new_bottle", False),
+            "opened_bottle_ml_left": decant_info.get("opened_bottle_ml_left", 0),
             "stock_display": f"{product['stock_quantity']} pcs & {decant_info['opened_bottle_ml_left']}mls" if decant_info["is_decantable"] else f"{product['stock_quantity']} {product['unit']}"
         }
 
