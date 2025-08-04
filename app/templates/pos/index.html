@@ -529,6 +529,9 @@ function initializePOS() {
 
     // Initialize payment method display
     handlePaymentMethodChange();
+
+    // Refresh stock quantities for any existing cart items
+    refreshCartStockQuantities();
 }
 
 // Product search functionality
@@ -605,7 +608,7 @@ function displaySearchResults(products) {
         }
 
         resultsContainer.innerHTML = products.map(product => `
-            <div class="group bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200 hover:border-blue-300 rounded-xl p-3 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5" onclick="addToCart('${product.id}', '${product.name}', ${product.price}, '${product.sku}')">
+            <div class="group bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200 hover:border-blue-300 rounded-xl p-3 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5" onclick="addToCart('${product.id}', '${product.name}', ${product.price}, '${product.sku}', ${product.stock_quantity})">
                 <div class="flex items-center justify-between">
                     <div class="flex-1 mr-3">
                         <div class="flex items-center mb-1">
@@ -745,7 +748,7 @@ async function processManualBarcode() {
 
             if (products && products.length > 0) {
                 const product = products[0];
-                addToCart(product.id, product.name, product.price, product.sku);
+                addToCart(product.id, product.name, product.price, product.sku, product.stock_quantity);
                 closeBarcodeScanner();
                 showToast(`Added "${product.name}" to cart`, 'success');
             } else {
@@ -792,18 +795,37 @@ function closeBarcodeScanner() {
 }
 
 // Cart functionality
-function addToCart(id, name, price, sku) {
+function addToCart(id, name, price, sku, stockQuantity) {
     const existingItem = cart.find(item => item.id === id);
+
+    // Ensure stockQuantity is provided
+    if (stockQuantity === undefined || stockQuantity === null) {
+        console.warn('Stock quantity not provided for product:', name);
+        stockQuantity = 0; // Default to 0 to prevent overselling
+    }
+
+    // Check stock availability
+    const currentCartQuantity = existingItem ? existingItem.quantity : 0;
+    const newQuantity = currentCartQuantity + 1;
+
+    if (newQuantity > stockQuantity) {
+        // Show stock limit warning
+        showStockWarning(name, stockQuantity, currentCartQuantity);
+        return;
+    }
 
     if (existingItem) {
         existingItem.quantity += 1;
+        // Update stock quantity in case it changed
+        existingItem.stockQuantity = stockQuantity;
     } else {
         cart.push({
             id: id,
             name: name,
             price: price,
             sku: sku,
-            quantity: 1
+            quantity: 1,
+            stockQuantity: stockQuantity
         });
     }
 
@@ -813,6 +835,69 @@ function addToCart(id, name, price, sku) {
     // Clear search
     document.getElementById('product-search').value = '';
     document.getElementById('search-results').innerHTML = '';
+}
+
+// Show stock warning message
+function showStockWarning(productName, availableStock, currentInCart) {
+    const message = availableStock === 0
+        ? `${productName} is out of stock!`
+        : `Cannot add more ${productName}. Only ${availableStock} available${currentInCart > 0 ? ` (${currentInCart} already in cart)` : ''}.`;
+
+    // Create and show toast notification
+    const toast = document.createElement('div');
+    toast.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-x-full';
+    toast.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas fa-exclamation-triangle mr-2"></i>
+            <span class="font-medium">${message}</span>
+        </div>
+    `;
+
+    document.body.appendChild(toast);
+
+    // Animate in
+    setTimeout(() => {
+        toast.classList.remove('translate-x-full');
+    }, 100);
+
+    // Remove after 3 seconds
+    setTimeout(() => {
+        toast.classList.add('translate-x-full');
+        setTimeout(() => {
+            document.body.removeChild(toast);
+        }, 300);
+    }, 3000);
+}
+
+// Refresh stock quantities for cart items
+async function refreshCartStockQuantities() {
+    if (cart.length === 0) return;
+
+    try {
+        // Get all product IDs in cart
+        const productIds = cart.map(item => item.id);
+
+        // Fetch current stock for all products in cart
+        for (const item of cart) {
+            try {
+                const response = await fetch(`/api/pos/products/search?query=${encodeURIComponent(item.sku)}&limit=1`, {
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    const products = await response.json();
+                    if (products && products.length > 0) {
+                        const product = products[0];
+                        item.stockQuantity = product.stock_quantity;
+                    }
+                }
+            } catch (error) {
+                console.warn('Failed to refresh stock for item:', item.name, error);
+            }
+        }
+    } catch (error) {
+        console.error('Error refreshing cart stock quantities:', error);
+    }
 }
 
 function updateCartDisplay() {
@@ -884,6 +969,14 @@ function updateQuantity(id, newQuantity) {
 
     const item = cart.find(item => item.id === id);
     if (item) {
+        // Check stock availability if stockQuantity is available
+        if (item.stockQuantity !== undefined && item.stockQuantity !== null) {
+            if (newQuantity > item.stockQuantity) {
+                showStockWarning(item.name, item.stockQuantity, item.quantity);
+                return;
+            }
+        }
+
         item.quantity = newQuantity;
         updateCartDisplay();
         updateTotals();
