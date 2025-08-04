@@ -1108,6 +1108,27 @@ function updateCartDisplay() {
         const iconClass = isDecant ? 'fas fa-vial' : 'fas fa-wine-bottle';
         const bgColor = isDecant ? 'from-purple-500 to-pink-600' : 'from-blue-500 to-indigo-600';
 
+        // Check if this decant item needs "Open New Bottle" option
+        const needsNewBottle = isDecant && item.stockQuantity !== undefined && item.quantity >= item.stockQuantity;
+
+        let openBottleOption = '';
+        if (needsNewBottle) {
+            openBottleOption = `
+                <div class="mt-2 pt-2 border-t border-orange-200">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <i class="fas fa-exclamation-triangle text-orange-500 mr-1"></i>
+                            <span class="text-xs text-orange-600">Need more decants?</span>
+                        </div>
+                        <button onclick="openNewBottleFromCart('${item.cartItemId}', '${item.id}')"
+                                class="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white px-2 py-1 rounded text-xs font-medium transition-all duration-200">
+                            <i class="fas fa-unlock mr-1"></i>Open New Bottle
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
         return `
         <div class="group bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 border border-purple-200 hover:border-purple-300 rounded-xl p-3 transition-all duration-200 shadow-sm hover:shadow-md">
             <div class="flex items-center justify-between">
@@ -1127,6 +1148,7 @@ function updateCartDisplay() {
                                 UGX ${item.price.toLocaleString()}
                             </span>
                             ${isDecant ? '<span class="bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-xs">Decant</span>' : ''}
+                            ${isDecant && item.stockQuantity !== undefined ? `<span class="text-xs text-gray-500">${item.stockQuantity} available</span>` : ''}
                         </div>
                     </div>
                 </div>
@@ -1153,6 +1175,7 @@ function updateCartDisplay() {
                 <span class="text-xs text-gray-600">Item Total:</span>
                 <span class="text-sm font-bold text-purple-600">UGX ${(item.price * item.quantity).toLocaleString()}</span>
             </div>
+            ${openBottleOption}
         </div>
         `;
     }).join('');
@@ -1169,7 +1192,12 @@ function updateQuantity(cartItemId, newQuantity) {
         // Check stock availability if stockQuantity is available
         if (item.stockQuantity !== undefined && item.stockQuantity !== null) {
             if (newQuantity > item.stockQuantity) {
-                showStockWarning(item.name, item.stockQuantity, item.quantity);
+                // For decants, show option to open new bottle instead of just warning
+                if (item.isDecant) {
+                    showDecantStockWarning(item.name, item.stockQuantity, item.quantity, cartItemId, item.id);
+                } else {
+                    showStockWarning(item.name, item.stockQuantity, item.quantity);
+                }
                 return;
             }
         }
@@ -1728,6 +1756,74 @@ function printReceipt() {
     printWindow.close();
 }
 
+// Show decant stock warning with option to open new bottle
+function showDecantStockWarning(productName, availableStock, currentInCart, cartItemId, productId) {
+    const message = availableStock === 0
+        ? `${productName} decants are out of stock from opened bottle!`
+        : `Cannot add more ${productName} decants. Only ${availableStock} available from opened bottle${currentInCart > 0 ? ` (${currentInCart} already in cart)` : ''}.`;
+
+    // Create and show toast notification with open bottle option
+    const toast = document.createElement('div');
+    toast.className = 'fixed top-4 right-4 bg-orange-500 text-white px-4 py-3 rounded-lg shadow-lg z-50 max-w-sm';
+    toast.innerHTML = `
+        <div class="flex items-start">
+            <i class="fas fa-exclamation-triangle mr-2 mt-0.5"></i>
+            <div class="flex-1">
+                <p class="text-sm font-medium">${message}</p>
+                <button onclick="openNewBottleFromCartWarning('${cartItemId}', '${productId}'); this.parentElement.parentElement.parentElement.remove();"
+                        class="mt-2 bg-white text-orange-600 px-2 py-1 rounded text-xs font-medium hover:bg-orange-50 transition-colors duration-200">
+                    <i class="fas fa-unlock mr-1"></i>Open New Bottle
+                </button>
+            </div>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-2 text-white hover:text-orange-200">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+
+    document.body.appendChild(toast);
+
+    // Auto remove after 8 seconds
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.remove();
+        }
+    }, 8000);
+}
+
+// Open new bottle from cart item
+async function openNewBottleFromCart(cartItemId, productId) {
+    try {
+        // Get product details first
+        const response = await fetch(`/api/products/${productId}/decant-info`, {
+            credentials: 'include'
+        });
+
+        if (response.ok) {
+            const productInfo = await response.json();
+
+            // Use the existing confirmation modal
+            confirmOpenNewBottle(
+                productId,
+                productInfo.product_name,
+                productInfo.bottle_size_ml,
+                productInfo.decant_size_ml,
+                productInfo.decant_price
+            );
+        } else {
+            showToast('Failed to get product information', 'error');
+        }
+    } catch (error) {
+        console.error('Error getting product info:', error);
+        showToast('Error getting product information', 'error');
+    }
+}
+
+// Open new bottle from cart warning (same as above but different trigger)
+function openNewBottleFromCartWarning(cartItemId, productId) {
+    openNewBottleFromCart(cartItemId, productId);
+}
+
 // Open New Bottle Confirmation Functions
 let pendingBottleData = null;
 
@@ -1793,6 +1889,9 @@ async function confirmAndOpenBottle() {
 
             // Show success message
             showToast(`Opened new bottle and added decant to cart`, 'success');
+
+            // Refresh cart stock quantities to update available decants
+            refreshCartStockQuantities();
 
             // Refresh search results to show updated stock
             if (document.getElementById('product-search').value.trim()) {
