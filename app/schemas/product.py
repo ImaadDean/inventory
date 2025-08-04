@@ -3,6 +3,41 @@ from typing import Optional, List
 from datetime import datetime
 
 
+# Decant Schemas
+class DecantCreate(BaseModel):
+    """Schema for creating decant information"""
+    is_decantable: bool = Field(default=False)
+    decant_size_ml: Optional[float] = Field(None, gt=0)
+    decant_price: Optional[float] = Field(None, gt=0)
+    opened_bottle_ml_left: Optional[float] = Field(None, ge=0)
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "is_decantable": True,
+                "decant_size_ml": 10.0,
+                "decant_price": 30000.0,
+                "opened_bottle_ml_left": 0.0
+            }
+        }
+
+
+class DecantUpdate(BaseModel):
+    """Schema for updating decant information"""
+    is_decantable: Optional[bool] = None
+    decant_size_ml: Optional[float] = Field(None, gt=0)
+    decant_price: Optional[float] = Field(None, gt=0)
+    opened_bottle_ml_left: Optional[float] = Field(None, ge=0)
+
+
+class DecantResponse(BaseModel):
+    """Schema for decant response"""
+    is_decantable: bool
+    decant_size_ml: Optional[float] = None
+    decant_price: Optional[float] = None
+    opened_bottle_ml_left: Optional[float] = None
+
+
 # Category Schemas
 class CategoryCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
@@ -64,6 +99,10 @@ class ProductCreate(BaseModel):
     unit: str = Field(default="pcs", max_length=20)
     supplier: Optional[str] = Field(None, max_length=200)
 
+    # Perfume-specific fields
+    bottle_size_ml: Optional[float] = Field(None, gt=0, description="Size of each bottle in ml")
+    decant: Optional[DecantCreate] = Field(None, description="Decant information for perfume products")
+
     class Config:
         schema_extra = {
             "example": {
@@ -94,6 +133,10 @@ class ProductUpdate(BaseModel):
     unit: Optional[str] = Field(None, max_length=20)
     supplier: Optional[str] = Field(None, max_length=200)
     is_active: Optional[bool] = None
+
+    # Perfume-specific fields
+    bottle_size_ml: Optional[float] = Field(None, gt=0)
+    decant: Optional[DecantUpdate] = None
 
     class Config:
         schema_extra = {
@@ -126,6 +169,16 @@ class ProductResponse(BaseModel):
     profit_margin: Optional[float] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
+
+    # Perfume-specific fields
+    bottle_size_ml: Optional[float] = None
+    decant: Optional[DecantResponse] = None
+
+    # Computed fields for perfume products
+    is_perfume_with_decants: Optional[bool] = None
+    total_ml_available: Optional[float] = None
+    available_decants: Optional[int] = None
+    stock_display: Optional[str] = None
 
     class Config:
         schema_extra = {

@@ -11,6 +11,7 @@ from ...models import Product, Category, User
 from ...utils.auth import require_admin_or_inventory, get_current_user, verify_token, get_user_by_username
 from ...utils.expense_categories_init import create_restocking_expense
 from ...utils.timezone import now_kampala, kampala_to_utc
+from ...utils.decant_handler import calculate_decant_availability, open_new_bottle_for_decants
 
 router = APIRouter(prefix="/api/products", tags=["Product Management API"])
 
@@ -384,7 +385,18 @@ async def get_products(
         is_low_stock = product["stock_quantity"] <= min_stock_level and product["stock_quantity"] > 0
         stock_status = "out-of-stock" if product["stock_quantity"] == 0 else ("low-stock" if is_low_stock else "in-stock")
 
-        products.append({
+        # Calculate perfume-specific fields
+        decant_info = calculate_decant_availability(product)
+
+        # Determine stock display format
+        stock_display = product["stock_quantity"]
+        if decant_info["is_decantable"]:
+            opened_ml = decant_info["opened_bottle_ml_left"]
+            stock_display = f"{product['stock_quantity']} pcs & {opened_ml}mls"
+        else:
+            stock_display = f"{product['stock_quantity']} {product['unit']}"
+
+        product_data = {
             "id": str(product["_id"]),
             "name": product["name"],
             "description": product.get("description", ""),
@@ -406,8 +418,21 @@ async def get_products(
             "profit_margin": profit_margin,
             "created_at": product["created_at"].isoformat(),
             "updated_at": product.get("updated_at", product["created_at"]).isoformat(),
-            "created_by": str(product.get("created_by", ""))
-        })
+            "created_by": str(product.get("created_by", "")),
+            "stock_display": stock_display
+        }
+
+        # Add perfume-specific fields if applicable
+        if product.get("bottle_size_ml"):
+            product_data["bottle_size_ml"] = product["bottle_size_ml"]
+
+        if product.get("decant"):
+            product_data["decant"] = product["decant"]
+            product_data["is_perfume_with_decants"] = decant_info["is_decantable"]
+            product_data["total_ml_available"] = decant_info["total_ml_available"]
+            product_data["available_decants"] = decant_info["available_decants"]
+
+        products.append(product_data)
 
     return {
         "products": products,
@@ -779,4 +804,99 @@ async def delete_product(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete product: {str(e)}"
+        )
+
+
+# Decant Management Endpoints
+
+@router.post("/{product_id}/open-bottle", response_model=dict)
+async def open_new_bottle(
+    product_id: str,
+    request: Request,
+    current_user: User = Depends(get_current_user_hybrid)
+):
+    """Open a new bottle for decant fulfillment"""
+    try:
+        db = await get_database()
+
+        # Validate product ID
+        if not ObjectId.is_valid(product_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid product ID"
+            )
+
+        # Open new bottle
+        success, message, updated_product = await open_new_bottle_for_decants(
+            db, ObjectId(product_id)
+        )
+
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=message
+            )
+
+        return {
+            "success": True,
+            "message": message,
+            "product": {
+                "id": str(updated_product["_id"]),
+                "name": updated_product["name"],
+                "stock_quantity": updated_product["stock_quantity"],
+                "opened_bottle_ml_left": updated_product.get("decant", {}).get("opened_bottle_ml_left", 0)
+            }
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to open new bottle: {str(e)}"
+        )
+
+
+@router.get("/{product_id}/decant-info", response_model=dict)
+async def get_decant_info(
+    product_id: str,
+    request: Request,
+    current_user: User = Depends(get_current_user_hybrid)
+):
+    """Get decant availability information for a product"""
+    try:
+        db = await get_database()
+
+        # Validate product ID
+        if not ObjectId.is_valid(product_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid product ID"
+            )
+
+        # Find the product
+        product = await db.products.find_one({"_id": ObjectId(product_id)})
+        if not product:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Product not found"
+            )
+
+        # Calculate decant availability
+        decant_info = calculate_decant_availability(product)
+
+        return {
+            "product_id": product_id,
+            "product_name": product["name"],
+            "bottle_size_ml": product.get("bottle_size_ml"),
+            "stock_quantity": product["stock_quantity"],
+            **decant_info
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get decant info: {str(e)}"
         )

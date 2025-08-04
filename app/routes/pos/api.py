@@ -10,6 +10,7 @@ from ...schemas.customer import CustomerCreate, CustomerResponse
 from ...models import Sale, SaleItem, User
 from ...utils.auth import get_current_user, verify_token, get_user_by_username
 from ...utils.timezone import now_kampala, kampala_to_utc
+from ...utils.decant_handler import process_decant_sale, calculate_decant_availability
 import uuid
 
 router = APIRouter(prefix="/api/pos", tags=["Point of Sale API"])
@@ -65,18 +66,27 @@ async def search_products(
     cursor = db.products.find(search_query).limit(limit)
     products_data = await cursor.to_list(length=limit)
 
-    products = [
-        {
+    products = []
+    for product in products_data:
+        # Calculate decant availability
+        decant_info = calculate_decant_availability(product)
+
+        product_data = {
             "id": str(product["_id"]),
             "name": product["name"],
             "sku": product["sku"],
             "barcode": product.get("barcode", ""),
             "price": product["price"],
             "stock_quantity": product["stock_quantity"],
-            "unit": product["unit"]
+            "unit": product["unit"],
+            "bottle_size_ml": product.get("bottle_size_ml"),
+            "decant": product.get("decant"),
+            "is_perfume_with_decants": decant_info["is_decantable"],
+            "available_decants": decant_info["available_decants"],
+            "stock_display": f"{product['stock_quantity']} pcs & {decant_info['opened_bottle_ml_left']}mls" if decant_info["is_decantable"] else f"{product['stock_quantity']} {product['unit']}"
         }
-        for product in products_data
-    ]
+
+        products.append(product_data)
 
     return products
 
@@ -294,10 +304,32 @@ async def create_sale(request: Request, sale_data: SaleCreate):
 
         # Update product stock quantities
         for item in sale_items:
-            await db.products.update_one(
-                {"_id": item["product_id"]},
-                {"$inc": {"stock_quantity": -item["quantity"]}}
-            )
+            # Check if this is a decant sale by looking at the product
+            product = await db.products.find_one({"_id": item["product_id"]})
+
+            # Check if this is a decant sale (price matches decant price)
+            is_decant_sale = False
+            if product and product.get("decant") and product["decant"].get("is_decantable"):
+                decant_price = product["decant"].get("decant_price")
+                if decant_price and abs(item["unit_price"] - decant_price) < 0.01:  # Allow for small floating point differences
+                    is_decant_sale = True
+
+            if is_decant_sale:
+                # Handle decant sale - reduce ml instead of stock count
+                success, message, updated_product = await process_decant_sale(
+                    db, item["product_id"], item["quantity"]
+                )
+                if not success:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Failed to process decant sale for {item['product_name']}: {message}"
+                    )
+            else:
+                # Handle regular product sale - reduce stock count
+                await db.products.update_one(
+                    {"_id": item["product_id"]},
+                    {"$inc": {"stock_quantity": -item["quantity"]}}
+                )
 
         # Update customer statistics if customer exists
         if sale_data.customer_id:
@@ -399,10 +431,33 @@ async def create_order(order_data: dict):
         # Update product stock quantities only if payment is made
         if order_data.get("payment_method") != "not_paid":
             for item in order_data["items"]:
-                await db.products.update_one(
-                    {"_id": ObjectId(item["product_id"])},
-                    {"$inc": {"stock_quantity": -item["quantity"]}}
-                )
+                # Check if this is a decant sale by looking at the product
+                product = await db.products.find_one({"_id": ObjectId(item["product_id"])})
+
+                # Check if this is a decant sale (price matches decant price)
+                is_decant_sale = False
+                if product and product.get("decant") and product["decant"].get("is_decantable"):
+                    decant_price = product["decant"].get("decant_price")
+                    item_unit_price = item.get("unit_price", item.get("price", 0))
+                    if decant_price and abs(item_unit_price - decant_price) < 0.01:
+                        is_decant_sale = True
+
+                if is_decant_sale:
+                    # Handle decant sale - reduce ml instead of stock count
+                    success, message, updated_product = await process_decant_sale(
+                        db, ObjectId(item["product_id"]), item["quantity"]
+                    )
+                    if not success:
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"Failed to process decant sale for {item.get('product_name', 'product')}: {message}"
+                        )
+                else:
+                    # Handle regular product sale - reduce stock count
+                    await db.products.update_one(
+                        {"_id": ObjectId(item["product_id"])},
+                        {"$inc": {"stock_quantity": -item["quantity"]}}
+                    )
 
         # Update customer statistics if not a guest and payment is made
         if (order_data.get("client_id") and

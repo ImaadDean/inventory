@@ -68,7 +68,12 @@ async def create_product(
     supplier: str = Form(None),
     location: str = Form(None),
     is_active: bool = Form(True),
-    payment_method: str = Form(None)
+    payment_method: str = Form(None),
+    # Perfume-specific fields
+    bottle_size_ml: str = Form(None),
+    is_decantable: bool = Form(False),
+    decant_size_ml: str = Form(None),
+    decant_price: str = Form(None)
 ):
     """Handle product creation from form submission"""
     current_user = await get_current_user_from_cookie(request)
@@ -84,6 +89,12 @@ async def create_product(
         parsed_stock_quantity = int(stock_quantity) if stock_quantity and stock_quantity.strip() else 0
         parsed_min_stock_level = int(min_stock_level) if min_stock_level and min_stock_level.strip() else 10
         parsed_max_stock_level = int(max_stock_level) if max_stock_level and max_stock_level.strip() else None
+
+        # Parse perfume-specific fields
+        parsed_bottle_size_ml = float(bottle_size_ml) if bottle_size_ml and bottle_size_ml.strip() else None
+        parsed_decant_size_ml = float(decant_size_ml) if decant_size_ml and decant_size_ml.strip() else None
+        parsed_decant_price = float(decant_price) if decant_price and decant_price.strip() else None
+
     except (ValueError, TypeError) as e:
         return RedirectResponse(
             url="/products/?error=Invalid numeric values provided",
@@ -139,6 +150,18 @@ async def create_product(
             "payment_method": payment_method.strip() if payment_method else None,
             "profit_margin": None  # Can be calculated later
         }
+
+        # Add perfume-specific fields if provided
+        if parsed_bottle_size_ml:
+            product_doc["bottle_size_ml"] = parsed_bottle_size_ml
+
+        if is_decantable and parsed_decant_size_ml and parsed_decant_price:
+            product_doc["decant"] = {
+                "is_decantable": True,
+                "decant_size_ml": parsed_decant_size_ml,
+                "decant_price": parsed_decant_price,
+                "opened_bottle_ml_left": 0.0  # Start with no opened bottle
+            }
 
         # Insert product
         result = await db.products.insert_one(product_doc)
