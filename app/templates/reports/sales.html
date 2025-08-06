@@ -2,36 +2,77 @@
 
 {% block title %}Sales Reports - Inventory Management System{% endblock %}
 
+{% block extra_head %}
+<!-- Load Chart.js locally with CDN fallback -->
+<script src="/static/js/chart.min.js"
+        onload="console.log('✅ Chart.js loaded locally'); window.chartJsLoaded = true;"
+        onerror="console.log('❌ Local Chart.js failed, trying CDN'); loadChartJSFromCDN();"></script>
+
+<script>
+    // Fallback function to load from CDN
+    function loadChartJSFromCDN() {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js';
+        script.onload = function() {
+            console.log('✅ Chart.js loaded from CDN');
+            window.chartJsLoaded = true;
+        };
+        script.onerror = function() {
+            console.error('❌ Failed to load Chart.js from CDN');
+            window.chartJsLoaded = false;
+        };
+        document.head.appendChild(script);
+    }
+
+    // Verify Chart.js loaded
+    window.addEventListener('load', function() {
+        setTimeout(function() {
+            if (typeof Chart !== 'undefined') {
+                console.log('🎉 Chart.js ready! Version:', Chart.version);
+                window.chartJsLoaded = true;
+            } else {
+                console.error('💥 Chart.js failed to load');
+                window.chartJsLoaded = false;
+            }
+        }, 100);
+    });
+</script>
+{% endblock %}
+
 {% block content %}
-<div class="space-y-4 animate-fade-in">
+<div class="space-y-4 animate-fade-in max-w-full overflow-x-hidden">
     <!-- Compact Header -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+    <div class="bg-gradient-to-r from-green-600 to-emerald-700 rounded-lg shadow-sm p-4 mb-4">
         <div class="flex items-center justify-between">
-            <div>
-                <h1 class="text-xl font-bold text-gray-900">📈 Sales Reports</h1>
-                <p class="text-gray-600 text-sm">Revenue analysis and performance metrics</p>
+            <div class="flex items-center">
+                <i class="fas fa-chart-line text-white text-lg mr-3"></i>
+                <div>
+                    <h2 class="text-xl font-bold text-white">Sales Reports</h2>
+                    <p class="text-green-100 text-xs">Revenue & performance analysis</p>
+                </div>
             </div>
-            <a href="/reports" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-all duration-200">
-                <i class="fas fa-arrow-left mr-2"></i>Back to Reports
+            <a href="/reports" class="inline-flex items-center px-3 py-1.5 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded text-sm font-medium transition-all duration-200">
+                <i class="fas fa-arrow-left mr-1"></i>Back
             </a>
         </div>
     </div>
 
+
+
     <!-- Compact Date Range Filter -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-        <h3 class="text-sm font-semibold text-gray-900 mb-3">Filter by Date Range</h3>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1">From Date</label>
-                <input type="date" id="fromDate" class="w-full px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
-            </div>
-            <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1">To Date</label>
-                <input type="date" id="toDate" class="w-full px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
-            </div>
-            <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1">Quick Select</label>
-                <select id="quickSelect" class="w-full px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
+        <div class="flex items-center justify-between flex-wrap gap-3">
+            <div class="flex items-center gap-3">
+                <div class="flex items-center">
+                    <i class="fas fa-calendar-day text-green-500 text-sm mr-2"></i>
+                    <input type="date" id="fromDate" class="px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-green-500">
+                </div>
+                <span class="text-gray-400">to</span>
+                <div class="flex items-center">
+                    <i class="fas fa-calendar-check text-green-500 text-sm mr-2"></i>
+                    <input type="date" id="toDate" class="px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-green-500">
+                </div>
+                <select id="quickSelect" class="px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-green-500">
                     <option value="">Custom Range</option>
                     <option value="today">Today</option>
                     <option value="yesterday">Yesterday</option>
@@ -41,117 +82,235 @@
                     <option value="year">This Year</option>
                 </select>
             </div>
-            <div class="flex items-end">
-                <button onclick="loadSalesData()" class="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200 text-sm">
-                    <i class="fas fa-search mr-2 text-xs"></i>Generate Report
-                </button>
+            <button onclick="loadSalesData()" class="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded font-medium text-sm transition-all duration-200">
+                <i class="fas fa-chart-bar mr-2"></i>Generate Report
+            </button>
+            <button onclick="testAPI()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium text-sm transition-all duration-200">
+                <i class="fas fa-bug mr-2"></i>Test API
+            </button>
+            <button onclick="testChart()" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded font-medium text-sm transition-all duration-200">
+                <i class="fas fa-chart-line mr-2"></i>Test Chart
+            </button>
+        </div>
+    </div>
+
+    <!-- Compact Sales Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+        <!-- Total Revenue Card -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow duration-200">
+            <div class="flex items-center justify-between mb-2">
+                <div class="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-money-bill-wave text-white text-sm"></i>
+                </div>
+                <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            </div>
+            <div>
+                <p class="text-xs font-medium text-gray-600 mb-1">Total Revenue</p>
+                <p class="text-lg font-bold text-gray-900" id="totalRevenue">UGX 0</p>
+                <p class="text-xs text-green-600">
+                    <i class="fas fa-arrow-up mr-1"></i>Revenue earned
+                </p>
+            </div>
+        </div>
+
+        <!-- Total Orders Card -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow duration-200">
+            <div class="flex items-center justify-between mb-2">
+                <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-shopping-bag text-white text-sm"></i>
+                </div>
+                <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+            </div>
+            <div>
+                <p class="text-xs font-medium text-gray-600 mb-1">Total Orders</p>
+                <p class="text-lg font-bold text-gray-900" id="totalOrders">0</p>
+                <p class="text-xs text-blue-600">
+                    <i class="fas fa-check-circle mr-1"></i>Completed orders
+                </p>
+            </div>
+        </div>
+
+        <!-- Average Order Card -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow duration-200">
+            <div class="flex items-center justify-between mb-2">
+                <div class="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-chart-line text-white text-sm"></i>
+                </div>
+                <div class="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+            </div>
+            <div>
+                <p class="text-xs font-medium text-gray-600 mb-1">Average Order</p>
+                <p class="text-lg font-bold text-gray-900" id="avgOrder">UGX 0</p>
+                <p class="text-xs text-purple-600">
+                    <i class="fas fa-calculator mr-1"></i>Per transaction
+                </p>
+            </div>
+        </div>
+
+        <!-- Growth Rate Card -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow duration-200" title="Revenue growth compared to the previous period of the same duration">
+            <div class="flex items-center justify-between mb-2">
+                <div class="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-trending-up text-white text-sm"></i>
+                </div>
+                <div class="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+            </div>
+            <div>
+                <p class="text-xs font-medium text-gray-600 mb-1">Growth Rate</p>
+                <p class="text-lg font-bold text-gray-900" id="growthRate">0%</p>
+                <p class="text-xs text-orange-600">
+                    <i class="fas fa-chart-bar mr-1"></i>vs previous period
+                </p>
             </div>
         </div>
     </div>
 
-    <!-- Sales Summary Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-gray-600">Total Revenue</p>
-                    <p class="text-2xl font-bold text-green-600" id="totalRevenue">UGX 0</p>
-                </div>
-                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-dollar-sign text-green-600 text-lg"></i>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-gray-600">Total Orders</p>
-                    <p class="text-2xl font-bold text-blue-600" id="totalOrders">0</p>
-                </div>
-                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-shopping-cart text-blue-600 text-lg"></i>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-gray-600">Average Order</p>
-                    <p class="text-2xl font-bold text-purple-600" id="avgOrder">UGX 0</p>
-                </div>
-                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-chart-bar text-purple-600 text-lg"></i>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-gray-600">Growth Rate</p>
-                    <p class="text-2xl font-bold text-orange-600" id="growthRate">0%</p>
-                </div>
-                <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-trending-up text-orange-600 text-lg"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Charts Section -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Compact Charts Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
         <!-- Sales Trend Chart -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Sales Trend</h3>
-            <div class="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-                <div class="text-center">
-                    <i class="fas fa-chart-line text-gray-400 text-4xl mb-2"></i>
-                    <p class="text-gray-500">Sales trend chart will appear here</p>
-                    <p class="text-sm text-gray-400">Generate a report to view data</p>
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div class="px-4 py-3 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <i class="fas fa-chart-line text-blue-600 text-sm mr-2"></i>
+                        <h3 class="text-sm font-semibold text-gray-900">Sales Trend</h3>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs text-gray-500 bg-blue-50 text-blue-700 px-2 py-1 rounded-full font-medium">Daily View</span>
+                        <div class="flex items-center space-x-1">
+                            <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <span class="text-xs text-gray-600">Revenue</span>
+                            <div class="w-2 h-2 bg-blue-500 rounded-full ml-2"></div>
+                            <span class="text-xs text-gray-600">Orders</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="p-4">
+                <!-- Chart Stats Summary -->
+                <div class="grid grid-cols-3 gap-4 mb-4">
+                    <div class="text-center">
+                        <p class="text-xs text-gray-500 mb-1">Peak Day</p>
+                        <p class="text-sm font-semibold text-gray-900" id="peakDay">-</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-xs text-gray-500 mb-1">Avg Daily</p>
+                        <p class="text-sm font-semibold text-gray-900" id="avgDaily">UGX 0</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-xs text-gray-500 mb-1">Total Days</p>
+                        <p class="text-sm font-semibold text-gray-900" id="totalDays">0</p>
+                    </div>
+                </div>
+
+                <div class="h-64 relative">
+                    <canvas id="salesTrendChart" class="w-full h-full" style="display: block; box-sizing: border-box; height: 256px; width: 100%; border: 1px solid red;"></canvas>
+                    <div id="salesTrendPlaceholder" class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50 rounded border-2 border-dashed border-gray-200">
+                        <div class="text-center">
+                            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                                <i class="fas fa-chart-line text-blue-500 text-lg"></i>
+                            </div>
+                            <p class="text-gray-600 font-medium mb-1 text-sm">Sales Trend Chart</p>
+                            <p class="text-xs text-gray-500">Generate a report to view daily trend data</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Top Products Chart -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Top Selling Products</h3>
-            <div class="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-                <div class="text-center">
-                    <i class="fas fa-chart-pie text-gray-400 text-4xl mb-2"></i>
-                    <p class="text-gray-500">Top products chart will appear here</p>
-                    <p class="text-sm text-gray-400">Generate a report to view data</p>
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div class="px-4 py-3 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <i class="fas fa-chart-pie text-purple-600 text-sm mr-2"></i>
+                        <h3 class="text-sm font-semibold text-gray-900">Top Products</h3>
+                    </div>
+                    <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">Top 10</span>
+                </div>
+            </div>
+            <div class="p-4">
+                <div class="h-48 relative">
+                    <canvas id="topProductsChart" class="w-full h-full"></canvas>
+                    <div id="topProductsPlaceholder" class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-50 to-purple-50 rounded border-2 border-dashed border-gray-200">
+                        <div class="text-center">
+                            <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                                <i class="fas fa-chart-pie text-purple-500 text-lg"></i>
+                            </div>
+                            <p class="text-gray-600 font-medium mb-1 text-sm">Top Products Chart</p>
+                            <p class="text-xs text-gray-500">Generate a report to view product data</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Sales Table -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-semibold text-gray-900">Sales Details</h3>
-            <button onclick="exportSalesData()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors duration-200">
-                <i class="fas fa-download mr-2"></i>Export CSV
-            </button>
+    <!-- Compact Sales Table -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div class="px-4 py-3 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <i class="fas fa-table text-green-600 text-sm mr-2"></i>
+                    <h3 class="text-sm font-semibold text-gray-900">Sales Details</h3>
+                </div>
+                <button onclick="exportSalesData()" class="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded text-xs font-medium transition-all duration-200">
+                    <i class="fas fa-download mr-1"></i>Export CSV
+                </button>
+            </div>
         </div>
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                            <div class="flex items-center">
+                                <i class="fas fa-calendar-alt mr-1 text-gray-400"></i>
+                                Date
+                            </div>
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                            <div class="flex items-center">
+                                <i class="fas fa-hashtag mr-1 text-gray-400"></i>
+                                Order ID
+                            </div>
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                            <div class="flex items-center">
+                                <i class="fas fa-user mr-1 text-gray-400"></i>
+                                Customer
+                            </div>
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                            <div class="flex items-center">
+                                <i class="fas fa-box mr-1 text-gray-400"></i>
+                                Items
+                            </div>
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                            <div class="flex items-center">
+                                <i class="fas fa-money-bill-wave mr-1 text-gray-400"></i>
+                                Amount
+                            </div>
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                            <div class="flex items-center">
+                                <i class="fas fa-check-circle mr-1 text-gray-400"></i>
+                                Status
+                            </div>
+                        </th>
                     </tr>
                 </thead>
                 <tbody id="salesTableBody" class="bg-white divide-y divide-gray-200">
                     <tr>
-                        <td colspan="6" class="px-6 py-8 text-center text-gray-500">
-                            <i class="fas fa-search text-gray-300 text-3xl mb-2"></i>
-                            <p>Generate a report to view sales data</p>
+                        <td colspan="6" class="px-4 py-8 text-center">
+                            <div class="flex flex-col items-center">
+                                <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                                    <i class="fas fa-chart-bar text-gray-400 text-lg"></i>
+                                </div>
+                                <p class="text-gray-600 font-medium mb-1 text-sm">No Data Available</p>
+                                <p class="text-xs text-gray-500">Generate a report to view sales data</p>
+                            </div>
                         </td>
                     </tr>
                 </tbody>
@@ -161,15 +320,899 @@
 </div>
 
 <script>
-function loadSalesData() {
-    // Placeholder for loading sales data
-    alert('Sales data loading functionality coming soon!');
+// Chart instances
+let salesTrendChart = null;
+let topProductsChart = null;
+
+
+
+async function loadSalesData() {
+    console.log('🚀 loadSalesData function called');
+
+    const fromDateEl = document.getElementById('fromDate');
+    const toDateEl = document.getElementById('toDate');
+
+    if (!fromDateEl || !toDateEl) {
+        console.error('❌ Date input elements not found in DOM');
+        showToast('Page elements not loaded properly. Please refresh the page.', 'error');
+        return;
+    }
+
+    const fromDate = fromDateEl.value;
+    const toDate = toDateEl.value;
+
+    console.log('📅 Date values:', { fromDate, toDate });
+
+    if (!fromDate || !toDate) {
+        console.log('❌ Missing dates');
+        showToast('Please select both from and to dates', 'error');
+        return;
+    }
+
+    if (new Date(fromDate) > new Date(toDate)) {
+        console.log('❌ Invalid date range');
+        showToast('From date cannot be later than to date', 'error');
+        return;
+    }
+
+    // Show loading state
+    console.log('⏳ Setting loading state');
+    const totalRevenueEl = document.getElementById('totalRevenue');
+    const totalOrdersEl = document.getElementById('totalOrders');
+    const avgOrderEl = document.getElementById('avgOrder');
+    const growthRateEl = document.getElementById('growthRate');
+
+    if (totalRevenueEl) totalRevenueEl.textContent = 'Loading...';
+    if (totalOrdersEl) totalOrdersEl.textContent = 'Loading...';
+    if (avgOrderEl) avgOrderEl.textContent = 'Loading...';
+    if (growthRateEl) growthRateEl.textContent = 'Loading...';
+
+    try {
+        const url = `/reports/api/sales-data?from_date=${fromDate}&to_date=${toDate}`;
+        console.log('🔍 Fetching sales data from:', url);
+        console.log('🔍 Current location:', window.location.href);
+
+        const response = await fetch(url, {
+            credentials: 'include'
+        });
+
+        console.log('🔍 Response status:', response.status);
+        console.log('🔍 Response headers:', response.headers);
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('🔍 Response error:', errorText);
+            throw new Error(`Failed to fetch sales data: ${response.status} - ${errorText}`);
+        }
+
+        const data = await response.json();
+        console.log('🔍 Received data:', data);
+        console.log('🔍 Data type:', typeof data);
+        console.log('🔍 Data.success:', data.success);
+
+        if (data.success) {
+            console.log('✅ Data is valid, updating UI');
+
+            // Update summary cards
+            const totalRevenueEl = document.getElementById('totalRevenue');
+            const totalOrdersEl = document.getElementById('totalOrders');
+            const avgOrderEl = document.getElementById('avgOrder');
+            const growthRateEl = document.getElementById('growthRate');
+
+            if (totalRevenueEl) {
+                totalRevenueEl.textContent = `UGX ${data.summary.total_revenue.toLocaleString()}`;
+            }
+            if (totalOrdersEl) {
+                totalOrdersEl.textContent = data.summary.total_orders.toLocaleString();
+            }
+            if (avgOrderEl) {
+                avgOrderEl.textContent = `UGX ${Math.round(data.summary.avg_order_value).toLocaleString()}`;
+            }
+            if (growthRateEl) {
+                const growthRate = data.summary.growth_rate;
+                const growthText = `${growthRate > 0 ? '+' : ''}${growthRate}%`;
+                growthRateEl.textContent = growthText;
+
+                // Update color based on growth rate
+                const growthContainer = growthRateEl.closest('.bg-white');
+                const growthIcon = growthContainer.querySelector('.fas');
+                const growthSubtext = growthContainer.querySelector('.text-xs.text-orange-600');
+
+                if (growthRate > 0) {
+                    // Positive growth - green
+                    growthRateEl.className = 'text-lg font-bold text-green-600';
+                    if (growthIcon) {
+                        growthIcon.className = 'fas fa-trending-up text-white text-sm';
+                        growthIcon.parentElement.className = 'w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center';
+                    }
+                    if (growthSubtext) {
+                        growthSubtext.className = 'text-xs text-green-600';
+                        growthSubtext.innerHTML = '<i class="fas fa-arrow-up mr-1"></i>vs previous period';
+                    }
+                } else if (growthRate < 0) {
+                    // Negative growth - red
+                    growthRateEl.className = 'text-lg font-bold text-red-600';
+                    if (growthIcon) {
+                        growthIcon.className = 'fas fa-trending-down text-white text-sm';
+                        growthIcon.parentElement.className = 'w-8 h-8 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center';
+                    }
+                    if (growthSubtext) {
+                        growthSubtext.className = 'text-xs text-red-600';
+                        growthSubtext.innerHTML = '<i class="fas fa-arrow-down mr-1"></i>vs previous period';
+                    }
+                } else {
+                    // No growth - gray
+                    growthRateEl.className = 'text-lg font-bold text-gray-600';
+                    if (growthIcon) {
+                        growthIcon.className = 'fas fa-minus text-white text-sm';
+                        growthIcon.parentElement.className = 'w-8 h-8 bg-gradient-to-br from-gray-500 to-gray-600 rounded-lg flex items-center justify-center';
+                    }
+                    if (growthSubtext) {
+                        growthSubtext.className = 'text-xs text-gray-600';
+                        growthSubtext.innerHTML = '<i class="fas fa-minus mr-1"></i>vs previous period';
+                    }
+                }
+            }
+
+            // Update sales table
+            console.log('🔍 Updating sales table with', data.sales_data.length, 'records');
+            updateSalesTable(data.sales_data);
+
+            // Update charts
+            console.log('🔍 Updating charts with:', data.chart_data);
+            updateCharts(data.chart_data);
+
+            console.log('✅ UI update complete');
+            showToast('Sales report generated successfully!', 'success');
+        } else {
+            console.log('❌ Data.success is false');
+            throw new Error('Invalid response format - success is false');
+        }
+
+    } catch (error) {
+        console.error('❌ Error loading sales data:', error);
+        console.error('❌ Error stack:', error.stack);
+        console.error('❌ Error message:', error.message);
+
+        let errorMessage = 'Failed to load sales data. Please try again.';
+        if (error.message.includes('Failed to fetch')) {
+            errorMessage = 'Network error: Unable to connect to server. Please check your connection.';
+        } else if (error.message.includes('401')) {
+            errorMessage = 'Authentication error: Please log in again.';
+        } else if (error.message.includes('500')) {
+            errorMessage = 'Server error: Please try again later.';
+        }
+
+        showToast(errorMessage, 'error');
+
+        // Reset to default values safely
+        const totalRevenueEl = document.getElementById('totalRevenue');
+        const totalOrdersEl = document.getElementById('totalOrders');
+        const avgOrderEl = document.getElementById('avgOrder');
+        const growthRateEl = document.getElementById('growthRate');
+
+        if (totalRevenueEl) totalRevenueEl.textContent = 'UGX 0';
+        if (totalOrdersEl) totalOrdersEl.textContent = '0';
+        if (avgOrderEl) avgOrderEl.textContent = 'UGX 0';
+        if (growthRateEl) growthRateEl.textContent = '0%';
+
+        // Show chart placeholders
+        showChartPlaceholders();
+    }
+}
+
+function showChartPlaceholders() {
+    // Show placeholders and hide charts
+    document.getElementById('salesTrendPlaceholder').style.display = 'flex';
+    document.getElementById('topProductsPlaceholder').style.display = 'flex';
+
+    // Reset chart statistics
+    resetChartStats();
+
+    // Destroy existing charts
+    if (salesTrendChart) {
+        salesTrendChart.destroy();
+        salesTrendChart = null;
+    }
+    if (topProductsChart) {
+        topProductsChart.destroy();
+        topProductsChart = null;
+    }
+}
+
+function resetChartStats() {
+    // Reset chart statistics to default values
+    const peakDayEl = document.getElementById('peakDay');
+    const avgDailyEl = document.getElementById('avgDaily');
+    const totalDaysEl = document.getElementById('totalDays');
+
+    if (peakDayEl) {
+        peakDayEl.textContent = '-';
+        peakDayEl.title = '';
+    }
+
+    if (avgDailyEl) {
+        avgDailyEl.textContent = 'UGX 0';
+    }
+
+    if (totalDaysEl) {
+        totalDaysEl.textContent = '0';
+    }
+}
+
+function updateSalesTable(salesData) {
+    const tbody = document.getElementById('salesTableBody');
+
+    if (!salesData || salesData.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                    <i class="fas fa-inbox text-gray-300 text-3xl mb-2"></i>
+                    <p>No sales data found for the selected period</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = salesData.map((sale, index) => `
+        <tr class="hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 transition-all duration-200 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}">
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                    <div class="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+                    <span class="text-sm text-gray-900 font-medium">${sale.date}</span>
+                </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                    <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-receipt text-blue-600 text-xs"></i>
+                    </div>
+                    <span class="text-sm font-semibold text-blue-600 hover:text-blue-800 cursor-pointer">${sale.order_id}</span>
+                </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                    <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center mr-3">
+                        <i class="fas fa-user text-gray-500 text-xs"></i>
+                    </div>
+                    <span class="text-sm text-gray-900">${sale.customer}</span>
+                </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                    <div class="w-6 h-6 bg-purple-100 rounded-md flex items-center justify-center mr-2">
+                        <span class="text-xs font-bold text-purple-600">${sale.items_count}</span>
+                    </div>
+                    <span class="text-sm text-gray-500">item${sale.items_count !== 1 ? 's' : ''}</span>
+                </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                    <div class="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                    <span class="text-sm font-bold text-green-600">UGX ${sale.amount.toLocaleString()}</span>
+                </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border border-green-200">
+                    <div class="w-1.5 h-1.5 bg-green-500 rounded-full mr-2"></div>
+                    ${sale.status}
+                </span>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function updateCharts(chartData) {
+    console.log('🔍 updateCharts called with:', chartData);
+
+    try {
+        if (!chartData) {
+            console.error('❌ No chart data provided');
+            return;
+        }
+
+        if (!chartData.sales_trend) {
+            console.error('❌ No sales_trend data in chartData');
+        } else {
+            console.log('📊 Updating sales trend chart...');
+            updateSalesTrendChart(chartData.sales_trend);
+        }
+
+        if (!chartData.top_products) {
+            console.error('❌ No top_products data in chartData');
+        } else {
+            console.log('📊 Updating top products chart...');
+            updateTopProductsChart(chartData.top_products);
+        }
+
+        console.log('✅ Charts updated successfully');
+    } catch (error) {
+        console.error('❌ Error updating charts:', error);
+    }
+}
+
+function updateSalesTrendChart(trendData) {
+    try {
+        console.log('📊 updateSalesTrendChart called with:', trendData);
+
+        // Check if Chart.js is available
+        if (typeof Chart === 'undefined') {
+            console.log('⏳ Chart.js not ready, waiting...');
+            setTimeout(() => updateSalesTrendChart(trendData), 1000);
+            return;
+        }
+
+        const canvas = document.getElementById('salesTrendChart');
+        const placeholder = document.getElementById('salesTrendPlaceholder');
+
+        if (!canvas) {
+            console.error('❌ Sales trend chart canvas not found');
+            return;
+        }
+
+        if (!placeholder) {
+            console.error('❌ Sales trend chart placeholder not found');
+            return;
+        }
+
+        const ctx = canvas.getContext('2d');
+
+        // Debug canvas properties
+        console.log('🔍 Canvas dimensions:', canvas.width, 'x', canvas.height);
+        console.log('🔍 Canvas style:', canvas.style.width, 'x', canvas.style.height);
+        console.log('🔍 Canvas parent:', canvas.parentElement);
+
+        // Hide placeholder
+        placeholder.style.display = 'none';
+
+        // Update chart statistics
+        updateChartStats(trendData);
+
+        // Destroy existing chart
+        if (salesTrendChart) {
+            salesTrendChart.destroy();
+        }
+
+        // Validate trend data
+        if (!trendData.labels || !trendData.revenue || !trendData.orders) {
+            console.error('❌ Invalid trend data structure:', trendData);
+            alert('Invalid chart data structure');
+            return;
+        }
+
+        if (trendData.labels.length === 0) {
+            console.log('⚠️ No data points to display');
+            alert('No data points to display in chart');
+            return;
+        }
+
+        // Format labels for better display
+        const formattedLabels = trendData.labels.map(label => {
+            const date = new Date(label);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        });
+
+        console.log('🔍 Chart will use:', {
+            labels: formattedLabels,
+            revenue: trendData.revenue,
+            orders: trendData.orders
+        });
+
+        // Debug chart creation
+        console.log('🔍 Chart.js available:', typeof Chart);
+        console.log('🔍 Canvas context:', ctx);
+        console.log('🔍 Trend data for chart:', trendData);
+        console.log('🔍 Formatted labels:', formattedLabels);
+
+        // Create new chart with simplified configuration
+        salesTrendChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: formattedLabels,
+                datasets: [
+                    {
+                        label: 'Revenue (UGX)',
+                        data: trendData.revenue,
+                        borderColor: 'rgb(34, 197, 94)',
+                        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3
+                    },
+                    {
+                        label: 'Orders Count',
+                        data: trendData.orders,
+                        borderColor: 'rgb(59, 130, 246)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                if (context.datasetIndex === 0) {
+                                    return `Revenue: UGX ${context.parsed.y.toLocaleString()}`;
+                                } else {
+                                    return `Orders: ${context.parsed.y}`;
+                                }
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Date'
+                        }
+                    },
+                    y: {
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Revenue (UGX)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return 'UGX ' + value.toLocaleString();
+                            }
+                        }
+                    },
+                    y1: {
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Orders'
+                        },
+                        grid: {
+                            drawOnChartArea: false
+                        }
+                    }
+                },
+                interaction: {
+                    mode: 'nearest',
+                    axis: 'x',
+                    intersect: false
+                }
+            }
+    });
+
+    console.log('✅ Sales trend chart created successfully');
+
+    } catch (error) {
+        console.error('❌ Error creating sales trend chart:', error);
+        // Show placeholder again on error
+        if (placeholder) {
+            placeholder.style.display = 'flex';
+        }
+    }
+}
+
+function updateChartStats(trendData) {
+    try {
+        console.log('📊 Updating chart statistics...');
+
+        if (!trendData || !trendData.revenue || !trendData.labels) {
+            console.log('❌ No trend data available for stats');
+            return;
+        }
+
+        const revenues = trendData.revenue;
+        const labels = trendData.labels;
+
+        // Calculate peak day
+        let peakRevenue = 0;
+        let peakDayIndex = 0;
+        revenues.forEach((revenue, index) => {
+            if (revenue > peakRevenue) {
+                peakRevenue = revenue;
+                peakDayIndex = index;
+            }
+        });
+
+        // Calculate average daily revenue
+        const totalRevenue = revenues.reduce((sum, revenue) => sum + revenue, 0);
+        const avgDaily = revenues.length > 0 ? totalRevenue / revenues.length : 0;
+
+        // Format peak day
+        const peakDayLabel = labels[peakDayIndex] || '-';
+        const formattedPeakDay = peakDayLabel !== '-' ?
+            new Date(peakDayLabel).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '-';
+
+        // Update DOM elements
+        const peakDayEl = document.getElementById('peakDay');
+        const avgDailyEl = document.getElementById('avgDaily');
+        const totalDaysEl = document.getElementById('totalDays');
+
+        if (peakDayEl) {
+            peakDayEl.textContent = formattedPeakDay;
+            peakDayEl.title = `Peak revenue: UGX ${peakRevenue.toLocaleString()}`;
+        }
+
+        if (avgDailyEl) {
+            avgDailyEl.textContent = `UGX ${Math.round(avgDaily).toLocaleString()}`;
+        }
+
+        if (totalDaysEl) {
+            totalDaysEl.textContent = revenues.length.toString();
+        }
+
+        console.log('✅ Chart statistics updated successfully');
+
+    } catch (error) {
+        console.error('❌ Error updating chart statistics:', error);
+    }
+}
+
+function updateTopProductsChart(productsData) {
+    try {
+        console.log('📊 updateTopProductsChart called with:', productsData);
+
+        const canvas = document.getElementById('topProductsChart');
+        const placeholder = document.getElementById('topProductsPlaceholder');
+
+        if (!canvas) {
+            console.error('❌ Top products chart canvas not found');
+            return;
+        }
+
+        if (!placeholder) {
+            console.error('❌ Top products chart placeholder not found');
+            return;
+        }
+
+        const ctx = canvas.getContext('2d');
+
+        // Hide placeholder
+        placeholder.style.display = 'none';
+
+        // Destroy existing chart
+        if (topProductsChart) {
+            topProductsChart.destroy();
+        }
+
+    // Generate colors for each product
+    const colors = [
+        'rgba(34, 197, 94, 0.8)',   // Green
+        'rgba(59, 130, 246, 0.8)',  // Blue
+        'rgba(168, 85, 247, 0.8)',  // Purple
+        'rgba(249, 115, 22, 0.8)',  // Orange
+        'rgba(239, 68, 68, 0.8)',   // Red
+        'rgba(14, 165, 233, 0.8)',  // Sky
+        'rgba(139, 92, 246, 0.8)',  // Violet
+        'rgba(34, 197, 94, 0.6)',   // Light Green
+        'rgba(251, 191, 36, 0.8)',  // Yellow
+        'rgba(236, 72, 153, 0.8)'   // Pink
+    ];
+
+    // Create new chart
+    topProductsChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: productsData.labels,
+            datasets: [{
+                data: productsData.revenue,
+                backgroundColor: colors.slice(0, productsData.labels.length),
+                borderColor: colors.slice(0, productsData.labels.length).map(color => color.replace('0.8', '1')),
+                borderWidth: 2,
+                hoverBorderWidth: 3,
+                hoverOffset: 10
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 15,
+                        font: {
+                            size: 11,
+                            weight: 'bold'
+                        },
+                        generateLabels: function(chart) {
+                            const data = chart.data;
+                            if (data.labels.length && data.datasets.length) {
+                                return data.labels.map((label, i) => {
+                                    const revenue = data.datasets[0].data[i];
+                                    return {
+                                        text: `${label}: UGX ${revenue.toLocaleString()}`,
+                                        fillStyle: data.datasets[0].backgroundColor[i],
+                                        strokeStyle: data.datasets[0].borderColor[i],
+                                        lineWidth: data.datasets[0].borderWidth,
+                                        pointStyle: 'circle',
+                                        hidden: false,
+                                        index: i
+                                    };
+                                });
+                            }
+                            return [];
+                        }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                    borderWidth: 1,
+                    cornerRadius: 8,
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${label}: UGX ${value.toLocaleString()} (${percentage}%)`;
+                        }
+                    }
+                }
+            },
+            cutout: '60%',
+            animation: {
+                animateRotate: true,
+                animateScale: true
+            }
+        }
+    });
+
+    console.log('✅ Top products chart created successfully');
+
+    } catch (error) {
+        console.error('❌ Error creating top products chart:', error);
+        // Show placeholder again on error
+        if (placeholder) {
+            placeholder.style.display = 'flex';
+        }
+    }
 }
 
 function exportSalesData() {
-    // Placeholder for export functionality
-    alert('Export functionality coming soon!');
+    const fromDate = document.getElementById('fromDate').value;
+    const toDate = document.getElementById('toDate').value;
+
+    if (!fromDate || !toDate) {
+        showToast('Please generate a report first before exporting', 'error');
+        return;
+    }
+
+    // Create export URL and trigger download
+    const exportUrl = `/api/orders/export?date_from=${fromDate}&date_to=${toDate}`;
+    window.open(exportUrl, '_blank');
+    showToast('Export started! Check your downloads.', 'success');
 }
+
+// Toast notification function
+function showToast(message, type = 'info') {
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-white font-medium transition-all duration-300 transform translate-x-full`;
+
+    // Set color based on type
+    switch(type) {
+        case 'success':
+            toast.classList.add('bg-green-500');
+            break;
+        case 'error':
+            toast.classList.add('bg-red-500');
+            break;
+        case 'warning':
+            toast.classList.add('bg-yellow-500');
+            break;
+        default:
+            toast.classList.add('bg-blue-500');
+    }
+
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    // Animate in
+    setTimeout(() => {
+        toast.classList.remove('translate-x-full');
+    }, 100);
+
+    // Remove after 3 seconds
+    setTimeout(() => {
+        toast.classList.add('translate-x-full');
+        setTimeout(() => {
+            document.body.removeChild(toast);
+        }, 300);
+    }, 3000);
+}
+
+// Test Chart function for debugging
+function testChart() {
+    console.log('🧪 Testing Chart.js...');
+
+    try {
+        const canvas = document.getElementById('salesTrendChart');
+        const placeholder = document.getElementById('salesTrendPlaceholder');
+
+        if (!canvas) {
+            console.error('❌ Canvas not found');
+            alert('Canvas element not found!');
+            return;
+        }
+
+        console.log('✅ Canvas found:', canvas);
+        console.log('✅ Chart.js available:', typeof Chart);
+        console.log('✅ Window.chartJsLoaded:', window.chartJsLoaded);
+
+        // Wait a bit more for Chart.js to load if needed
+        if (typeof Chart === 'undefined') {
+            console.log('⏳ Chart.js not ready, waiting...');
+            setTimeout(function() {
+                if (typeof Chart === 'undefined') {
+                    console.error('❌ Chart.js not loaded after waiting');
+                    alert('Chart.js library not loaded! Please check your internet connection.');
+                    return;
+                } else {
+                    testChart(); // Retry
+                }
+            }, 2000);
+            return;
+        }
+
+        // Hide placeholder
+        if (placeholder) {
+            placeholder.style.display = 'none';
+        }
+
+        // Destroy existing chart
+        if (salesTrendChart) {
+            salesTrendChart.destroy();
+        }
+
+        const ctx = canvas.getContext('2d');
+        console.log('✅ Canvas context:', ctx);
+
+        // Create simple test chart
+        salesTrendChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5'],
+                datasets: [{
+                    label: 'Test Data',
+                    data: [10, 20, 15, 25, 30],
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+
+        console.log('✅ Test chart created successfully');
+        alert('Test chart created successfully!');
+
+    } catch (error) {
+        console.error('❌ Test chart error:', error);
+        alert(`Test chart error: ${error.message}`);
+    }
+}
+
+// Test API function for debugging
+async function testAPI() {
+    console.log('🧪 Testing API directly...');
+
+    const fromDate = document.getElementById('fromDate').value;
+    const toDate = document.getElementById('toDate').value;
+
+    try {
+        const url = `/reports/api/sales-data?from_date=${fromDate}&to_date=${toDate}`;
+        console.log('🔍 Test API URL:', url);
+
+        const response = await fetch(url, {
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+
+        console.log('📊 Test API Response status:', response.status);
+        console.log('📊 Test API Response headers:', [...response.headers.entries()]);
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ Test API Error:', errorText);
+            alert(`API Error: ${response.status} - ${errorText}`);
+            return;
+        }
+
+        const data = await response.json();
+        console.log('✅ Test API Success:', data);
+        alert(`API Success! Revenue: UGX ${data.summary?.total_revenue?.toLocaleString() || 'N/A'}, Orders: ${data.summary?.total_orders || 'N/A'}`);
+
+    } catch (error) {
+        console.error('❌ Test API Exception:', error);
+        alert(`API Exception: ${error.message}`);
+    }
+}
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 DOM Content Loaded - Initializing sales page');
+
+    // Check Chart.js availability
+    console.log('🔍 Chart.js version:', typeof Chart !== 'undefined' ? Chart.version : 'Not loaded');
+    console.log('🔍 Chart.js object:', typeof Chart);
+
+    // Test chart creation immediately
+    setTimeout(function() {
+        console.log('🧪 Testing immediate chart creation...');
+        const canvas = document.getElementById('salesTrendChart');
+        if (canvas && typeof Chart !== 'undefined') {
+            try {
+                const ctx = canvas.getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Test 1', 'Test 2', 'Test 3'],
+                        datasets: [{
+                            label: 'Test Data',
+                            data: [10, 20, 15],
+                            borderColor: 'rgb(255, 99, 132)',
+                            backgroundColor: 'rgba(255, 99, 132, 0.2)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+                console.log('✅ Immediate test chart created');
+            } catch (error) {
+                console.error('❌ Immediate test chart failed:', error);
+            }
+        }
+    }, 1000);
+
+    // Set default dates (last 7 days)
+    const today = new Date();
+    const weekAgo = new Date(today);
+    weekAgo.setDate(today.getDate() - 7);
+
+    const fromDateEl = document.getElementById('fromDate');
+    const toDateEl = document.getElementById('toDate');
+
+    if (fromDateEl && toDateEl) {
+        fromDateEl.value = weekAgo.toISOString().split('T')[0];
+        toDateEl.value = today.toISOString().split('T')[0];
+        console.log('📅 Default dates set:', { from: fromDateEl.value, to: toDateEl.value });
+
+        // Load initial data with a small delay to ensure DOM is ready
+        setTimeout(() => {
+            console.log('⏳ Loading initial sales data...');
+            loadSalesData();
+        }, 100);
+    } else {
+        console.error('❌ Date input elements not found');
+    }
+});
 
 // Quick select functionality
 document.getElementById('quickSelect').addEventListener('change', function() {
@@ -177,9 +1220,9 @@ document.getElementById('quickSelect').addEventListener('change', function() {
     const today = new Date();
     const fromDate = document.getElementById('fromDate');
     const toDate = document.getElementById('toDate');
-    
+
     toDate.value = today.toISOString().split('T')[0];
-    
+
     switch(value) {
         case 'today':
             fromDate.value = today.toISOString().split('T')[0];
@@ -207,6 +1250,11 @@ document.getElementById('quickSelect').addEventListener('change', function() {
             const yearStart = new Date(today.getFullYear(), 0, 1);
             fromDate.value = yearStart.toISOString().split('T')[0];
             break;
+    }
+
+    // Auto-load data when quick select is used
+    if (value) {
+        setTimeout(loadSalesData, 100);
     }
 });
 </script>

@@ -52,6 +52,7 @@
                 <p class="text-xs text-gray-500 mb-2">Orders</p>
                 <div class="space-y-1">
                     <p class="text-xs text-gray-600">Revenue: <span class="font-semibold text-green-600">UGX {{ "{:,.0f}".format(stats.today.revenue) }}</span></p>
+                    <p class="text-xs text-gray-600">Profit: <span class="font-semibold text-blue-600">UGX {{ "{:,.0f}".format(stats.today.profit) }}</span> <span class="text-gray-500">({{ "{:.1f}".format(stats.today.profit_margin) }}%)</span></p>
                     <p class="text-xs text-gray-600">Customers: <span class="font-semibold">{{ stats.today.customers }}</span></p>
                 </div>
             </div>
@@ -70,6 +71,7 @@
                 <p class="text-xs text-gray-500 mb-2">Orders</p>
                 <div class="space-y-1">
                     <p class="text-xs text-gray-600">Revenue: <span class="font-semibold text-green-600">UGX {{ "{:,.0f}".format(stats.week.revenue) }}</span></p>
+                    <p class="text-xs text-gray-600">Profit: <span class="font-semibold text-blue-600">UGX {{ "{:,.0f}".format(stats.week.profit) }}</span> <span class="text-gray-500">({{ "{:.1f}".format(stats.week.profit_margin) }}%)</span></p>
                     <p class="text-xs text-gray-600">Customers: <span class="font-semibold">{{ stats.week.customers }}</span></p>
                 </div>
             </div>
@@ -88,6 +90,7 @@
                 <p class="text-xs text-gray-500 mb-2">Orders</p>
                 <div class="space-y-1">
                     <p class="text-xs text-gray-600">Revenue: <span class="font-semibold text-green-600">UGX {{ "{:,.0f}".format(stats.month.revenue) }}</span></p>
+                    <p class="text-xs text-gray-600">Profit: <span class="font-semibold text-blue-600">UGX {{ "{:,.0f}".format(stats.month.profit) }}</span> <span class="text-gray-500">({{ "{:.1f}".format(stats.month.profit_margin) }}%)</span></p>
                     <p class="text-xs text-gray-600">Customers: <span class="font-semibold">{{ stats.month.customers }}</span></p>
                 </div>
             </div>
@@ -105,6 +108,7 @@
                 <p class="text-lg font-bold text-gray-900">{{ stats.total.orders }}</p>
                 <p class="text-xs text-gray-500 mb-2">Total Orders</p>
                 <div class="space-y-1">
+                    <p class="text-xs text-gray-600">Incomplete: <span class="font-semibold text-orange-600">{{ stats.total.incomplete_orders }}</span></p>
                     <p class="text-xs text-gray-600">Products: <span class="font-semibold">{{ stats.total.products }}</span></p>
                     <p class="text-xs text-gray-600">Customers: <span class="font-semibold">{{ stats.total.customers }}</span></p>
                 </div>

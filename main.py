@@ -115,6 +115,9 @@ from app.utils.template_filters import TEMPLATE_FILTERS
 for filter_name, filter_func in TEMPLATE_FILTERS.items():
     templates.env.filters[filter_name] = filter_func
 
+# Mount static files
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
 # Add activity tracking middleware
 app.add_middleware(ActivityTrackingMiddleware)
 
