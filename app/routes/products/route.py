@@ -8,8 +8,10 @@ from typing import Optional
 from ...models import User
 from ...utils.auth import get_current_user, verify_token, get_user_by_username
 from ...config.database import get_database
-from ...utils.expense_categories_init import create_stocking_expense
+from ...utils.expense_categories_init import create_stocking_expense, create_restocking_expense
 from ...utils.timezone import now_kampala, kampala_to_utc
+from ...models.product_supplier_price import ProductSupplierPriceCreate
+from ...services.product_supplier_price_service import ProductSupplierPriceService
 
 templates = Jinja2Templates(directory="app/templates")
 products_routes = APIRouter(prefix="/products", tags=["Product Management Web"])
@@ -73,7 +75,9 @@ async def create_product(
     bottle_size_ml: str = Form(None),
     is_decantable: bool = Form(False),
     decant_size_ml: str = Form(None),
-    decant_price: str = Form(None)
+    decant_price: str = Form(None),
+    # Scent fields
+    scent_ids: list = Form(None)
 ):
     """Handle product creation from form submission"""
     current_user = await get_current_user_from_cookie(request)
@@ -163,36 +167,91 @@ async def create_product(
                 "opened_bottle_ml_left": 0.0  # Start with no opened bottle
             }
 
+        # Handle scent associations
+        if scent_ids and isinstance(scent_ids, list) and len(scent_ids) > 0:
+            # Filter out empty strings and validate scent IDs
+            valid_scent_ids = [scent_id for scent_id in scent_ids if scent_id and scent_id.strip()]
+
+            if valid_scent_ids:
+                # Validate all scent IDs exist and convert to ObjectIds
+                scent_object_ids = []
+                for scent_id in valid_scent_ids:
+                    if ObjectId.is_valid(scent_id):
+                        scent_object_id = ObjectId(scent_id)
+                        # Verify scent exists
+                        scent = await db.scents.find_one({"_id": scent_object_id})
+                        if scent:
+                            scent_object_ids.append(scent_object_id)
+
+                if scent_object_ids:
+                    # Store scent IDs as ObjectIds
+                    product_doc["scent_ids"] = scent_object_ids
+                    # For backward compatibility, also store the first scent as scent_id
+                    product_doc["scent_id"] = scent_object_ids[0]
+
         # Insert product
         result = await db.products.insert_one(product_doc)
 
-        # Update supplier information if supplier is provided
-        if supplier and supplier.strip():
-            await update_supplier_on_product_creation(
+        product_id = str(result.inserted_id)
+
+        # Handle supplier and pricing information (same as API and restocking)
+        supplier_id = None
+        expense_id = None
+        expense_message = ""
+
+        if supplier and supplier.strip() and parsed_cost_price and parsed_cost_price > 0:
+            # Import the restock function
+            from ...routes.products.api import update_supplier_on_restock
+
+            # Update supplier information
+            supplier_id = await update_supplier_on_restock(
                 db=db,
                 supplier_name=supplier.strip(),
-                product_id=str(result.inserted_id),
+                product_id=product_id,
                 product_name=name,
                 product_sku=sku.strip().upper()
             )
 
-        # Create stocking expense (mandatory for all new products with cost price)
-        expense_message = ""
-        if parsed_cost_price and parsed_cost_price > 0 and parsed_stock_quantity > 0:
-            total_cost = parsed_cost_price * parsed_stock_quantity
-            expense_id = await create_stocking_expense(
-                db=db,
-                product_name=name,
-                quantity=parsed_stock_quantity,
-                unit_cost=parsed_cost_price,  # Use parsed_cost_price as unit_cost
-                total_cost=total_cost,
-                supplier_name=supplier,
-                user_username=current_user.username,
-                payment_method=payment_method
-            )
+            # Create expense record for initial stock
+            if parsed_stock_quantity > 0:
+                total_cost = parsed_cost_price * parsed_stock_quantity
+                expense_id = await create_restocking_expense(
+                    db=db,
+                    product_name=name,
+                    quantity=parsed_stock_quantity,
+                    unit_cost=parsed_cost_price,
+                    total_cost=total_cost,
+                    supplier_name=supplier.strip(),
+                    user_username=current_user.username,
+                    payment_method=payment_method or "Initial Stock"
+                )
 
-            if expense_id:
-                expense_message = f" and stocking expense created (UGX {total_cost:,.2f})"
+                if expense_id:
+                    expense_message = f" and expense created (UGX {total_cost:,.2f})"
+
+            # Create price record for supplier pricing history
+            if supplier_id and parsed_stock_quantity > 0:
+                try:
+                    price_service = ProductSupplierPriceService(db)
+                    total_cost = parsed_cost_price * parsed_stock_quantity
+
+                    price_record = ProductSupplierPriceCreate(
+                        product_id=product_id,
+                        supplier_id=str(supplier_id),
+                        unit_cost=parsed_cost_price,
+                        quantity_restocked=parsed_stock_quantity,
+                        total_cost=total_cost,
+                        restock_date=kampala_to_utc(now_kampala()),
+                        expense_id=expense_id,
+                        notes="Initial stock - Product creation"
+                    )
+
+                    await price_service.create_price_record(price_record)
+                    print(f"✅ Created initial price record: {supplier.strip()} - UGX {parsed_cost_price}")
+
+                except Exception as e:
+                    print(f"⚠️ Failed to create price record: {e}")
+                    # Don't fail the entire product creation if price record fails
 
         # Redirect with success message
         success_msg = f"Product created successfully{expense_message}"
@@ -215,61 +274,3 @@ async def create_product(
         )
 
 
-async def update_supplier_on_product_creation(db, supplier_name: str, product_id: str, product_name: str, product_sku: str):
-    """Update supplier information when a new product is created"""
-    try:
-        suppliers_collection = db.suppliers
-
-        # Find the supplier by name (case-insensitive)
-        supplier = await suppliers_collection.find_one({
-            "name": {"$regex": f"^{supplier_name}$", "$options": "i"}
-        })
-
-        if not supplier:
-            # If supplier doesn't exist, create a basic supplier record
-            supplier_doc = {
-                "name": supplier_name,
-                "contact_person": None,
-                "phone": None,
-                "email": None,
-                "address": None,
-                "notes": f"Auto-created from product creation",
-                "is_active": True,
-                "created_at": kampala_to_utc(now_kampala()),
-                "updated_at": kampala_to_utc(now_kampala()),
-                "created_by": "system",
-                "products": [product_id],
-                "last_order_date": kampala_to_utc(now_kampala()),
-                "total_orders": 1
-            }
-
-            result = await suppliers_collection.insert_one(supplier_doc)
-            if result.inserted_id:
-                print(f"Created new supplier: {supplier_name}")
-        else:
-            # Update existing supplier
-            supplier_id = supplier["_id"]
-            current_products = supplier.get("products", [])
-
-            # Add product to supplier's product list if not already there
-            if product_id not in current_products:
-                current_products.append(product_id)
-
-            # Update supplier with new product
-            update_doc = {
-                "products": current_products,
-                "last_order_date": kampala_to_utc(now_kampala()),
-                "total_orders": supplier.get("total_orders", 0) + 1,
-                "updated_at": kampala_to_utc(now_kampala())
-            }
-
-            await suppliers_collection.update_one(
-                {"_id": supplier_id},
-                {"$set": update_doc}
-            )
-
-            print(f"Updated supplier {supplier_name} with new product {product_name}")
-
-    except Exception as e:
-        print(f"Error updating supplier on product creation: {e}")
-        # Don't raise exception as this is supplementary functionality

@@ -33,6 +33,9 @@ fastapi-mail>=1.4.0
 # HTTP client for external requests
 httpx>=0.25.0
 
+# Image upload and management
+cloudinary>=1.36.0
+
 # System and network utilities
 psutil>=5.9.0
 

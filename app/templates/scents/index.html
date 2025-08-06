@@ -1,0 +1,800 @@
+{% extends "base.html" %}
+
+{% block title %}Scents Management - Inventory Management System{% endblock %}
+
+{% block content %}
+<div class="space-y-4 animate-fade-in">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-purple-500 to-pink-600 shadow-lg rounded-xl p-4 text-white">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div class="mb-2 md:mb-0">
+                <h1 class="text-xl md:text-2xl font-bold">Scents Management</h1>
+                <p class="text-purple-100 text-sm">Manage perfume scents and fragrance profiles</p>
+            </div>
+            <button onclick="openAddScentModal()" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-all duration-200 text-sm">
+                <i class="fas fa-plus"></i>
+                <span class="font-medium">Add Scent</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <!-- Total Scents -->
+        <div class="bg-white overflow-hidden shadow-md rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+            <div class="p-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-gradient-to-r from-purple-400 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
+                            <i class="fas fa-spray-can text-white text-xs"></i>
+                        </div>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <dt class="text-xs font-medium text-gray-500 truncate">Total Scents</dt>
+                        <dd class="text-base font-bold text-gray-900 mt-0.5" id="total-scents">0</dd>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gradient-to-r from-purple-50 to-purple-100 px-4 py-2">
+                <div class="text-xs">
+                    <span class="text-purple-700 font-medium">Available profiles</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Scents -->
+        <div class="bg-white overflow-hidden shadow-md rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+            <div class="p-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-gradient-to-r from-green-400 to-green-600 rounded-lg flex items-center justify-center shadow-md">
+                            <i class="fas fa-check-circle text-white text-xs"></i>
+                        </div>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <dt class="text-xs font-medium text-gray-500 truncate">Active Scents</dt>
+                        <dd class="text-base font-bold text-gray-900 mt-0.5" id="active-scents">0</dd>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gradient-to-r from-green-50 to-green-100 px-4 py-2">
+                <div class="text-xs">
+                    <span class="text-green-700 font-medium">Ready to use</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Inactive Scents -->
+        <div class="bg-white overflow-hidden shadow-md rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+            <div class="p-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-gradient-to-r from-red-400 to-red-600 rounded-lg flex items-center justify-center shadow-md">
+                            <i class="fas fa-times-circle text-white text-xs"></i>
+                        </div>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <dt class="text-xs font-medium text-gray-500 truncate">Inactive Scents</dt>
+                        <dd class="text-base font-bold text-gray-900 mt-0.5" id="inactive-scents">0</dd>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gradient-to-r from-red-50 to-red-100 px-4 py-2">
+                <div class="text-xs">
+                    <span class="text-red-700 font-medium">Not in use</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Products Using Scents -->
+        <div class="bg-white overflow-hidden shadow-md rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+            <div class="p-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-gradient-to-r from-indigo-400 to-indigo-600 rounded-lg flex items-center justify-center shadow-md">
+                            <i class="fas fa-box text-white text-xs"></i>
+                        </div>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <dt class="text-xs font-medium text-gray-500 truncate">Products</dt>
+                        <dd class="text-base font-bold text-gray-900 mt-0.5" id="products-with-scents">0</dd>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gradient-to-r from-indigo-50 to-indigo-100 px-4 py-2">
+                <div class="text-xs">
+                    <span class="text-indigo-700 font-medium">Using scents</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scents Table -->
+    <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300">
+        <!-- Table Header with Search & Filters -->
+        <div class="px-4 py-3 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-3 lg:space-y-0">
+                <div class="flex items-center">
+                    <div class="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg flex items-center justify-center mr-2">
+                        <i class="fas fa-table text-white text-xs"></i>
+                    </div>
+                    <h3 class="text-base font-semibold text-gray-900">Scents Library</h3>
+                </div>
+
+                <!-- Compact Search & Filter Controls -->
+                <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                    <div class="relative">
+                        <input type="text" id="search-input" placeholder="Search scents..."
+                               class="pl-7 pr-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent w-full sm:w-40 text-xs transition-all duration-200">
+                        <i class="fas fa-search absolute left-2 top-2 text-gray-400 text-xs"></i>
+                    </div>
+
+                    <div class="flex space-x-1">
+                        <button onclick="refreshScents()" class="bg-purple-500 hover:bg-purple-600 text-white px-2 py-1.5 rounded-lg flex items-center space-x-1 text-xs transition-all duration-200">
+                            <i class="fas fa-refresh text-xs"></i>
+                            <span>Refresh</span>
+                        </button>
+                        <button onclick="exportScents()" class="bg-green-500 hover:bg-green-600 text-white px-2 py-1.5 rounded-lg flex items-center space-x-1 text-xs transition-all duration-200">
+                            <i class="fas fa-download text-xs"></i>
+                            <span>Export</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
+                    <tr>
+                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Scent</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Description</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Products</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="scents-table-body" class="bg-white divide-y divide-gray-100">
+                    <!-- Scents will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loading-state" class="flex items-center justify-center py-12">
+            <div class="text-center">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+                <p class="text-gray-600 text-sm">Loading scents...</p>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="hidden text-center py-8">
+            <div class="w-12 h-12 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <i class="fas fa-spray-can text-purple-500 text-lg"></i>
+            </div>
+            <h3 class="text-lg font-bold text-gray-900 mb-2">No scents found</h3>
+            <p class="text-gray-600 mb-4 text-sm">Create your first scent profile.</p>
+            <button onclick="openAddScentModal()" class="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg text-sm">
+                <i class="fas fa-plus mr-2"></i>
+                Add First Scent
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Add Scent Modal -->
+<div id="add-scent-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300">
+            <div class="px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-600 rounded-t-xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                            <i class="fas fa-plus text-white text-xs"></i>
+                        </div>
+                        <h3 class="text-base font-semibold text-white">Add New Scent</h3>
+                    </div>
+                    <button type="button" onclick="closeAddScentModal()" class="text-white hover:text-gray-200 transition-colors duration-200">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
+
+            <form action="/scents" method="POST" class="p-4 space-y-3">
+                <!-- Basic Information -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                        <i class="fas fa-spray-can text-gray-400 mr-1"></i>Scent Name
+                    </label>
+                    <input type="text" name="name" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200" placeholder="Enter scent name">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                        <i class="fas fa-align-left text-gray-400 mr-1"></i>Description
+                    </label>
+                    <textarea name="description" rows="2" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200" placeholder="Describe the scent..."></textarea>
+                </div>
+
+
+
+
+
+                <div class="flex justify-end space-x-2 pt-3 border-t border-gray-200">
+                    <button type="button" onclick="closeAddScentModal()" class="px-3 py-1.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-medium transition-colors duration-200">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-3 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg text-xs font-medium transition-all duration-200">
+                        <i class="fas fa-plus mr-1"></i>
+                        Create Scent
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Scent Details Modal -->
+<div id="scent-details-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300">
+            <div class="px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-t-xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                            <i class="fas fa-eye text-white text-xs"></i>
+                        </div>
+                        <h3 class="text-base font-semibold text-white">Scent Details</h3>
+                    </div>
+                    <button type="button" onclick="closeScentDetailsModal()" class="text-white hover:text-gray-200 transition-colors duration-200">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="scent-details-content" class="p-4">
+                <!-- Scent details will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Scent Modal -->
+<div id="edit-scent-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300">
+            <!-- Modal Header -->
+            <div class="px-4 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-t-xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                            <i class="fas fa-edit text-white text-xs"></i>
+                        </div>
+                        <h3 class="text-base font-semibold text-white">Edit Scent</h3>
+                    </div>
+                    <button type="button" onclick="closeEditScentModal()" class="text-white hover:text-gray-200 transition-colors duration-200">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal Content -->
+            <div class="p-4">
+                <form id="edit-scent-form" method="POST" class="space-y-4">
+                    <!-- Basic Information Section -->
+                    <div class="bg-gray-50 rounded-lg p-3">
+                        <h4 class="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                            <i class="fas fa-info-circle text-indigo-500 mr-2"></i>
+                            Basic Information
+                        </h4>
+
+                        <div class="grid grid-cols-1 gap-3">
+                            <!-- Scent Name -->
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">
+                                    <i class="fas fa-spray-can text-gray-400 mr-1"></i>Scent Name *
+                                </label>
+                                <input type="text" id="edit-scent-name" name="name" required
+                                       class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+                                       placeholder="Enter scent name">
+                                <p class="text-xs text-gray-500 mt-1">Unique name for this scent profile</p>
+                            </div>
+
+                            <!-- Description -->
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">
+                                    <i class="fas fa-align-left text-gray-400 mr-1"></i>Description
+                                </label>
+                                <textarea id="edit-scent-description" name="description" rows="3"
+                                          class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+                                          placeholder="Describe the scent characteristics, notes, or inspiration..."></textarea>
+                                <p class="text-xs text-gray-500 mt-1">Optional description to help identify this scent</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Status Section -->
+                    <div class="bg-gray-50 rounded-lg p-3">
+                        <h4 class="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                            <i class="fas fa-toggle-on text-indigo-500 mr-2"></i>
+                            Status Settings
+                        </h4>
+
+                        <div class="flex items-center">
+                            <input type="checkbox" id="edit-scent-active" name="is_active"
+                                   class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded transition-all duration-200">
+                            <label for="edit-scent-active" class="ml-2 block text-sm text-gray-700">
+                                <span class="font-medium">Scent is active</span>
+                                <span class="block text-xs text-gray-500">Active scents will be available for selection in products</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Metadata Section (Read-only) -->
+                    <div class="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                        <h4 class="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                            <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                            Scent Information
+                        </h4>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                            <div class="bg-white rounded-lg p-2 border border-blue-200">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Created:</span>
+                                    <span id="edit-scent-created" class="font-medium text-gray-900">-</span>
+                                </div>
+                            </div>
+                            <div class="bg-white rounded-lg p-2 border border-blue-200">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Last Updated:</span>
+                                    <span id="edit-scent-updated" class="font-medium text-gray-900">-</span>
+                                </div>
+                            </div>
+                            <div class="bg-white rounded-lg p-2 border border-blue-200 md:col-span-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Scent ID:</span>
+                                    <span id="edit-scent-id" class="font-mono text-xs text-gray-500">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                        <button type="button" onclick="closeEditScentModal()"
+                                class="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors duration-200">
+                            <i class="fas fa-times mr-2"></i>
+                            Cancel
+                        </button>
+                        <button type="submit"
+                                class="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-lg text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg">
+                            <i class="fas fa-save mr-2"></i>
+                            Update Scent
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="delete-confirmation-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all duration-300">
+            <div class="px-4 py-3 bg-gradient-to-r from-red-500 to-red-600 rounded-t-xl">
+                <div class="flex items-center">
+                    <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                        <i class="fas fa-exclamation-triangle text-white text-xs"></i>
+                    </div>
+                    <h3 class="text-base font-semibold text-white">Confirm Delete</h3>
+                </div>
+            </div>
+
+            <div class="p-4">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
+                        <i class="fas fa-trash text-red-600 text-lg"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-lg font-semibold text-gray-900">Delete Scent</h4>
+                        <p class="text-sm text-gray-600">This action cannot be undone</p>
+                    </div>
+                </div>
+
+                <div class="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                    <p class="text-sm text-red-800">
+                        Are you sure you want to delete "<span id="delete-scent-name" class="font-semibold"></span>"?
+                    </p>
+                </div>
+
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="closeDeleteConfirmationModal()" class="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors duration-200">
+                        Cancel
+                    </button>
+                    <button type="button" id="confirm-delete-btn" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors duration-200">
+                        <i class="fas fa-trash mr-2"></i>
+                        Delete Scent
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Scents management functionality
+let scents = [];
+
+// Load scents on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadScents();
+    loadScentsStats(); // Load stats on page load
+
+    // Add event listeners for search
+    document.getElementById('search-input').addEventListener('input', filterScents);
+
+    // Add modal close functionality when clicking outside
+    document.getElementById('scent-details-modal').addEventListener('click', function(e) {
+        if (e.target === this) closeScentDetailsModal();
+    });
+
+    document.getElementById('edit-scent-modal').addEventListener('click', function(e) {
+        if (e.target === this) closeEditScentModal();
+    });
+
+    document.getElementById('delete-confirmation-modal').addEventListener('click', function(e) {
+        if (e.target === this) closeDeleteConfirmationModal();
+    });
+
+    document.getElementById('add-scent-modal').addEventListener('click', function(e) {
+        if (e.target === this) closeAddScentModal();
+    });
+});
+
+async function loadScents() {
+    try {
+        const response = await fetch('/api/scents/table?active_only=false', {
+            credentials: 'include'
+        });
+
+        if (response.ok) {
+            scents = await response.json();
+            displayScents(scents);
+            updateStats(scents);
+        } else {
+            console.error('Failed to load scents');
+            showError('Failed to load scents');
+        }
+    } catch (error) {
+        console.error('Error loading scents:', error);
+        showError('Error loading scents');
+    }
+}
+
+function updateStats(scentsData) {
+    // Update total scents
+    document.getElementById('total-scents').textContent = scentsData.length;
+
+    // Update active scents
+    const activeScents = scentsData.filter(scent => scent.is_active).length;
+    document.getElementById('active-scents').textContent = activeScents;
+
+    // Update inactive scents
+    const inactiveScents = scentsData.filter(scent => !scent.is_active).length;
+    document.getElementById('inactive-scents').textContent = inactiveScents;
+
+    // Load products using scents count from API
+    loadScentsStats();
+}
+
+// Load scents statistics from API
+function loadScentsStats() {
+    fetch('/api/scents/stats', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(stats => {
+        console.log('Scents stats loaded:', stats);
+
+        // Update all stats from API (more accurate than client-side calculation)
+        document.getElementById('total-scents').textContent = stats.total_scents || 0;
+        document.getElementById('active-scents').textContent = stats.active_scents || 0;
+        document.getElementById('inactive-scents').textContent = stats.inactive_scents || 0;
+        document.getElementById('products-with-scents').textContent = stats.products_with_scents || 0;
+    })
+    .catch(error => {
+        console.error('Error loading scents stats:', error);
+        // Keep the client-side calculated values for scents, but set products to 0
+        document.getElementById('products-with-scents').textContent = '0';
+    });
+}
+
+function displayScents(scentsToShow) {
+    const tbody = document.getElementById('scents-table-body');
+    const loadingState = document.getElementById('loading-state');
+    const emptyState = document.getElementById('empty-state');
+
+    loadingState.style.display = 'none';
+
+    if (scentsToShow.length === 0) {
+        tbody.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+    }
+
+    emptyState.classList.add('hidden');
+
+    tbody.innerHTML = scentsToShow.map(scent => `
+        <tr class="hover:bg-blue-50 transition-colors duration-150">
+            <td class="px-3 py-3 whitespace-nowrap">
+                <div class="flex items-center">
+                    <div class="w-8 h-8 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg flex items-center justify-center mr-3 shadow-sm">
+                        <i class="fas fa-spray-can text-purple-600 text-xs"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <div class="text-sm font-semibold text-gray-900 truncate">${scent.name}</div>
+                    </div>
+                </div>
+            </td>
+            <td class="px-3 py-3">
+                <div class="text-sm text-gray-700">
+                    ${scent.description || '<span class="text-gray-400 italic">No description</span>'}
+                </div>
+            </td>
+            <td class="px-3 py-3 whitespace-nowrap">
+                <div class="flex items-center">
+                    <div class="w-6 h-6 bg-gradient-to-r from-indigo-100 to-blue-100 rounded-lg flex items-center justify-center mr-2 shadow-sm">
+                        <i class="fas fa-box text-indigo-600 text-xs"></i>
+                    </div>
+                    <span class="text-sm font-semibold text-gray-900">
+                        ${scent.product_count || 0}
+                    </span>
+                    <span class="text-xs text-gray-500 ml-1">
+                        product${(scent.product_count || 0) === 1 ? '' : 's'}
+                    </span>
+                </div>
+            </td>
+            <td class="px-3 py-3 whitespace-nowrap">
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${scent.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                    <div class="w-1.5 h-1.5 rounded-full mr-1.5 ${scent.is_active ? 'bg-green-500' : 'bg-red-500'}"></div>
+                    ${scent.is_active ? 'Active' : 'Inactive'}
+                </span>
+            </td>
+            <td class="px-3 py-3 whitespace-nowrap">
+                <div class="flex items-center space-x-2">
+                    <button onclick="viewScentDetails('${scent.id}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-150" title="View Details">
+                        <i class="fas fa-eye text-xs"></i>
+                    </button>
+                    <button onclick="editScent('${scent.id}')" class="text-indigo-600 hover:text-indigo-800 transition-colors duration-150" title="Edit">
+                        <i class="fas fa-edit text-xs"></i>
+                    </button>
+                    <button onclick="deleteScent('${scent.id}', '${scent.name}')" class="text-red-600 hover:text-red-800 transition-colors duration-150" title="Delete">
+                        <i class="fas fa-trash text-xs"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+
+
+function filterScents() {
+    const searchTerm = document.getElementById('search-input').value.toLowerCase();
+
+    const filtered = scents.filter(scent => {
+        const matchesSearch = !searchTerm ||
+            scent.name.toLowerCase().includes(searchTerm) ||
+            (scent.description && scent.description.toLowerCase().includes(searchTerm));
+
+        return matchesSearch;
+    });
+
+    displayScents(filtered);
+}
+
+function openAddScentModal() {
+    document.getElementById('add-scent-modal').classList.remove('hidden');
+}
+
+function closeAddScentModal() {
+    document.getElementById('add-scent-modal').classList.add('hidden');
+}
+
+function refreshScents() {
+    document.getElementById('loading-state').style.display = 'flex';
+    document.getElementById('empty-state').classList.add('hidden');
+    document.getElementById('scents-table-body').innerHTML = '';
+    loadScents();
+}
+
+function exportScents() {
+    // TODO: Implement export functionality
+    console.log('Export scents');
+    showNotification('Export functionality coming soon!', 'info');
+}
+
+function viewScentDetails(scentId) {
+    const scent = scents.find(s => s.id === scentId);
+    if (scent) {
+        displayScentDetails(scent);
+        document.getElementById('scent-details-modal').classList.remove('hidden');
+    }
+}
+
+function displayScentDetails(scent) {
+    const content = document.getElementById('scent-details-content');
+    content.innerHTML = `
+        <div class="space-y-4">
+            <!-- Scent Header -->
+            <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4 border border-purple-200">
+                <div class="flex items-center mb-2">
+                    <div class="w-10 h-10 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-spray-can text-purple-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900">${scent.name}</h3>
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${scent.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                            <div class="w-1.5 h-1.5 rounded-full mr-1.5 ${scent.is_active ? 'bg-green-500' : 'bg-red-500'}"></div>
+                            ${scent.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                    </div>
+                </div>
+                ${scent.description ? `
+                <div class="bg-white/60 backdrop-blur-sm rounded-lg p-3 border border-white/60">
+                    <h4 class="text-sm font-semibold text-gray-700 mb-1">Description</h4>
+                    <p class="text-sm text-gray-600">${scent.description}</p>
+                </div>
+                ` : `
+                <div class="bg-gray-50 rounded-lg p-3 text-center">
+                    <p class="text-sm text-gray-500 italic">No description provided</p>
+                </div>
+                `}
+            </div>
+
+            <!-- Metadata -->
+            <div class="bg-gray-50 rounded-lg p-4">
+                <h4 class="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                    <i class="fas fa-info-circle text-gray-500 mr-2"></i>Information
+                </h4>
+                <div class="grid grid-cols-1 gap-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Created:</span>
+                        <span class="font-medium text-gray-900">${new Date(scent.created_at).toLocaleDateString()}</span>
+                    </div>
+                    ${scent.updated_at ? `
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Updated:</span>
+                        <span class="font-medium text-gray-900">${new Date(scent.updated_at).toLocaleDateString()}</span>
+                    </div>
+                    ` : ''}
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">ID:</span>
+                        <span class="font-mono text-xs text-gray-500">${scent.id}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function closeScentDetailsModal() {
+    document.getElementById('scent-details-modal').classList.add('hidden');
+}
+
+function editScent(scentId) {
+    const scent = scents.find(s => s.id === scentId);
+    if (scent) {
+        // Populate basic information
+        document.getElementById('edit-scent-name').value = scent.name;
+        document.getElementById('edit-scent-description').value = scent.description || '';
+
+        // Populate status
+        document.getElementById('edit-scent-active').checked = scent.is_active;
+
+        // Populate metadata (read-only)
+        document.getElementById('edit-scent-created').textContent = new Date(scent.created_at).toLocaleDateString();
+        document.getElementById('edit-scent-updated').textContent = scent.updated_at ? new Date(scent.updated_at).toLocaleDateString() : 'Never';
+        document.getElementById('edit-scent-id').textContent = scent.id;
+
+        // Set form action
+        document.getElementById('edit-scent-form').action = `/scents/${scentId}/update`;
+
+        // Show modal
+        document.getElementById('edit-scent-modal').classList.remove('hidden');
+    }
+}
+
+function closeEditScentModal() {
+    document.getElementById('edit-scent-modal').classList.add('hidden');
+}
+
+function deleteScent(scentId, scentName) {
+    // Show confirmation modal
+    document.getElementById('delete-scent-name').textContent = scentName;
+    document.getElementById('delete-confirmation-modal').classList.remove('hidden');
+
+    // Set up the confirm button
+    const confirmBtn = document.getElementById('confirm-delete-btn');
+    confirmBtn.onclick = () => confirmDeleteScent(scentId);
+}
+
+async function confirmDeleteScent(scentId) {
+    // Close modal first
+    closeDeleteConfirmationModal();
+
+    try {
+        const response = await fetch(`/api/scents/${scentId}`, {
+            method: 'DELETE',
+            credentials: 'include'
+        });
+
+        if (response.ok) {
+            showNotification('Scent deleted successfully!', 'success');
+            loadScents(); // Reload the scents list
+        } else {
+            const error = await response.json();
+            showNotification(error.detail || 'Failed to delete scent', 'error');
+        }
+    } catch (error) {
+        console.error('Error deleting scent:', error);
+        showNotification('Error deleting scent', 'error');
+    }
+}
+
+function closeDeleteConfirmationModal() {
+    document.getElementById('delete-confirmation-modal').classList.add('hidden');
+}
+
+function showError(message) {
+    showNotification(message, 'error');
+}
+
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transition-all duration-300 transform translate-x-full`;
+
+    // Set colors based on type
+    const colors = {
+        success: 'bg-green-500 text-white',
+        error: 'bg-red-500 text-white',
+        info: 'bg-blue-500 text-white',
+        warning: 'bg-yellow-500 text-black'
+    };
+
+    notification.className += ` ${colors[type] || colors.info}`;
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation-triangle' : 'info'} mr-2"></i>
+            <span>${message}</span>
+        </div>
+    `;
+
+    document.body.appendChild(notification);
+
+    // Animate in
+    setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+    }, 100);
+
+    // Remove after 3 seconds
+    setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 300);
+    }, 3000);
+}
+</script>
+{% endblock %}

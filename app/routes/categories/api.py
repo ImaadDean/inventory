@@ -253,7 +253,19 @@ async def create_category(
         
         # Retrieve created category
         created_category = await db.categories.find_one({"_id": result.inserted_id})
-        return CategoryResponse(**created_category)
+
+        # Convert to proper format for response
+        category_response = {
+            "id": str(created_category["_id"]),
+            "name": created_category["name"],
+            "description": created_category.get("description"),
+            "parent_id": str(created_category["parent_id"]) if created_category.get("parent_id") else None,
+            "is_active": created_category["is_active"],
+            "created_at": created_category["created_at"],
+            "updated_at": created_category.get("updated_at", created_category["created_at"])
+        }
+
+        return CategoryResponse(**category_response)
         
     except HTTPException:
         raise
@@ -476,7 +488,16 @@ async def get_categories(
 
         # Handle parent_id filter (for hierarchical filtering)
         if parent_id:
-            filter_dict["parent_id"] = parent_id
+            try:
+                filter_dict["parent_id"] = ObjectId(parent_id)
+            except Exception:
+                # Invalid ObjectId, return empty result
+                return {
+                    "categories": [],
+                    "total": 0,
+                    "skip": skip,
+                    "limit": limit
+                }
 
         # Handle search filter
         if search:
@@ -518,6 +539,10 @@ async def get_categories(
         # Convert to response format
         category_responses = []
         for category in categories:
+            # Safely handle datetime conversion
+            created_at = category.get("created_at")
+            updated_at = category.get("updated_at", created_at)
+
             category_responses.append({
                 "id": str(category["_id"]),
                 "name": category["name"],
@@ -526,9 +551,9 @@ async def get_categories(
                 "parent_name": None,  # TODO: Implement parent name lookup
                 "product_count": category.get("product_count", 0),
                 "is_active": category["is_active"],
-                "created_at": category["created_at"].isoformat(),
-                "updated_at": category.get("updated_at", category["created_at"]).isoformat(),
-                "created_by": category.get("created_by")
+                "created_at": created_at.isoformat() if created_at else None,
+                "updated_at": updated_at.isoformat() if updated_at else None,
+                "created_by": str(category.get("created_by")) if category.get("created_by") else None
             })
 
         return {
@@ -591,6 +616,10 @@ async def get_category(category_id: str):
 
         category = categories[0]
 
+        # Safely handle datetime conversion
+        created_at = category.get("created_at")
+        updated_at = category.get("updated_at", created_at)
+
         return {
             "id": str(category["_id"]),
             "name": category["name"],
@@ -598,9 +627,9 @@ async def get_category(category_id: str):
             "parent_id": str(category["parent_id"]) if category.get("parent_id") else None,
             "product_count": category.get("product_count", 0),
             "is_active": category["is_active"],
-            "created_at": category["created_at"].isoformat(),
-            "updated_at": category.get("updated_at", category["created_at"]).isoformat(),
-            "created_by": category.get("created_by")
+            "created_at": created_at.isoformat() if created_at else None,
+            "updated_at": updated_at.isoformat() if updated_at else None,
+            "created_by": str(category.get("created_by")) if category.get("created_by") else None
         }
 
     except HTTPException:
@@ -649,14 +678,28 @@ async def get_category_tree(current_user: User = Depends(get_current_user)):
         
         # Get all active categories
         categories = await db.categories.find({"is_active": True}).sort("name", 1).to_list(length=None)
-        
+
+        # Convert categories to proper format
+        converted_categories = []
+        for cat in categories:
+            converted_cat = {
+                "id": str(cat["_id"]),
+                "name": cat["name"],
+                "description": cat.get("description"),
+                "parent_id": str(cat["parent_id"]) if cat.get("parent_id") else None,
+                "is_active": cat["is_active"],
+                "created_at": cat["created_at"],
+                "updated_at": cat.get("updated_at", cat["created_at"])
+            }
+            converted_categories.append(converted_cat)
+
         # Build tree structure
-        category_dict = {str(cat["_id"]): CategoryWithChildren(**cat) for cat in categories}
+        category_dict = {cat["id"]: CategoryWithChildren(**cat) for cat in converted_categories}
         root_categories = []
-        
+
         for category in category_dict.values():
             if category.parent_id:
-                parent_id = str(category.parent_id)
+                parent_id = category.parent_id
                 if parent_id in category_dict:
                     category_dict[parent_id].children.append(category)
             else:
@@ -671,30 +714,6 @@ async def get_category_tree(current_user: User = Depends(get_current_user)):
         )
 
 
-@router.get("/{category_id}", response_model=CategoryResponse)
-async def get_category(
-    category_id: str,
-    current_user: User = Depends(get_current_user)
-):
-    """Get a specific category by ID"""
-    try:
-        db = await get_database()
-        
-        category = await db.categories.find_one({"_id": category_id})
-        if not category:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Category not found"
-            )
-        
-        return CategoryResponse(**category)
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve category: {str(e)}"
-        )
+
 
 

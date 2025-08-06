@@ -99,9 +99,14 @@ class ProductCreate(BaseModel):
     unit: str = Field(default="pcs", max_length=20)
     supplier: Optional[str] = Field(None, max_length=200)
 
+    # Image fields
+    image_public_id: Optional[str] = Field(None, description="Cloudinary public ID for product image")
+    image_url: Optional[str] = Field(None, description="URL of the product image")
+
     # Perfume-specific fields
     bottle_size_ml: Optional[float] = Field(None, gt=0, description="Size of each bottle in ml")
     decant: Optional[DecantCreate] = Field(None, description="Decant information for perfume products")
+    scent_ids: Optional[List[str]] = Field(None, description="List of scent IDs associated with this product")
 
     class Config:
         schema_extra = {
@@ -134,8 +139,13 @@ class ProductUpdate(BaseModel):
     supplier: Optional[str] = Field(None, max_length=200)
     is_active: Optional[bool] = None
 
+    # Image fields
+    image_public_id: Optional[str] = Field(None, description="Cloudinary public ID for product image")
+    image_url: Optional[str] = Field(None, description="URL of the product image")
+
     # Perfume-specific fields
     bottle_size_ml: Optional[float] = Field(None, gt=0)
+    scent_ids: Optional[List[str]] = Field(None, description="List of scent IDs associated with this product")
     decant: Optional[DecantUpdate] = None
 
     class Config:

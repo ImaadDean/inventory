@@ -15,6 +15,9 @@ from .dashboard import (
     ReportPeriod, SalesOverview, InventoryOverview, TopSellingProduct,
     LowStockProduct, SalesReport, InventoryReport, DashboardSummary
 )
+from .scent import (
+    ScentCreate, ScentUpdate, ScentResponse, ScentList
+)
 
 __all__ = [
     # Auth schemas
@@ -36,5 +39,8 @@ __all__ = [
 
     # Dashboard schemas
     "ReportPeriod", "SalesOverview", "InventoryOverview", "TopSellingProduct",
-    "LowStockProduct", "SalesReport", "InventoryReport", "DashboardSummary"
+    "LowStockProduct", "SalesReport", "InventoryReport", "DashboardSummary",
+
+    # Scent schemas
+    "ScentCreate", "ScentUpdate", "ScentResponse", "ScentList"
 ]
