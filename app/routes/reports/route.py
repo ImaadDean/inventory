@@ -433,13 +433,13 @@ async def test_sales_api(request: Request):
 
 @reports_routes.get("/test-chart", response_class=HTMLResponse)
 async def test_chart_page(request: Request):
-    """Test page for Chart.js debugging"""
+    """Test page for ApexCharts debugging"""
     try:
-        with open("test_chart.html", "r") as f:
+        with open("apexcharts_test.html", "r") as f:
             html_content = f.read()
         return HTMLResponse(content=html_content)
     except FileNotFoundError:
-        return HTMLResponse(content="<h1>Test chart file not found</h1>", status_code=404)
+        return HTMLResponse(content="<h1>ApexCharts test file not found</h1>", status_code=404)
 
 
 @reports_routes.get("/inventory", response_class=HTMLResponse)
@@ -699,3 +699,306 @@ async def financial_report(request: Request):
             "page_title": "Financial Reports"
         }
     )
+
+
+@reports_routes.get("/test-chart", response_class=HTMLResponse)
+async def test_chart(request: Request):
+    """Test chart page for debugging"""
+    return templates.TemplateResponse("test_chart.html", {"request": request})
+
+
+@reports_routes.get("/api/inventory-data")
+async def get_inventory_data(request: Request):
+    """Get inventory data for reports"""
+    try:
+        db = await get_database()
+
+        # Get inventory overview statistics
+        inventory_pipeline = [
+            {"$group": {
+                "_id": None,
+                "total_products": {"$sum": 1},
+                "active_products": {"$sum": {"$cond": [{"$eq": ["$is_active", True]}, 1, 0]}},
+                "low_stock_products": {"$sum": {"$cond": [
+                    {"$and": [
+                        {"$eq": ["$is_active", True]},
+                        {"$lte": ["$stock_quantity", {"$ifNull": ["$min_stock_level", 10]}]},
+                        {"$gt": ["$stock_quantity", 0]}
+                    ]}, 1, 0
+                ]}},
+                "out_of_stock_products": {"$sum": {"$cond": [
+                    {"$and": [
+                        {"$eq": ["$is_active", True]},
+                        {"$eq": ["$stock_quantity", 0]}
+                    ]}, 1, 0
+                ]}},
+                "total_inventory_value": {"$sum": {"$multiply": ["$stock_quantity", "$price"]}}
+            }}
+        ]
+
+        inventory_cursor = db.products.aggregate(inventory_pipeline)
+        inventory_data = await inventory_cursor.to_list(length=1)
+
+        if inventory_data:
+            inv_info = inventory_data[0]
+            inventory_overview = {
+                "total_products": inv_info["total_products"],
+                "active_products": inv_info["active_products"],
+                "low_stock_products": inv_info["low_stock_products"],
+                "out_of_stock_products": inv_info["out_of_stock_products"],
+                "total_inventory_value": inv_info["total_inventory_value"]
+            }
+        else:
+            inventory_overview = {
+                "total_products": 0,
+                "active_products": 0,
+                "low_stock_products": 0,
+                "out_of_stock_products": 0,
+                "total_inventory_value": 0.0
+            }
+
+        # Get low stock products details
+        low_stock_products = await db.products.find({
+            "is_active": True,
+            "$expr": {
+                "$and": [
+                    {"$lte": ["$stock_quantity", {"$ifNull": ["$min_stock_level", 10]}]},
+                    {"$gt": ["$stock_quantity", 0]}
+                ]
+            }
+        }).sort("stock_quantity", 1).limit(20).to_list(length=20)
+
+        # Get out of stock products
+        out_of_stock_products = await db.products.find({
+            "is_active": True,
+            "stock_quantity": 0
+        }).sort("name", 1).limit(20).to_list(length=20)
+
+        # Get stock levels by category for chart
+        category_pipeline = [
+            {"$match": {"is_active": True}},
+            {"$group": {
+                "_id": "$category_id",
+                "category_name": {"$first": "$category_name"},
+                "total_products": {"$sum": 1},
+                "total_stock": {"$sum": "$stock_quantity"},
+                "total_value": {"$sum": {"$multiply": ["$stock_quantity", "$price"]}}
+            }},
+            {"$sort": {"total_value": -1}}
+        ]
+
+        category_cursor = db.products.aggregate(category_pipeline)
+        category_data = await category_cursor.to_list(length=None)
+
+        # Format low stock products for frontend
+        formatted_low_stock = []
+        for product in low_stock_products:
+            formatted_low_stock.append({
+                "id": str(product["_id"]),
+                "name": product.get("name", "Unknown Product"),
+                "sku": product.get("sku", "N/A"),
+                "current_stock": product.get("stock_quantity", 0),
+                "min_stock_level": product.get("min_stock_level", 10),
+                "price": product.get("price", 0),
+                "category": product.get("category_name", "Uncategorized"),
+                "supplier": product.get("supplier", "N/A")
+            })
+
+        # Format out of stock products
+        formatted_out_of_stock = []
+        for product in out_of_stock_products:
+            formatted_out_of_stock.append({
+                "id": str(product["_id"]),
+                "name": product.get("name", "Unknown Product"),
+                "sku": product.get("sku", "N/A"),
+                "price": product.get("price", 0),
+                "category": product.get("category_name", "Uncategorized"),
+                "supplier": product.get("supplier", "N/A")
+            })
+
+        # Format category data for chart
+        formatted_categories = []
+        for cat in category_data:
+            formatted_categories.append({
+                "category": cat.get("category_name", "Uncategorized"),
+                "total_products": cat["total_products"],
+                "total_stock": cat["total_stock"],
+                "total_value": cat["total_value"]
+            })
+
+        return {
+            "inventory_overview": inventory_overview,
+            "low_stock_products": formatted_low_stock,
+            "out_of_stock_products": formatted_out_of_stock,
+            "category_breakdown": formatted_categories
+        }
+
+    except Exception as e:
+        print(f"Error getting inventory data: {e}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving inventory data: {str(e)}")
+
+
+@reports_routes.get("/api/stock-movement")
+async def get_stock_movement_data(
+    request: Request,
+    days: int = Query(30, description="Number of days to look back", ge=1, le=365)
+):
+    """Get stock movement data for the specified period"""
+    try:
+        db = await get_database()
+
+        # Calculate date range
+        end_date = datetime.utcnow()
+        start_date = end_date - timedelta(days=days)
+
+        # Get restock movements (stock increases)
+        restock_pipeline = [
+            {"$match": {
+                "restocked_at": {"$gte": start_date, "$lte": end_date}
+            }},
+            {"$sort": {"restocked_at": -1}},
+            {"$limit": 100}  # Limit to recent 100 records
+        ]
+
+        restock_cursor = db.restock_history.aggregate(restock_pipeline)
+        restock_movements = await restock_cursor.to_list(length=None)
+
+        # Get sales movements (stock decreases) from orders
+        sales_pipeline = [
+            {"$match": {
+                "created_at": {"$gte": start_date, "$lte": end_date},
+                "status": "completed"
+            }},
+            {"$unwind": "$items"},
+            {"$project": {
+                "product_id": "$items.product_id",
+                "product_name": "$items.name",
+                "sku": "$items.sku",
+                "quantity_sold": "$items.quantity",
+                "unit_price": "$items.price",
+                "total_value": "$items.total",
+                "order_date": "$created_at",
+                "order_number": "$order_number",
+                "customer_name": "$client_name"
+            }},
+            {"$sort": {"order_date": -1}},
+            {"$limit": 100}  # Limit to recent 100 records
+        ]
+
+        sales_cursor = db.orders.aggregate(sales_pipeline)
+        sales_movements = await sales_cursor.to_list(length=None)
+
+        # Format restock movements
+        formatted_restocks = []
+        for movement in restock_movements:
+            formatted_restocks.append({
+                "id": str(movement["_id"]),
+                "type": "restock",
+                "product_id": str(movement.get("product_id", "")),
+                "product_name": movement.get("product_name", "Unknown Product"),
+                "sku": movement.get("product_sku", "N/A"),
+                "quantity": movement.get("quantity_added", 0),
+                "previous_stock": movement.get("previous_stock", 0),
+                "new_stock": movement.get("new_stock", 0),
+                "reason": movement.get("reason", "Restock"),
+                "user": movement.get("restocked_by_username", "System"),
+                "date": movement.get("restocked_at"),
+                "reference": f"Restock by {movement.get('restocked_by_username', 'System')}"
+            })
+
+        # Format sales movements
+        formatted_sales = []
+        for movement in sales_movements:
+            formatted_sales.append({
+                "id": str(movement["_id"]),
+                "type": "sale",
+                "product_id": str(movement.get("product_id", "")),
+                "product_name": movement.get("product_name", "Unknown Product"),
+                "sku": movement.get("sku", "N/A"),
+                "quantity": -movement.get("quantity_sold", 0),  # Negative for stock decrease
+                "unit_price": movement.get("unit_price", 0),
+                "total_value": movement.get("total_value", 0),
+                "reason": "Sale",
+                "user": "POS System",
+                "date": movement.get("order_date"),
+                "reference": f"Order #{movement.get('order_number', 'N/A')} - {movement.get('customer_name', 'Walk-in Customer')}"
+            })
+
+        # Combine and sort all movements by date
+        all_movements = formatted_restocks + formatted_sales
+        all_movements.sort(key=lambda x: x["date"] if x["date"] else datetime.min, reverse=True)
+
+        # Get movement summary statistics
+        total_restocks = len(formatted_restocks)
+        total_sales = len(formatted_sales)
+        total_restock_quantity = sum(m["quantity"] for m in formatted_restocks)
+        total_sales_quantity = abs(sum(m["quantity"] for m in formatted_sales))
+
+        # Get top moving products
+        product_movements = {}
+        for movement in all_movements:
+            product_key = movement["product_name"]
+            if product_key not in product_movements:
+                product_movements[product_key] = {
+                    "product_name": movement["product_name"],
+                    "sku": movement["sku"],
+                    "total_movements": 0,
+                    "restock_quantity": 0,
+                    "sales_quantity": 0
+                }
+
+            product_movements[product_key]["total_movements"] += 1
+            if movement["type"] == "restock":
+                product_movements[product_key]["restock_quantity"] += movement["quantity"]
+            else:
+                product_movements[product_key]["sales_quantity"] += abs(movement["quantity"])
+
+        # Sort by total movement activity
+        top_moving_products = sorted(
+            product_movements.values(),
+            key=lambda x: x["total_movements"],
+            reverse=True
+        )[:10]
+
+        # Daily movement summary for chart
+        daily_summary = {}
+        for movement in all_movements:
+            if movement["date"]:
+                date_key = movement["date"].strftime("%Y-%m-%d")
+                if date_key not in daily_summary:
+                    daily_summary[date_key] = {
+                        "date": date_key,
+                        "restocks": 0,
+                        "sales": 0,
+                        "restock_quantity": 0,
+                        "sales_quantity": 0
+                    }
+
+                if movement["type"] == "restock":
+                    daily_summary[date_key]["restocks"] += 1
+                    daily_summary[date_key]["restock_quantity"] += movement["quantity"]
+                else:
+                    daily_summary[date_key]["sales"] += 1
+                    daily_summary[date_key]["sales_quantity"] += abs(movement["quantity"])
+
+        # Convert to list and sort by date
+        daily_chart_data = sorted(daily_summary.values(), key=lambda x: x["date"])
+
+        return {
+            "summary": {
+                "period_days": days,
+                "total_movements": len(all_movements),
+                "total_restocks": total_restocks,
+                "total_sales": total_sales,
+                "total_restock_quantity": total_restock_quantity,
+                "total_sales_quantity": total_sales_quantity,
+                "net_stock_change": total_restock_quantity - total_sales_quantity
+            },
+            "movements": all_movements[:50],  # Return latest 50 movements
+            "top_moving_products": top_moving_products,
+            "daily_chart_data": daily_chart_data
+        }
+
+    except Exception as e:
+        print(f"Error getting stock movement data: {e}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving stock movement data: {str(e)}")

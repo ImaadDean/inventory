@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chart Test</title>
+    <script src="/static/js/apexcharts.min.js"></script>
+</head>
+<body>
+    <div style="padding: 20px;">
+        <h1>ApexCharts Test</h1>
+        <div id="chart" style="width: 100%; height: 400px; border: 1px solid #ccc;"></div>
+        <button onclick="createChart()">Create Chart</button>
+        <button onclick="testApexCharts()">Test ApexCharts</button>
+        
+        <div id="log" style="margin-top: 20px; padding: 10px; background: #f5f5f5; font-family: monospace; white-space: pre-wrap;"></div>
+    </div>
+
+    <script>
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            logDiv.textContent += new Date().toLocaleTimeString() + ': ' + message + '\n';
+            console.log(message);
+        }
+
+        function testApexCharts() {
+            log('Testing ApexCharts availability...');
+            
+            if (typeof ApexCharts === 'undefined') {
+                log('❌ ApexCharts is not defined');
+                return;
+            }
+            
+            log('✅ ApexCharts is available');
+            log('ApexCharts version: ' + (ApexCharts.version || 'unknown'));
+            
+            // Test basic functionality
+            try {
+                const testOptions = {
+                    series: [44, 55, 13, 43, 22],
+                    chart: {
+                        type: 'donut',
+                        height: 350
+                    },
+                    labels: ['Team A', 'Team B', 'Team C', 'Team D', 'Team E']
+                };
+                
+                log('✅ ApexCharts options created successfully');
+                
+                const chartContainer = document.getElementById('chart');
+                if (!chartContainer) {
+                    log('❌ Chart container not found');
+                    return;
+                }
+                
+                log('✅ Chart container found');
+                
+                const chart = new ApexCharts(chartContainer, testOptions);
+                log('✅ ApexCharts instance created');
+                
+                chart.render().then(() => {
+                    log('✅ Chart rendered successfully');
+                }).catch((error) => {
+                    log('❌ Chart render error: ' + error.message);
+                });
+                
+            } catch (error) {
+                log('❌ Error testing ApexCharts: ' + error.message);
+            }
+        }
+
+        function createChart() {
+            log('Creating test chart...');
+            testApexCharts();
+        }
+
+        // Auto-test on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            log('DOM loaded, testing ApexCharts...');
+            setTimeout(testApexCharts, 100);
+        });
+    </script>
+</body>
+</html>

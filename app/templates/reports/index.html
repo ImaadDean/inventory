@@ -168,21 +168,21 @@
             </div>
             <div class="p-4">
                 <div class="space-y-1">
-                    <a href="/reports/sales" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-md transition-all duration-200 flex items-center group block">
+                    <a href="javascript:void(0)" onclick="openSalesReport('daily')" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-md transition-all duration-200 flex items-center group block">
                         <i class="fas fa-calendar-day mr-2 text-green-500 group-hover:text-green-600 text-xs"></i>
                         <span>Daily Sales Report</span>
                     </a>
-                    <a href="/reports/sales" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-md transition-all duration-200 flex items-center group block">
+                    <a href="javascript:void(0)" onclick="openSalesReport('weekly')" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-md transition-all duration-200 flex items-center group block">
                         <i class="fas fa-calendar-week mr-2 text-green-500 group-hover:text-green-600 text-xs"></i>
                         <span>Weekly Sales Report</span>
                     </a>
-                    <a href="/reports/sales" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-md transition-all duration-200 flex items-center group block">
+                    <a href="javascript:void(0)" onclick="openSalesReport('monthly')" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-md transition-all duration-200 flex items-center group block">
                         <i class="fas fa-calendar-alt mr-2 text-green-500 group-hover:text-green-600 text-xs"></i>
                         <span>Monthly Sales Report</span>
                     </a>
-                    <a href="/reports/sales" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-md transition-all duration-200 flex items-center group block">
-                        <i class="fas fa-star mr-2 text-green-500 group-hover:text-green-600 text-xs"></i>
-                        <span>Top Products Report</span>
+                    <a href="javascript:void(0)" onclick="openSalesReport('yearly')" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-md transition-all duration-200 flex items-center group block">
+                        <i class="fas fa-calendar mr-2 text-green-500 group-hover:text-green-600 text-xs"></i>
+                        <span>Yearly Sales Report</span>
                     </a>
                 </div>
             </div>
@@ -562,6 +562,56 @@ function scheduleReport() {
     setTimeout(() => {
         showToast('Report scheduled successfully!', 'success');
     }, 1500);
+}
+
+// Function to open sales report with specific date range
+function openSalesReport(period) {
+    const today = new Date();
+    let fromDate, toDate;
+
+    switch(period) {
+        case 'daily':
+            // Today
+            fromDate = today.toISOString().split('T')[0];
+            toDate = today.toISOString().split('T')[0];
+            break;
+
+        case 'weekly':
+            // This week (Monday to Sunday)
+            const startOfWeek = new Date(today);
+            const day = today.getDay();
+            const diff = today.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
+            startOfWeek.setDate(diff);
+
+            fromDate = startOfWeek.toISOString().split('T')[0];
+            toDate = today.toISOString().split('T')[0];
+            break;
+
+        case 'monthly':
+            // This month
+            const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            fromDate = startOfMonth.toISOString().split('T')[0];
+            toDate = today.toISOString().split('T')[0];
+            break;
+
+        case 'yearly':
+            // This year
+            const startOfYear = new Date(today.getFullYear(), 0, 1);
+            fromDate = startOfYear.toISOString().split('T')[0];
+            toDate = today.toISOString().split('T')[0];
+            break;
+
+        default:
+            // Default to last 7 days
+            const weekAgo = new Date(today);
+            weekAgo.setDate(today.getDate() - 7);
+            fromDate = weekAgo.toISOString().split('T')[0];
+            toDate = today.toISOString().split('T')[0];
+    }
+
+    // Navigate to sales report with date parameters
+    const url = `/reports/sales?from_date=${fromDate}&to_date=${toDate}&period=${period}`;
+    window.location.href = url;
 }
 
 // Toast notification function (if not already defined)

@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ApexCharts Test</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .chart-container { 
+            width: 100%; 
+            height: 400px; 
+            margin: 20px 0; 
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .status { 
+            padding: 15px; 
+            margin: 10px 0; 
+            border-radius: 5px; 
+            font-weight: bold;
+        }
+        .success { 
+            background-color: #d4edda; 
+            color: #155724; 
+            border: 1px solid #c3e6cb;
+        }
+        .error { 
+            background-color: #f8d7da; 
+            color: #721c24; 
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .button-group {
+            margin: 20px 0;
+        }
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ApexCharts Test Page</h1>
+        
+        <div id="status" class="status info">Loading ApexCharts...</div>
+        
+        <div class="button-group">
+            <button onclick="checkApexCharts()">Check ApexCharts Status</button>
+            <button onclick="createLineChart()">Create Line Chart</button>
+            <button onclick="createDonutChart()">Create Donut Chart</button>
+            <button onclick="clearCharts()">Clear Charts</button>
+        </div>
+        
+        <div class="charts-grid">
+            <div>
+                <h3>Line Chart</h3>
+                <div id="lineChart" class="chart-container"></div>
+            </div>
+            <div>
+                <h3>Donut Chart</h3>
+                <div id="donutChart" class="chart-container"></div>
+            </div>
+        </div>
+        
+        <div id="console-output" style="background: #f8f9fa; padding: 15px; border-radius: 4px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto;">
+            <strong>Console Output:</strong><br>
+        </div>
+    </div>
+
+    <!-- Load ApexCharts with multiple fallbacks -->
+    <script>
+        // ApexCharts loading with fallbacks
+        window.apexChartsLoaded = false;
+        window.apexChartsAttempts = 0;
+        
+        const statusDiv = document.getElementById('status');
+        const consoleOutput = document.getElementById('console-output');
+        let lineChart = null;
+        let donutChart = null;
+        
+        function log(message) {
+            console.log(message);
+            consoleOutput.innerHTML += message + '<br>';
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+        
+        function updateStatus(message, type = 'info') {
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+            log(`STATUS: ${message}`);
+        }
+        
+        function loadApexCharts() {
+            window.apexChartsAttempts++;
+            log(`🔄 Loading ApexCharts attempt ${window.apexChartsAttempts}`);
+            
+            const script = document.createElement('script');
+            
+            // Try different CDNs
+            const cdns = [
+                'https://cdn.jsdelivr.net/npm/apexcharts@3.44.0/dist/apexcharts.min.js',
+                'https://cdnjs.cloudflare.com/ajax/libs/apexcharts/3.44.0/apexcharts.min.js',
+                'https://unpkg.com/apexcharts@3.44.0/dist/apexcharts.min.js'
+            ];
+            
+            const currentCdn = cdns[(window.apexChartsAttempts - 1) % cdns.length];
+            script.src = currentCdn;
+            
+            script.onload = function() {
+                log(`✅ ApexCharts loaded from: ${currentCdn}`);
+                window.apexChartsLoaded = true;
+                updateStatus(`✅ ApexCharts Ready!`, 'success');
+            };
+            
+            script.onerror = function() {
+                log(`❌ Failed to load ApexCharts from: ${currentCdn}`);
+                if (window.apexChartsAttempts < cdns.length) {
+                    log('🔄 Trying next CDN...');
+                    setTimeout(loadApexCharts, 1000);
+                } else {
+                    log('💥 All ApexCharts sources failed');
+                    window.apexChartsLoaded = false;
+                    updateStatus('❌ ApexCharts Failed to Load', 'error');
+                }
+            };
+            
+            document.head.appendChild(script);
+        }
+        
+        function checkApexCharts() {
+            if (typeof ApexCharts !== 'undefined') {
+                updateStatus(`✅ ApexCharts is loaded!`, 'success');
+                log(`ApexCharts object: ${typeof ApexCharts}`);
+            } else {
+                updateStatus('❌ ApexCharts is not loaded', 'error');
+                log('ApexCharts object is undefined');
+            }
+        }
+        
+        function createLineChart() {
+            if (typeof ApexCharts === 'undefined') {
+                updateStatus('❌ ApexCharts not available', 'error');
+                return;
+            }
+            
+            try {
+                const container = document.getElementById('lineChart');
+                
+                // Clear existing chart
+                if (lineChart) {
+                    lineChart.destroy();
+                }
+                
+                const options = {
+                    series: [
+                        {
+                            name: 'Revenue',
+                            type: 'area',
+                            data: [12000, 19000, 15000, 25000, 22000, 30000]
+                        },
+                        {
+                            name: 'Orders',
+                            type: 'line',
+                            data: [65, 85, 70, 95, 88, 110]
+                        }
+                    ],
+                    chart: {
+                        height: '100%',
+                        type: 'line',
+                        toolbar: { show: false }
+                    },
+                    colors: ['#22c55e', '#3b82f6'],
+                    stroke: {
+                        width: [0, 2],
+                        curve: 'smooth'
+                    },
+                    fill: {
+                        type: ['gradient', 'solid'],
+                        gradient: {
+                            shadeIntensity: 1,
+                            opacityFrom: 0.4,
+                            opacityTo: 0.1
+                        }
+                    },
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    yaxis: [
+                        {
+                            title: { text: 'Revenue (UGX)' },
+                            labels: {
+                                formatter: function (val) {
+                                    return 'UGX ' + val.toLocaleString();
+                                }
+                            }
+                        },
+                        {
+                            opposite: true,
+                            title: { text: 'Orders' }
+                        }
+                    ],
+                    tooltip: {
+                        shared: true,
+                        intersect: false
+                    },
+                    legend: {
+                        position: 'top'
+                    }
+                };
+                
+                lineChart = new ApexCharts(container, options);
+                lineChart.render();
+                
+                updateStatus('✅ Line chart created successfully!', 'success');
+                log('Line chart created with dual y-axis');
+                
+            } catch (error) {
+                updateStatus(`❌ Error creating line chart: ${error.message}`, 'error');
+                log(`Line chart creation error: ${error.stack}`);
+            }
+        }
+        
+        function createDonutChart() {
+            if (typeof ApexCharts === 'undefined') {
+                updateStatus('❌ ApexCharts not available', 'error');
+                return;
+            }
+            
+            try {
+                const container = document.getElementById('donutChart');
+                
+                // Clear existing chart
+                if (donutChart) {
+                    donutChart.destroy();
+                }
+                
+                const options = {
+                    series: [44, 55, 13, 43, 22],
+                    chart: {
+                        type: 'donut',
+                        height: '100%'
+                    },
+                    labels: ['Product A', 'Product B', 'Product C', 'Product D', 'Product E'],
+                    colors: ['#22c55e', '#3b82f6', '#a855f7', '#f97316', '#ef4444'],
+                    plotOptions: {
+                        pie: {
+                            donut: {
+                                size: '60%',
+                                labels: {
+                                    show: true,
+                                    total: {
+                                        show: true,
+                                        label: 'Total',
+                                        formatter: function (w) {
+                                            return w.globals.seriesTotals.reduce((a, b) => {
+                                                return a + b;
+                                            }, 0);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    legend: {
+                        position: 'right'
+                    },
+                    tooltip: {
+                        y: {
+                            formatter: function (val) {
+                                return val + " units";
+                            }
+                        }
+                    }
+                };
+                
+                donutChart = new ApexCharts(container, options);
+                donutChart.render();
+                
+                updateStatus('✅ Donut chart created successfully!', 'success');
+                log('Donut chart created with center total');
+                
+            } catch (error) {
+                updateStatus(`❌ Error creating donut chart: ${error.message}`, 'error');
+                log(`Donut chart creation error: ${error.stack}`);
+            }
+        }
+        
+        function clearCharts() {
+            if (lineChart) {
+                lineChart.destroy();
+                lineChart = null;
+                log('Line chart cleared');
+            }
+            if (donutChart) {
+                donutChart.destroy();
+                donutChart = null;
+                log('Donut chart cleared');
+            }
+            updateStatus('Charts cleared', 'info');
+        }
+        
+        // Start loading ApexCharts
+        loadApexCharts();
+        
+        // Initialize when page loads
+        window.addEventListener('load', function() {
+            log('Page loaded, checking ApexCharts...');
+            setTimeout(function() {
+                checkApexCharts();
+                if (typeof ApexCharts !== 'undefined') {
+                    log('Auto-creating test charts...');
+                    createLineChart();
+                    setTimeout(createDonutChart, 500);
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
