@@ -727,8 +727,8 @@ async def get_products(
             "is_low_stock": is_low_stock,
             "stock_status": stock_status,
             "profit_margin": profit_margin,
-            "created_at": product["created_at"].isoformat(),
-            "updated_at": product.get("updated_at", product["created_at"]).isoformat(),
+            "created_at": product["created_at"].isoformat() if product.get("created_at") else None,
+            "updated_at": (product.get("updated_at") or product.get("created_at")).isoformat() if (product.get("updated_at") or product.get("created_at")) else None,
             "created_by": str(product.get("created_by", "")),
             "stock_display": stock_display
         }
