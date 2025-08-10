@@ -47,7 +47,7 @@ async def search_products(
     query: str = Query(..., min_length=1),
     limit: int = Query(10, ge=1, le=50)
 ):
-    """Search products for POS (by name, SKU, or barcode)"""
+    """Search products for POS (by name or barcode)"""
     db = await get_database()
 
     # Build search query
@@ -57,7 +57,6 @@ async def search_products(
             {"stock_quantity": {"$gt": 0}},  # Only show products in stock
             {"$or": [
                 {"name": {"$regex": query, "$options": "i"}},
-                {"sku": {"$regex": query, "$options": "i"}},
                 {"barcode": {"$regex": query, "$options": "i"}}
             ]}
         ]
@@ -74,7 +73,6 @@ async def search_products(
         product_data = {
             "id": str(product["_id"]),
             "name": product["name"],
-            "sku": product["sku"],
             "barcode": product.get("barcode", ""),
             "price": product["price"],
             "stock_quantity": product["stock_quantity"],
@@ -268,7 +266,6 @@ async def create_sale(request: Request, sale_data: SaleCreate):
             sale_items.append({
                 "product_id": ObjectId(item_data.product_id),
                 "product_name": product["name"],
-                "sku": product["sku"],
                 "quantity": item_data.quantity,
                 "unit_price": unit_price,
                 "total_price": total_price,
@@ -359,7 +356,6 @@ async def create_sale(request: Request, sale_data: SaleCreate):
             SaleItemResponse(
                 product_id=str(item["product_id"]),
                 product_name=item["product_name"],
-                sku=item["sku"],
                 quantity=item["quantity"],
                 unit_price=item["unit_price"],
                 total_price=item["total_price"],
@@ -527,7 +523,6 @@ async def get_sales(
             SaleItemResponse(
                 product_id=str(item["product_id"]),
                 product_name=item["product_name"],
-                sku=item["sku"],
                 quantity=item["quantity"],
                 unit_price=item["unit_price"],
                 total_price=item["total_price"],

@@ -1394,7 +1394,7 @@ async def delete_product(
             "deleted_product": {
                 "id": product_id,
                 "name": product["name"],
-                "sku": product.get("sku", ""),
+                "barcode": product.get("barcode", ""),
                 "orders_affected": orders_with_product
             }
         }

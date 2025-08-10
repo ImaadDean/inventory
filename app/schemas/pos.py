@@ -22,7 +22,6 @@ class SaleItemCreate(BaseModel):
 class SaleItemResponse(BaseModel):
     product_id: str
     product_name: str
-    sku: str
     quantity: int
     unit_price: float
     total_price: float
@@ -33,7 +32,6 @@ class SaleItemResponse(BaseModel):
             "example": {
                 "product_id": "507f1f77bcf86cd799439011",
                 "product_name": "iPhone 15 Pro",
-                "sku": "IPH15PRO001",
                 "quantity": 2,
                 "unit_price": 999.99,
                 "total_price": 1999.98,
@@ -102,7 +100,6 @@ class SaleResponse(BaseModel):
                 "items": [
                     {
                         "product_name": "iPhone 15 Pro",
-                        "sku": "IPH15PRO001",
                         "quantity": 1,
                         "unit_price": 999.99,
                         "total_price": 999.99,
@@ -151,7 +148,6 @@ class SaleList(BaseModel):
 class ProductSearch(BaseModel):
     id: str
     name: str
-    sku: str
     barcode: Optional[str] = None
     price: float
     stock_quantity: int
@@ -162,7 +158,6 @@ class ProductSearch(BaseModel):
             "example": {
                 "id": "507f1f77bcf86cd799439011",
                 "name": "iPhone 15 Pro",
-                "sku": "IPH15PRO001",
                 "barcode": "1234567890123",
                 "price": 999.99,
                 "stock_quantity": 50,

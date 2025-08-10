@@ -115,7 +115,7 @@ class ProductCreate(BaseModel):
                 "price": 999.99,
                 "cost_price": 750.00,
                 "stock_quantity": 50,
-                "min_stock_level": 10,
+                "min_stock_level": 4,
                 "unit": "pcs",
                 "supplier": "Apple Inc."
             }
@@ -219,7 +219,7 @@ class ProductList(BaseModel):
                     {
                         "id": "507f1f77bcf86cd799439011",
                         "name": "iPhone 15 Pro",
-                        "sku": "IPH15PRO001",
+                        "barcode": "1234567890123",
                         "price": 999.99,
                         "stock_quantity": 50,
                         "is_low_stock": False

@@ -122,7 +122,7 @@ class Product(BaseModel):
                     "price": 999.99,
                     "cost_price": 750.00,
                     "stock_quantity": 50,
-                    "min_stock_level": 10,
+                    "min_stock_level": 4,
                     "unit": "pcs",
                     "supplier": "Apple Inc."
                 },
