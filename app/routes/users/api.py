@@ -89,7 +89,7 @@ require_admin_or_inventory_hybrid = require_roles_hybrid(["admin", "inventory_ma
 async def create_user(
     request: Request,
     user_data: UserCreate,
-    current_user: User = Depends(can_create_users)
+    current_user: User = Depends(require_admin_or_inventory_hybrid)
 ):
     """Create a new user (Admin or Manager only)"""
     db = await get_database()
