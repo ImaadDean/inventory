@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     # MongoDB Configuration
     MONGO_USERNAME: str = "imaad"
     MONGO_PASSWORD: str = "Ertdfgxc"
-    MONGO_HOST: str = "144.21.56.184"
+    MONGO_HOST: str = "79.72.88.5"
     MONGO_PORT: int = 27017
     
     MONGO_DATABASE: str = "perfumesandmore"

@@ -11,7 +11,9 @@ from ...utils.auth import (
     create_access_token,
     get_current_user,
     verify_password,
-    get_user_by_id
+    get_user_by_id,
+    get_user_by_email,
+    check_email_exists
 )
 from ...utils.email import (
     generate_reset_token,
@@ -135,19 +137,33 @@ async def change_password(
 async def forgot_password(request_data: ForgotPasswordRequest, request: Request):
     """Send password reset email"""
     try:
-        db = await get_database()
+        # Fast check if email exists in database
+        email_exists = await check_email_exists(request_data.email)
+        if not email_exists:
+            # Explicitly tell user that email doesn't exist - NO EMAIL SENT
+            return {
+                "message": "Email does not exist in our system. Please check your email address and try again.",
+                "email": request_data.email,
+                "status": "email_not_found"
+            }
 
-        # Find user by email
-        user_data = await db.users.find_one({"email": request_data.email})
-        if not user_data:
-            # Don't reveal if email exists or not for security
-            return {"message": "If the email exists in our system, you will receive a password reset link."}
-
-        user = User(**user_data)
+        # Get user by email
+        user = await get_user_by_email(request_data.email)
+        if not user:
+            # This shouldn't happen if check_email_exists returned True, but just in case
+            return {
+                "message": "Email does not exist in our system. Please check your email address and try again.",
+                "email": request_data.email,
+                "status": "email_not_found"
+            }
 
         # Check if user is active
         if not user.is_active:
-            return {"message": "If the email exists in our system, you will receive a password reset link."}
+            return {
+                "message": "Email exists but account is inactive. Please contact your administrator.",
+                "email": user.email,
+                "status": "account_inactive"
+            }
 
         # Generate reset token
         reset_token = generate_reset_token()
@@ -169,7 +185,11 @@ async def forgot_password(request_data: ForgotPasswordRequest, request: Request)
                 detail="Failed to send reset email"
             )
 
-        return {"message": "If the email exists in our system, you will receive a password reset link."}
+        return {
+            "message": "Email exists in our system. Password reset link has been sent successfully. Please check your email inbox.",
+            "email": user.email,
+            "status": "email_sent"
+        }
 
     except HTTPException:
         raise

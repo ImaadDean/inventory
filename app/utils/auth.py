@@ -61,6 +61,15 @@ async def get_user_by_username(username: str) -> Optional[User]:
     return None
 
 
+async def get_user_by_email(email: str) -> Optional[User]:
+    """Get user by email from database"""
+    db = await get_database()
+    user_data = await db.users.find_one({"email": email})
+    if user_data:
+        return User(**user_data)
+    return None
+
+
 async def get_user_by_id(user_id: str) -> Optional[User]:
     """Get user by ObjectId from database"""
     try:
@@ -74,13 +83,11 @@ async def get_user_by_id(user_id: str) -> Optional[User]:
         return None
 
 
-async def get_user_by_id(user_id: str) -> Optional[User]:
-    """Get user by ID from database"""
+async def check_email_exists(email: str) -> bool:
+    """Fast check if email exists in database without returning user data"""
     db = await get_database()
-    user_data = await db.users.find_one({"_id": ObjectId(user_id)})
-    if user_data:
-        return User(**user_data)
-    return None
+    user_count = await db.users.count_documents({"email": email}, limit=1)
+    return user_count > 0
 
 
 async def authenticate_user(username: str, password: str) -> Optional[User]:
