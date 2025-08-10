@@ -59,6 +59,10 @@ async def reports_dashboard(request: Request):
     if not current_user:
         return RedirectResponse(url="/auth/login", status_code=302)
 
+    # Block cashiers from accessing reports
+    if current_user.role == "cashier":
+        return RedirectResponse(url="/pos", status_code=302)
+
     try:
         db = await get_database()
         
@@ -313,6 +317,10 @@ async def sales_report(request: Request):
     if not current_user:
         return RedirectResponse(url="/auth/login", status_code=302)
 
+    # Block cashiers from accessing sales reports
+    if current_user.role == "cashier":
+        return RedirectResponse(url="/pos", status_code=302)
+
     return templates.TemplateResponse(
         "reports/sales.html",
         {
@@ -449,6 +457,10 @@ async def inventory_report(request: Request):
     if not current_user:
         return RedirectResponse(url="/auth/login", status_code=302)
 
+    # Block cashiers from accessing inventory reports
+    if current_user.role == "cashier":
+        return RedirectResponse(url="/pos", status_code=302)
+
     return templates.TemplateResponse(
         "reports/inventory.html",
         {
@@ -465,6 +477,10 @@ async def customers_report(request: Request):
     current_user = await get_current_user_from_cookie(request)
     if not current_user:
         return RedirectResponse(url="/auth/login", status_code=302)
+
+    # Block cashiers from accessing customer reports
+    if current_user.role == "cashier":
+        return RedirectResponse(url="/pos", status_code=302)
 
     return templates.TemplateResponse(
         "reports/customers.html",
@@ -690,6 +706,10 @@ async def financial_report(request: Request):
     current_user = await get_current_user_from_cookie(request)
     if not current_user:
         return RedirectResponse(url="/auth/login", status_code=302)
+
+    # Block cashiers from accessing financial reports
+    if current_user.role == "cashier":
+        return RedirectResponse(url="/pos", status_code=302)
 
     return templates.TemplateResponse(
         "reports/financial.html",

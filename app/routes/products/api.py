@@ -765,7 +765,9 @@ async def get_products(
         "total": total,
         "page": page,
         "size": size,
-        "total_pages": (total + size - 1) // size
+        "total_pages": (total + size - 1) // size,
+        "has_next": page * size < total,
+        "has_prev": page > 1
     }
 
 

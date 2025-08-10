@@ -189,6 +189,10 @@ async def dashboard_page(request: Request):
     if not current_user:
         return RedirectResponse(url="/auth/login", status_code=302)
 
+    # Block cashiers from accessing dashboard
+    if current_user.role == "cashier":
+        return RedirectResponse(url="/pos", status_code=302)
+
     try:
         # Get dashboard data directly from the function
         dashboard_data = await get_dashboard_data()
@@ -212,6 +216,10 @@ async def reports_page(request: Request):
     current_user = await get_current_user_from_cookie(request)
     if not current_user:
         return RedirectResponse(url="/auth/login", status_code=302)
+
+    # Block cashiers from accessing reports
+    if current_user.role == "cashier":
+        return RedirectResponse(url="/pos", status_code=302)
 
     return templates.TemplateResponse(
         "dashboard/reports.html",

@@ -134,7 +134,7 @@
                         <option value="inactive">Inactive</option>
                     </select>
                     <div class="flex space-x-1">
-                        <button onclick="loadClients()" class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1.5 rounded-lg flex items-center space-x-1 text-xs transition-all duration-200">
+                        <button onclick="refreshClientsData()" class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1.5 rounded-lg flex items-center space-x-1 text-xs transition-all duration-200">
                             <i class="fas fa-refresh text-xs"></i>
                             <span>Refresh</span>
                         </button>
@@ -163,6 +163,28 @@
                     <!-- Clients will be loaded here -->
                 </tbody>
             </table>
+        </div>
+
+        <!-- Infinite Scroll Status -->
+        <div id="scroll-status-container" class="mt-4 px-4 py-3 bg-white border-t border-gray-200">
+            <div class="flex flex-col items-center space-y-3">
+                <!-- Results info -->
+                <div class="text-sm text-gray-700">
+                    Showing <span id="showing-count" class="font-medium">0</span> of <span id="total-count" class="font-medium">0</span> clients
+                </div>
+
+                <!-- Auto-loading indicator -->
+                <div id="auto-loading-indicator" class="hidden flex items-center space-x-2 text-gray-500">
+                    <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                    <span class="text-sm">Loading more clients...</span>
+                </div>
+
+                <!-- End of results message -->
+                <div id="end-of-results" class="hidden text-sm text-gray-500 text-center">
+                    <i class="fas fa-check-circle text-green-500 mr-1"></i>
+                    You've reached the end of the list
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -408,6 +430,15 @@
 </div>
 
 <script>
+// Global variables for clients infinite scroll
+let currentClientsPage = 1;
+let totalClientsPages = 1;
+let totalClientsCount = 0;
+let loadedClientsCount = 0;
+let isLoadingClients = false;
+let hasMoreClients = true;
+let allClients = []; // Store all loaded clients
+
 // Toast notification function
 function showToast(message, type = 'info') {
     // Create toast element
@@ -495,11 +526,19 @@ function closeAddClientModal() {
     submitButton.disabled = false;
 }
 
-function loadClients() {
-    console.log('Loading clients...');
+function loadClients(page = 1, append = false) {
+    if (isLoadingClients) return;
 
-    // Load clients from the API
-    fetch('/api/customers/', {
+    console.log(`Loading clients page ${page}...`);
+    isLoadingClients = true;
+
+    // Show loading state
+    if (append) {
+        showAutoLoadingState();
+    }
+
+    // Load clients from the table API with pagination
+    fetch(`/api/customers/table?page=${page}&size=10`, {
         method: 'GET',
         credentials: 'include',
         headers: {
@@ -534,10 +573,30 @@ function loadClients() {
                 throw new Error('Invalid data structure received from server');
             }
 
-            console.log(`Displaying ${data.customers.length} clients`);
-            displayClients(data.customers);
-            updateClientStats(data.customers);
-            showToast(`Loaded ${data.total || 0} clients`, 'success');
+            // Update state
+            currentClientsPage = data.page;
+            totalClientsPages = data.total_pages;
+            totalClientsCount = data.total;
+            hasMoreClients = data.has_next;
+
+            if (append) {
+                // Append new clients to existing list
+                allClients = allClients.concat(data.customers);
+                appendClients(data.customers);
+            } else {
+                // Replace clients list (initial load)
+                allClients = data.customers;
+                displayClients(data.customers);
+            }
+
+            loadedClientsCount = allClients.length;
+            updateScrollStatus();
+
+            console.log(`${append ? 'Appended' : 'Loaded'} ${data.customers.length} clients (page ${data.page} of ${data.total_pages})`);
+
+            if (!append) {
+                showToast(`Loaded ${data.customers.length} clients`, 'success');
+            }
         })
         .catch(error => {
             console.error('Error loading clients:', error);
@@ -555,6 +614,10 @@ function loadClients() {
             }
 
             showToast(errorMessage, 'error');
+        })
+        .finally(() => {
+            isLoadingClients = false;
+            hideAutoLoadingState();
         });
 }
 
@@ -630,25 +693,177 @@ function displayClients(clients) {
             </td>
         </tr>
     `).join('');
+
+    // Set up intersection observer for the last row
+    if (window.observeLastRow) {
+        setTimeout(window.observeLastRow, 100);
+    }
 }
 
-function updateClientStats(clients) {
-    const totalClients = clients.length;
-    const activeClients = clients.filter(c => c.is_active).length;
-    const totalOrders = clients.reduce((sum, c) => sum + c.total_orders, 0);
-    const totalRevenue = clients.reduce((sum, c) => sum + c.total_purchases, 0);
+function appendClients(clients) {
+    const tableBody = document.querySelector('#clients-table-body');
+    if (!tableBody || clients.length === 0) return;
 
-    document.getElementById('total-clients').textContent = totalClients;
-    document.getElementById('active-clients').textContent = activeClients;
-    document.getElementById('total-orders').textContent = totalOrders;
-    document.getElementById('total-revenue').textContent = `UGX ${Math.round(totalRevenue).toLocaleString('en-UG')}`;
+    const newRowsHTML = clients.map(client => `
+        <tr class="hover:bg-gray-50 transition-colors duration-150">
+            <td class="px-3 py-2">
+                <div class="flex items-center space-x-2">
+                    <div class="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center">
+                        <i class="fas fa-user text-white text-xs"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <div class="text-sm font-medium text-gray-900 truncate">${client.name}</div>
+                        <div class="text-xs text-gray-500 truncate">${client.notes || 'No notes'}</div>
+                    </div>
+                </div>
+            </td>
+            <td class="px-3 py-2">
+                <div class="text-sm text-gray-900 truncate">${client.email || 'No email'}</div>
+            </td>
+            <td class="px-3 py-2">
+                <div class="text-sm text-gray-900">${client.phone || 'No phone'}</div>
+            </td>
+            <td class="px-3 py-2 text-center">
+                <span class="inline-flex items-center justify-center w-8 h-8 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">
+                    ${client.total_orders}
+                </span>
+            </td>
+            <td class="px-3 py-2 text-right">
+                <div class="text-sm font-medium text-gray-900">UGX ${Math.round(client.total_purchases).toLocaleString('en-UG')}</div>
+            </td>
+            <td class="px-3 py-2 text-center">
+                <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full ${client.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                    ${client.is_active ? 'Active' : 'Inactive'}
+                </span>
+            </td>
+            <td class="px-3 py-2">
+                <div class="flex items-center justify-center space-x-1">
+                    <button onclick="viewClient('${client.id}')"
+                            class="text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 p-1 rounded transition-colors duration-150"
+                            title="View Client Details">
+                        <i class="fas fa-eye text-xs"></i>
+                    </button>
+                    <button onclick="editClient('${client.id}')"
+                            class="text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-1 rounded transition-colors duration-150"
+                            title="Edit Client">
+                        <i class="fas fa-edit text-xs"></i>
+                    </button>
+                    <button onclick="deleteClient('${client.id}')"
+                            class="text-red-600 hover:text-red-800 hover:bg-red-50 p-1 rounded transition-colors duration-150"
+                            title="Delete Client">
+                        <i class="fas fa-trash text-xs"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+
+    tableBody.insertAdjacentHTML('beforeend', newRowsHTML);
+
+    // Set up intersection observer for the new last row
+    if (window.observeLastRow) {
+        setTimeout(window.observeLastRow, 100);
+    }
+}
+
+function showAutoLoadingState() {
+    document.getElementById('auto-loading-indicator').classList.remove('hidden');
+}
+
+function hideAutoLoadingState() {
+    document.getElementById('auto-loading-indicator').classList.add('hidden');
+}
+
+function updateScrollStatus() {
+    const showingCountEl = document.getElementById('showing-count');
+    const totalCountEl = document.getElementById('total-count');
+    const endOfResults = document.getElementById('end-of-results');
+
+    // Update counts
+    showingCountEl.textContent = loadedClientsCount;
+    totalCountEl.textContent = totalClientsCount;
+
+    // Show/hide end message
+    if (hasMoreClients) {
+        endOfResults.classList.add('hidden');
+    } else {
+        endOfResults.classList.remove('hidden');
+    }
+}
+
+function loadMoreClients() {
+    if (!hasMoreClients || isLoadingClients) return;
+
+    const nextPage = currentClientsPage + 1;
+    loadClients(nextPage, true);
+}
+
+function loadClientStats() {
+    console.log('Loading client statistics...');
+
+    fetch('/api/customers/stats', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(async response => {
+        console.log(`Load stats API Response Status: ${response.status}`);
+
+        if (!response.ok) {
+            let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+
+            try {
+                const errorData = await response.json();
+                if (errorData.detail) {
+                    errorMessage = errorData.detail;
+                }
+            } catch (e) {
+                console.log('Could not parse error response as JSON');
+            }
+
+            throw new Error(errorMessage);
+        }
+
+        const data = await response.json();
+        console.log('Stats data received:', data);
+        return data;
+    })
+    .then(data => {
+        updateClientStats(data);
+    })
+    .catch(error => {
+        console.error('Error loading client stats:', error);
+        showToast('Failed to load statistics', 'error');
+    });
+}
+
+function updateClientStats(stats) {
+    document.getElementById('total-clients').textContent = stats.total_customers || 0;
+    document.getElementById('active-clients').textContent = stats.active_customers || 0;
+    document.getElementById('total-orders').textContent = stats.total_orders || 0;
+    document.getElementById('total-revenue').textContent = `UGX ${Math.round(stats.total_revenue || 0).toLocaleString('en-UG')}`;
 
     // Update footer text
     const activeFooter = document.getElementById('active-clients-footer');
     if (activeFooter) {
-        activeFooter.textContent = `${activeClients} currently active`;
+        activeFooter.textContent = `${stats.active_customers || 0} currently active`;
     }
 }
+
+function refreshClientsData() {
+    // Reset infinite scroll state
+    currentClientsPage = 1;
+    allClients = [];
+    loadedClientsCount = 0;
+    hasMoreClients = true;
+
+    loadClients();
+    loadClientStats();
+}
+
+
 
 function editClient(clientId) {
     showToast('Edit functionality coming soon', 'info');
@@ -718,7 +933,7 @@ document.getElementById('add-client-form').addEventListener('submit', function(e
     .then(data => {
         showToast(`Client ${isEdit ? 'updated' : 'created'} successfully`, 'success');
         closeAddClientModal();
-        loadClients(); // Reload the clients list
+        refreshClientsData(); // Reload the clients list and stats
     })
     .catch(error => {
         console.error(`Error ${isEdit ? 'updating' : 'creating'} client:`, error);
@@ -734,6 +949,7 @@ document.getElementById('add-client-form').addEventListener('submit', function(e
 // Load clients on page load
 document.addEventListener('DOMContentLoaded', function() {
     loadClients();
+    loadClientStats();
 
     // Check for success/error messages in URL parameters
     const urlParams = new URLSearchParams(window.location.search);
@@ -743,7 +959,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (successMessage) {
         showToast(successMessage, 'success');
         // Reload clients after successful creation
-        loadClients();
+        refreshClientsData();
         // Clean up URL
         window.history.replaceState({}, document.title, window.location.pathname);
     }
@@ -759,6 +975,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Setup infinite scroll for client orders
     setupOrdersInfiniteScroll();
+
+    // Setup infinite scroll for clients
+    setupClientsInfiniteScroll();
 });
 
 // Setup keyboard event handlers
@@ -813,6 +1032,60 @@ function setupOrdersInfiniteScroll() {
             }
         }
     });
+}
+
+// Setup infinite scroll for clients
+function setupClientsInfiniteScroll() {
+    // Add scroll detection to the window for automatic loading
+    window.addEventListener('scroll', function() {
+        // Check if we're near the bottom of the page (within 300px for early loading)
+        if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 300) {
+            // Auto-load more clients if available
+            if (hasMoreClients && !isLoadingClients) {
+                console.log('Auto-loading more clients...');
+                loadMoreClients();
+            }
+        }
+    });
+
+    // Also add scroll detection to the table container
+    const tableContainer = document.querySelector('.overflow-x-auto');
+    if (tableContainer) {
+        tableContainer.addEventListener('scroll', function() {
+            // Check if we're near the bottom (within 150px)
+            if (tableContainer.scrollTop + tableContainer.clientHeight >= tableContainer.scrollHeight - 150) {
+                // Auto-load more clients if available
+                if (hasMoreClients && !isLoadingClients) {
+                    console.log('Auto-loading more clients from table scroll...');
+                    loadMoreClients();
+                }
+            }
+        });
+    }
+
+    // Add intersection observer for even better detection
+    const lastRowObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting && hasMoreClients && !isLoadingClients) {
+                console.log('Last row visible, auto-loading more clients...');
+                loadMoreClients();
+            }
+        });
+    }, {
+        rootMargin: '100px' // Trigger when within 100px of viewport
+    });
+
+    // Observe the last row when clients are loaded
+    function observeLastRow() {
+        const tableBody = document.querySelector('#clients-table-body');
+        if (tableBody && tableBody.children.length > 0) {
+            const lastRow = tableBody.children[tableBody.children.length - 1];
+            lastRowObserver.observe(lastRow);
+        }
+    }
+
+    // Store the observer function globally so we can call it after loading clients
+    window.observeLastRow = observeLastRow;
 }
 
 // View Client Functions
@@ -1332,7 +1605,7 @@ function deleteClient(clientId) {
     .then(response => {
         if (response.ok) {
             showToast('Client deleted successfully', 'success');
-            loadClients(); // Reload the clients list
+            refreshClientsData(); // Reload the clients list and stats
         } else {
             throw new Error('Failed to delete client');
         }

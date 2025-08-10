@@ -71,8 +71,13 @@ async def login_form(
             data={"sub": user.username}, expires_delta=access_token_expires
         )
 
-        # Redirect to dashboard with token in cookie
-        response = RedirectResponse(url="/dashboard", status_code=status.HTTP_302_FOUND)
+        # Redirect based on user role
+        if user.role == "cashier":
+            redirect_url = "/pos"
+        else:
+            redirect_url = "/dashboard"
+
+        response = RedirectResponse(url=redirect_url, status_code=status.HTTP_302_FOUND)
         response.set_cookie(
             key="access_token",
             value=f"Bearer {access_token}",

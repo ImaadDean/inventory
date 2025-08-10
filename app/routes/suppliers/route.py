@@ -38,6 +38,11 @@ async def suppliers_page(request: Request):
     """Render the suppliers management page"""
     try:
         user = await get_current_user_hybrid(request)
+
+        # Block cashiers from accessing suppliers
+        if user.role == "cashier":
+            return RedirectResponse(url="/pos", status_code=302)
+
         return templates.TemplateResponse("suppliers/index.html", {
             "request": request,
             "user": user

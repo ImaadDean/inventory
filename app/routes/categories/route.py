@@ -41,6 +41,10 @@ async def categories_page(request: Request):
     if not current_user:
         return RedirectResponse(url="/auth/login", status_code=302)
 
+    # Block cashiers from accessing categories
+    if current_user.role == "cashier":
+        return RedirectResponse(url="/pos", status_code=302)
+
     return templates.TemplateResponse(
         "categories/index.html",
         {"request": request, "user": current_user}
@@ -59,6 +63,10 @@ async def create_category(
     current_user = await get_current_user_from_cookie(request)
     if not current_user:
         return RedirectResponse(url="/auth/login", status_code=302)
+
+    # Block cashiers from creating categories
+    if current_user.role == "cashier":
+        return RedirectResponse(url="/pos", status_code=302)
 
     db = await get_database()
 

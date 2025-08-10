@@ -41,6 +41,11 @@ async def expenses_page(request: Request):
     """Render the expenses management page"""
     try:
         user = await get_current_user_hybrid(request)
+
+        # Block cashiers from accessing expenses
+        if user.role == "cashier":
+            return RedirectResponse(url="/pos", status_code=302)
+
         return templates.TemplateResponse("expenses/index.html", {
             "request": request,
             "user": user

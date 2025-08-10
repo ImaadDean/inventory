@@ -1,12 +1,35 @@
-from fastapi import APIRouter, HTTPException, status, Depends, Query
+from fastapi import APIRouter, HTTPException, status, Depends, Query, Request
 from typing import Optional, List
 from datetime import datetime, date
 from bson import ObjectId
 from ...config.database import get_database
 from ...models import User
-from ...utils.auth import get_current_user
+from ...utils.auth import get_current_user, verify_token, get_user_by_username
 
 router = APIRouter(prefix="/api/orders", tags=["Orders API"])
+
+
+async def get_current_user_from_cookie(request: Request):
+    """Get current user from cookie for API routes"""
+    access_token = request.cookies.get("access_token")
+    if not access_token:
+        return None
+
+    if access_token.startswith("Bearer "):
+        token = access_token[7:]
+    else:
+        token = access_token
+
+    payload = verify_token(token)
+    if not payload:
+        return None
+
+    username = payload.get("sub")
+    if not username:
+        return None
+
+    user = await get_user_by_username(username)
+    return user
 
 
 @router.get("/", response_model=dict)
@@ -353,6 +376,84 @@ async def get_order(order_id: str):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve order: {str(e)}"
+        )
+
+
+@router.put("/{order_id}/status")
+async def update_order_status(
+    order_id: str,
+    status_data: dict,
+    request: Request
+):
+    """Update order status"""
+    try:
+        # Check authentication
+        current_user = await get_current_user_from_cookie(request)
+        if not current_user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required"
+            )
+
+        db = await get_database()
+
+        # Validate order exists
+        order = await db.orders.find_one({"_id": ObjectId(order_id)})
+        if not order:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Order not found"
+            )
+
+        new_status = status_data.get("status")
+        if not new_status:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Status is required"
+            )
+
+        # Validate status
+        valid_statuses = ["pending", "completed", "cancelled"]
+        if new_status not in valid_statuses:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid status. Must be one of: {', '.join(valid_statuses)}"
+            )
+
+        # Update order status
+        update_data = {
+            "status": new_status,
+            "updated_at": datetime.utcnow()
+        }
+
+        # If marking as completed, also update payment status
+        if new_status == "completed":
+            update_data["payment_status"] = "paid"
+
+        result = await db.orders.update_one(
+            {"_id": ObjectId(order_id)},
+            {"$set": update_data}
+        )
+
+        if result.modified_count == 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Failed to update order status"
+            )
+
+        return {
+            "success": True,
+            "message": f"Order status updated to {new_status}",
+            "order_id": order_id,
+            "new_status": new_status
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update order status: {str(e)}"
         )
 
 

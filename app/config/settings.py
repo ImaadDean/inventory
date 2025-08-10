@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     # JWT Configuration
     SECRET_KEY: str = "your-secret-key-change-this-in-production"
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 525600  # 1 year (365 days * 24 hours * 60 minutes)
 
     # Application Configuration
     APP_NAME: str = "Inventory Management System"

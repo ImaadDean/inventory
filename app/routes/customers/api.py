@@ -506,6 +506,121 @@ async def create_customer(
         notes=created_customer.get("notes")
     )
 
+@router.get("/table", response_model=dict)
+async def get_customers_for_table(
+    request: Request,
+    page: int = Query(1, ge=1),
+    size: int = Query(10, ge=1, le=100),
+    search: Optional[str] = Query(None),
+    is_active: Optional[bool] = Query(None),
+    user: User = Depends(get_current_user_hybrid)
+):
+    """Get customers for table display with pagination"""
+    try:
+        db = await get_database()
+
+        # Build filter query
+        filter_query = {}
+        if search:
+            filter_query["$or"] = [
+                {"name": {"$regex": search, "$options": "i"}},
+                {"email": {"$regex": search, "$options": "i"}},
+                {"phone": {"$regex": search, "$options": "i"}}
+            ]
+        if is_active is not None:
+            filter_query["is_active"] = is_active
+
+        # Get total count
+        total = await db.customers.count_documents(filter_query)
+
+        # Get customers with pagination
+        skip = (page - 1) * size
+        cursor = db.customers.find(filter_query).skip(skip).limit(size).sort("created_at", -1)
+        customers_data = await cursor.to_list(length=size)
+
+        # Convert ObjectId to string and format data for table
+        customers = []
+        for customer in customers_data:
+            customer_dict = {
+                "id": str(customer["_id"]),
+                "name": customer.get("name", ""),
+                "email": customer.get("email"),
+                "phone": customer.get("phone"),
+                "total_orders": customer.get("total_orders", 0),
+                "total_purchases": customer.get("total_purchases", 0.0),
+                "is_active": customer.get("is_active", True),
+                "notes": customer.get("notes"),
+                "created_at": customer.get("created_at"),
+                "last_purchase_date": customer.get("last_purchase_date")
+            }
+            customers.append(customer_dict)
+
+        return {
+            "customers": customers,
+            "total": total,
+            "page": page,
+            "size": size,
+            "total_pages": (total + size - 1) // size,
+            "has_next": page * size < total,
+            "has_prev": page > 1
+        }
+
+    except Exception as e:
+        print(f"Error fetching customers for table: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error while fetching customers for table"
+        )
+
+
+@router.get("/stats", response_model=dict)
+async def get_customer_stats(
+    request: Request,
+    user: User = Depends(get_current_user_hybrid)
+):
+    """Get customer statistics without fetching all customer data"""
+    try:
+        db = await get_database()
+
+        # Get total customers count
+        total_customers = await db.customers.count_documents({})
+
+        # Get active customers count
+        active_customers = await db.customers.count_documents({"is_active": True})
+
+        # Get aggregated statistics using MongoDB aggregation pipeline
+        pipeline = [
+            {
+                "$group": {
+                    "_id": None,
+                    "total_orders": {"$sum": "$total_orders"},
+                    "total_revenue": {"$sum": "$total_purchases"}
+                }
+            }
+        ]
+
+        aggregation_result = await db.customers.aggregate(pipeline).to_list(length=1)
+
+        if aggregation_result:
+            total_orders = aggregation_result[0]["total_orders"]
+            total_revenue = aggregation_result[0]["total_revenue"]
+        else:
+            total_orders = 0
+            total_revenue = 0.0
+
+        return {
+            "total_customers": total_customers,
+            "active_customers": active_customers,
+            "total_orders": total_orders,
+            "total_revenue": total_revenue
+        }
+
+    except Exception as e:
+        print(f"Error fetching customer stats: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error while fetching customer statistics"
+        )
 
 
 

@@ -39,9 +39,12 @@ async def users_page(request: Request):
     if not current_user:
         return RedirectResponse(url="/auth/login", status_code=302)
 
-    # Check if user is admin or manager
+    # Check if user is admin or manager (block cashiers)
     if not is_admin_or_manager(current_user):
-        return RedirectResponse(url="/dashboard", status_code=302)
+        if current_user.role == "cashier":
+            return RedirectResponse(url="/pos", status_code=302)
+        else:
+            return RedirectResponse(url="/dashboard", status_code=302)
 
     return templates.TemplateResponse(
         "users/index.html",

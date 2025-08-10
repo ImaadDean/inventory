@@ -44,6 +44,10 @@ async def scents_page(request: Request):
     if not current_user:
         return RedirectResponse(url="/auth/login", status_code=302)
 
+    # Block cashiers from accessing scents
+    if current_user.role == "cashier":
+        return RedirectResponse(url="/pos", status_code=302)
+
     return templates.TemplateResponse(
         "scents/index.html",
         {"request": request, "user": current_user}
@@ -70,6 +74,10 @@ async def create_scent(
     current_user = await get_current_user_from_cookie(request)
     if not current_user:
         return RedirectResponse(url="/auth/login", status_code=302)
+
+    # Block cashiers from creating scents
+    if current_user.role == "cashier":
+        return RedirectResponse(url="/pos", status_code=302)
 
     try:
         db = await get_database()

@@ -205,13 +205,17 @@ app.include_router(reports_routes, prefix="/reports")
 app.include_router(scents_routes)
 
 
-# Root endpoint - redirect to dashboard if authenticated, otherwise to login
+# Root endpoint - redirect based on authentication status and role
 @app.get("/", tags=["Root"])
 async def root(request: Request):
-    """Root endpoint - redirect based on authentication status"""
+    """Root endpoint - redirect based on authentication status and user role"""
     user = await get_current_user_from_cookie(request)
     if user:
-        return RedirectResponse(url="/dashboard", status_code=302)
+        # Redirect based on user role
+        if user.role == "cashier":
+            return RedirectResponse(url="/pos", status_code=302)
+        else:
+            return RedirectResponse(url="/dashboard", status_code=302)
     else:
         return RedirectResponse(url="/auth/login", status_code=302)
 
