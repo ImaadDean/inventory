@@ -58,17 +58,14 @@ async def create_product(
     request: Request,
     name: str = Form(...),
     category_id: str = Form(...),
-    sku: str = Form(...),
     cost_price: str = Form(None),
     price: str = Form(...),
     stock_quantity: str = Form(...),
     description: str = Form(None),
-    min_stock_level: str = Form("10"),
-    max_stock_level: str = Form(None),
+    min_stock_level: str = Form("4"),
     unit: str = Form("pcs"),
     barcode: str = Form(None),
     supplier: str = Form(None),
-    location: str = Form(None),
     is_active: bool = Form(True),
     payment_method: str = Form(None),
     # Perfume-specific fields
@@ -91,8 +88,7 @@ async def create_product(
         parsed_cost_price = float(cost_price) if cost_price and cost_price.strip() else None
         parsed_price = float(price) if price and price.strip() else 0.0
         parsed_stock_quantity = int(stock_quantity) if stock_quantity and stock_quantity.strip() else 0
-        parsed_min_stock_level = int(min_stock_level) if min_stock_level and min_stock_level.strip() else 10
-        parsed_max_stock_level = int(max_stock_level) if max_stock_level and max_stock_level.strip() else None
+        parsed_min_stock_level = int(min_stock_level) if min_stock_level and min_stock_level.strip() else 4
 
         # Parse perfume-specific fields
         parsed_bottle_size_ml = float(bottle_size_ml) if bottle_size_ml and bottle_size_ml.strip() else None
@@ -106,13 +102,7 @@ async def create_product(
         )
 
     try:
-        # Check if product with same SKU already exists
-        existing_product = await db.products.find_one({"sku": sku.strip()})
-        if existing_product:
-            return RedirectResponse(
-                url="/products/?error=Product with this SKU already exists",
-                status_code=302
-            )
+
 
         # Validate category exists
         try:
@@ -134,16 +124,13 @@ async def create_product(
             "name": name.strip(),
             "category_id": category_object_id,
             "category_name": category["name"],  # Store category name for easy access
-            "sku": sku.strip().upper(),  # Store SKU in uppercase
             "price": parsed_price,  # Store as float for MongoDB compatibility
             "stock_quantity": parsed_stock_quantity,
             "description": description.strip() if description else None,
             "min_stock_level": parsed_min_stock_level,
-            "max_stock_level": parsed_max_stock_level,
             "unit": unit.strip() if unit else "pcs",
             "barcode": barcode.strip() if barcode else None,
             "supplier": supplier.strip() if supplier else None,
-            "location": location.strip() if location else None,
             "is_active": is_active,
             "created_at": kampala_to_utc(now_kampala()),
             "updated_at": kampala_to_utc(now_kampala()),

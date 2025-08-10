@@ -237,26 +237,18 @@ async def create_product_api(
                     detail="Category not found"
                 )
 
-        # Check if SKU already exists
-        existing_product = await db.products.find_one({"sku": product_data.sku})
-        if existing_product:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Product with SKU '{product_data.sku}' already exists"
-            )
+
 
         # Create product document
         product_doc = {
             "name": product_data.name,
             "description": product_data.description,
-            "sku": product_data.sku,
             "barcode": product_data.barcode,
             "category_id": ObjectId(product_data.category_id) if product_data.category_id else None,
             "price": product_data.price,
             "cost_price": product_data.cost_price,
             "stock_quantity": product_data.stock_quantity,
             "min_stock_level": product_data.min_stock_level,
-            "max_stock_level": product_data.max_stock_level,
             "unit": product_data.unit,
             "supplier": product_data.supplier,
             "is_active": True,
@@ -316,7 +308,7 @@ async def create_product_api(
                 supplier_name=product_data.supplier,
                 product_id=product_id,
                 product_name=product_data.name,
-                product_sku=product_data.sku
+                product_sku=""  # No SKU field anymore
             )
 
             # Create expense record for initial stock
@@ -632,7 +624,6 @@ async def get_products(
     if search:
         filter_query["$or"] = [
             {"name": {"$regex": search, "$options": "i"}},
-            {"sku": {"$regex": search, "$options": "i"}},
             {"barcode": {"$regex": search, "$options": "i"}},
             {"supplier": {"$regex": search, "$options": "i"}}
         ]
@@ -711,7 +702,6 @@ async def get_products(
             "id": str(product["_id"]),
             "name": product["name"],
             "description": product.get("description", ""),
-            "sku": product["sku"],
             "barcode": product.get("barcode", ""),
             "category_id": str(product["category_id"]) if product.get("category_id") else None,
             "category_name": category_name,
@@ -719,10 +709,8 @@ async def get_products(
             "cost_price": product.get("cost_price"),
             "stock_quantity": product["stock_quantity"],
             "min_stock_level": product["min_stock_level"],
-            "max_stock_level": product.get("max_stock_level"),
             "unit": product["unit"],
             "supplier": product.get("supplier", ""),
-            "location": product.get("location", ""),
             "is_active": product["is_active"],
             "is_low_stock": is_low_stock,
             "stock_status": stock_status,
@@ -1143,14 +1131,12 @@ async def get_product(
             "id": str(product["_id"]),
             "name": product["name"],
             "description": product.get("description", ""),
-            "sku": product.get("sku", ""),
             "barcode": product.get("barcode"),
             "price": float(product["price"]),
             "cost_price": float(cost_price) if cost_price else None,
             "profit_margin": profit_margin,
             "stock_quantity": product["stock_quantity"],
             "min_stock_level": product.get("min_stock_level", 0),
-            "max_stock_level": product.get("max_stock_level"),
             "unit": product.get("unit", "pcs"),
             "stock_status": stock_status,
             "stock_display": stock_display,
@@ -1267,8 +1253,7 @@ async def update_product(
         if product_data.min_stock_level is not None:
             update_doc["min_stock_level"] = product_data.min_stock_level
 
-        if product_data.max_stock_level is not None:
-            update_doc["max_stock_level"] = product_data.max_stock_level if product_data.max_stock_level > 0 else None
+
 
         if product_data.unit is not None:
             update_doc["unit"] = product_data.unit.strip() if product_data.unit else "pcs"

@@ -56,7 +56,6 @@ async def create_category(
     request: Request,
     name: str = Form(...),
     description: str = Form(None),
-    parent_id: str = Form(None),
     is_active: str = Form(None)
 ):
     """Handle category creation from form submission"""
@@ -79,29 +78,12 @@ async def create_category(
                 status_code=302
             )
 
-        # Handle parent_id
-        parent_object_id = None
-        if parent_id and parent_id.strip():
-            try:
-                parent_object_id = ObjectId(parent_id.strip())
-                # Verify parent exists
-                parent_exists = await db.categories.find_one({"_id": parent_object_id})
-                if not parent_exists:
-                    return RedirectResponse(
-                        url="/categories/?error=Parent category not found",
-                        status_code=302
-                    )
-            except Exception:
-                return RedirectResponse(
-                    url="/categories/?error=Invalid parent category ID",
-                    status_code=302
-                )
+
 
         # Create category document
         category_doc = {
             "name": name.strip(),
             "description": description.strip() if description else None,
-            "parent_id": parent_object_id,
             "is_active": is_active == "on",  # Checkbox value
             "created_at": datetime.utcnow(),
             "updated_at": datetime.utcnow(),

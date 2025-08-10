@@ -1,14 +1,17 @@
 from fastapi import APIRouter, HTTPException, status, Depends, Query, Request
-from typing import List, Optional
+from typing import Optional
 from datetime import datetime
 from bson import ObjectId
 from ...config.database import get_database
-from ...schemas.category import CategoryCreate, CategoryUpdate, CategoryResponse, CategoryStats, CategoryWithChildren
+from ...schemas.category import CategoryCreate, CategoryUpdate, CategoryResponse, CategoryStats
 from ...models import Category
 from ...utils.auth import get_current_user, verify_token, get_user_by_username
 from ...models import User
 
 router = APIRouter(prefix="/api/categories", tags=["Categories API"])
+
+
+
 
 
 async def get_current_user_hybrid(request: Request) -> User:
@@ -101,18 +104,7 @@ async def get_category_stats():
         # Get active categories count
         active_categories = await db.categories.count_documents({"is_active": True})
 
-        # Get parent categories count (categories without parent_id)
-        parent_categories = await db.categories.count_documents({
-            "$or": [
-                {"parent_id": {"$exists": False}},
-                {"parent_id": None}
-            ]
-        })
 
-        # Get subcategories count (categories with parent_id)
-        subcategories = await db.categories.count_documents({
-            "parent_id": {"$exists": True, "$ne": None}
-        })
 
         # Get total products count across all categories
         total_products = await db.products.count_documents({"is_active": True})
@@ -142,8 +134,6 @@ async def get_category_stats():
         return {
             "total_categories": total_categories,
             "active_categories": active_categories,
-            "parent_categories": parent_categories,
-            "subcategories": subcategories,
             "total_products": total_products,
             "categories_with_products": categories_with_products_count,
             "empty_categories": total_categories - categories_with_products_count
@@ -154,8 +144,8 @@ async def get_category_stats():
         return {
             "total_categories": 0,
             "active_categories": 0,
-            "parent_categories": 0,
-            "subcategories": 0,
+            "categories_with_products": 0,
+            "empty_categories": 0,
             "error": str(e)
         }
 
@@ -238,14 +228,7 @@ async def create_category(
                 detail="Category with this name already exists"
             )
         
-        # If parent_id is provided, verify parent exists
-        if category_data.parent_id:
-            parent_category = await db.categories.find_one({"_id": category_data.parent_id})
-            if not parent_category:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Parent category not found"
-                )
+
         
         # Create category
         category = Category(**category_data.model_dump())
@@ -259,7 +242,6 @@ async def create_category(
             "id": str(created_category["_id"]),
             "name": created_category["name"],
             "description": created_category.get("description"),
-            "parent_id": str(created_category["parent_id"]) if created_category.get("parent_id") else None,
             "is_active": created_category["is_active"],
             "created_at": created_category["created_at"],
             "updated_at": created_category.get("updated_at", created_category["created_at"])
@@ -320,22 +302,7 @@ async def update_category(
         if category_update.description is not None:
             update_data["description"] = category_update.description
 
-        if category_update.parent_id is not None:
-            # Validate parent category exists
-            if category_update.parent_id:
-                parent_exists = await db.categories.find_one({"_id": ObjectId(category_update.parent_id)})
-                if not parent_exists:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail="Parent category not found"
-                    )
-                # Prevent circular reference
-                if str(category_update.parent_id) == category_id:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail="Category cannot be its own parent"
-                    )
-            update_data["parent_id"] = ObjectId(category_update.parent_id) if category_update.parent_id else None
+
 
         if category_update.is_active is not None:
             update_data["is_active"] = category_update.is_active
@@ -365,7 +332,6 @@ async def update_category(
                 "id": str(updated_category["_id"]),
                 "name": updated_category["name"],
                 "description": updated_category.get("description"),
-                "parent_id": str(updated_category["parent_id"]) if updated_category.get("parent_id") else None,
                 "is_active": updated_category["is_active"],
                 "updated_at": updated_category["updated_at"].isoformat()
             }
@@ -413,13 +379,7 @@ async def delete_category(
                 detail=f"Cannot delete category. It has {products_count} products assigned to it. Please reassign or delete the products first."
             )
 
-        # Check if category has subcategories
-        subcategories_count = await db.categories.count_documents({"parent_id": ObjectId(category_id)})
-        if subcategories_count > 0:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Cannot delete category. It has {subcategories_count} subcategories. Please delete or reassign the subcategories first."
-            )
+
 
         # Delete the category
         result = await db.categories.delete_one({"_id": ObjectId(category_id)})
@@ -454,10 +414,8 @@ async def get_categories(
     skip: int = Query(0, ge=0, description="Number of categories to skip"),
     limit: int = Query(100, ge=1, le=1000, description="Number of categories to return"),
     active_only: bool = Query(True, description="Return only active categories"),
-    parent_id: Optional[str] = Query(None, description="Filter by parent category ID"),
     search: Optional[str] = Query(None, description="Search term for category name or description"),
-    status: Optional[str] = Query(None, description="Filter by status: active, inactive"),
-    type: Optional[str] = Query(None, description="Filter by type: parent, child")
+    status: Optional[str] = Query(None, description="Filter by status: active, inactive")
 ):
     """Get all categories with optional filtering"""
     try:
@@ -477,27 +435,7 @@ async def get_categories(
         elif active_only and not status:
             filter_dict["is_active"] = True
 
-        # Handle type filter
-        if type == "parent":
-            filter_dict["$or"] = [
-                {"parent_id": {"$exists": False}},
-                {"parent_id": None}
-            ]
-        elif type == "child":
-            filter_dict["parent_id"] = {"$exists": True, "$ne": None}
 
-        # Handle parent_id filter (for hierarchical filtering)
-        if parent_id:
-            try:
-                filter_dict["parent_id"] = ObjectId(parent_id)
-            except Exception:
-                # Invalid ObjectId, return empty result
-                return {
-                    "categories": [],
-                    "total": 0,
-                    "skip": skip,
-                    "limit": limit
-                }
 
         # Handle search filter
         if search:
@@ -547,8 +485,6 @@ async def get_categories(
                 "id": str(category["_id"]),
                 "name": category["name"],
                 "description": category.get("description"),
-                "parent_id": str(category["parent_id"]) if category.get("parent_id") else None,
-                "parent_name": None,  # TODO: Implement parent name lookup
                 "product_count": category.get("product_count", 0),
                 "is_active": category["is_active"],
                 "created_at": created_at.isoformat() if created_at else None,
@@ -624,7 +560,6 @@ async def get_category(category_id: str):
             "id": str(category["_id"]),
             "name": category["name"],
             "description": category.get("description"),
-            "parent_id": str(category["parent_id"]) if category.get("parent_id") else None,
             "product_count": category.get("product_count", 0),
             "is_active": category["is_active"],
             "created_at": created_at.isoformat() if created_at else None,
@@ -670,48 +605,7 @@ async def get_category_stats(current_user: User = Depends(get_current_user)):
         )
 
 
-@router.get("/tree", response_model=List[CategoryWithChildren])
-async def get_category_tree(current_user: User = Depends(get_current_user)):
-    """Get categories in a hierarchical tree structure"""
-    try:
-        db = await get_database()
-        
-        # Get all active categories
-        categories = await db.categories.find({"is_active": True}).sort("name", 1).to_list(length=None)
 
-        # Convert categories to proper format
-        converted_categories = []
-        for cat in categories:
-            converted_cat = {
-                "id": str(cat["_id"]),
-                "name": cat["name"],
-                "description": cat.get("description"),
-                "parent_id": str(cat["parent_id"]) if cat.get("parent_id") else None,
-                "is_active": cat["is_active"],
-                "created_at": cat["created_at"],
-                "updated_at": cat.get("updated_at", cat["created_at"])
-            }
-            converted_categories.append(converted_cat)
-
-        # Build tree structure
-        category_dict = {cat["id"]: CategoryWithChildren(**cat) for cat in converted_categories}
-        root_categories = []
-
-        for category in category_dict.values():
-            if category.parent_id:
-                parent_id = category.parent_id
-                if parent_id in category_dict:
-                    category_dict[parent_id].children.append(category)
-            else:
-                root_categories.append(category)
-        
-        return root_categories
-        
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve category tree: {str(e)}"
-        )
 
 
 

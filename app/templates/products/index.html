@@ -158,7 +158,6 @@
                     <tr>
                         <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Product</th>
                         <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Category</th>
-                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">SKU</th>
                         <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Price</th>
                         <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Stock</th>
                         <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
@@ -180,15 +179,31 @@
                 </div>
 
                 <!-- Auto-loading indicator -->
-                <div id="auto-loading-products-indicator" class="hidden flex items-center space-x-2 text-gray-500">
-                    <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                    <span class="text-sm">Loading more products...</span>
+                <div id="auto-loading-products-indicator" class="hidden flex items-center justify-center space-x-3 py-4 text-gray-600 bg-blue-50 rounded-lg border border-blue-200 transition-all duration-300">
+                    <div class="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent"></div>
+                    <span class="text-sm font-medium">Loading more products...</span>
+                    <div class="flex space-x-1">
+                        <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0ms"></div>
+                        <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 150ms"></div>
+                        <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 300ms"></div>
+                    </div>
                 </div>
 
                 <!-- End of results message -->
-                <div id="end-of-products" class="hidden text-sm text-gray-500 text-center">
-                    <i class="fas fa-check-circle text-green-500 mr-1"></i>
-                    You've reached the end of the list
+                <div id="end-of-products" class="hidden text-center py-6">
+                    <div class="inline-flex items-center justify-center space-x-3 px-6 py-3 bg-green-50 border border-green-200 rounded-lg text-green-700">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-check-circle text-green-500 text-lg"></i>
+                        </div>
+                        <div class="text-sm font-medium">
+                            You've reached the end of all products
+                        </div>
+                        <div class="flex space-x-1">
+                            <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -223,7 +238,7 @@
                     <label class="block text-xs font-semibold text-gray-700 mb-1">
                         <i class="fas fa-folder text-gray-400 mr-1"></i>Category
                     </label>
-                    <select name="category_id" id="category-select" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
+                    <select name="category_id" id="category-select" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" onchange="togglePerfumeSettings()">
                         <option value="">Select Category</option>
                         <!-- Categories will be loaded here -->
                     </select>
@@ -237,12 +252,7 @@
                         </button>
                     </div>
                 </div>
-                <div>
-                    <label class="block text-xs font-semibold text-gray-700 mb-1">
-                        <i class="fas fa-barcode text-gray-400 mr-1"></i>SKU
-                    </label>
-                    <input type="text" name="sku" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Enter SKU code">
-                </div>
+
 
                 <!-- Product Image Upload -->
                 <div>
@@ -303,56 +313,41 @@
                         <label class="block text-xs font-semibold text-gray-700 mb-1">
                             <i class="fas fa-exclamation-triangle text-gray-400 mr-1"></i>Min Stock Level
                         </label>
-                        <input type="number" name="min_stock_level" min="0" value="10" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="10">
+                        <input type="number" name="min_stock_level" min="0" value="4" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="4">
                         <p class="text-xs text-gray-500 mt-1">Alert when stock falls to this level</p>
                     </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">
-                            <i class="fas fa-layer-group text-gray-400 mr-1"></i>Max Stock Level
-                        </label>
-                        <input type="number" name="max_stock_level" min="0" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Optional">
-                        <p class="text-xs text-gray-500 mt-1">Maximum stock to maintain</p>
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-semibold text-gray-700 mb-1">
                             <i class="fas fa-cube text-gray-400 mr-1"></i>Unit
                         </label>
                         <input type="text" name="unit" value="pcs" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="pcs, kg, liters">
                     </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">
-                            <i class="fas fa-truck text-gray-400 mr-1"></i>Supplier
-                        </label>
-                        <select name="supplier" id="supplier-select" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
-                            <option value="">Select Supplier (Optional)</option>
-                            <!-- Suppliers will be loaded here -->
-                        </select>
-                        <div class="mt-1 flex items-center justify-between">
-                            <p class="text-xs text-gray-500">
-                                Don't see your supplier? <a href="/suppliers" target="_blank" class="text-blue-600 hover:text-blue-500 underline font-medium">Manage suppliers</a>
-                            </p>
-                            <button type="button" onclick="loadSuppliers()" class="text-xs text-gray-500 hover:text-gray-700 flex items-center transition-colors duration-200">
-                                <i class="fas fa-refresh mr-1"></i>
-                                Refresh
-                            </button>
-                        </div>
+                </div>
+                <!-- Supplier -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                        <i class="fas fa-truck text-gray-400 mr-1"></i>Supplier
+                    </label>
+                    <select name="supplier" id="supplier-select" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
+                        <option value="">Select Supplier (Optional)</option>
+                        <!-- Suppliers will be loaded here -->
+                    </select>
+                    <div class="mt-1 flex items-center justify-between">
+                        <p class="text-xs text-gray-500">
+                            Don't see your supplier? <a href="/suppliers" target="_blank" class="text-blue-600 hover:text-blue-500 underline font-medium">Manage suppliers</a>
+                        </p>
+                        <button type="button" onclick="loadSuppliers()" class="text-xs text-gray-500 hover:text-gray-700 flex items-center transition-colors duration-200">
+                            <i class="fas fa-refresh mr-1"></i>
+                            Refresh
+                        </button>
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">
-                            <i class="fas fa-qrcode text-gray-400 mr-1"></i>Barcode
-                        </label>
-                        <input type="text" name="barcode" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Optional">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">
-                            <i class="fas fa-map-marker-alt text-gray-400 mr-1"></i>Location
-                        </label>
-                        <input type="text" name="location" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Storage location">
-                    </div>
+                <!-- Barcode -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                        <i class="fas fa-qrcode text-gray-400 mr-1"></i>Barcode
+                    </label>
+                    <input type="text" name="barcode" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Optional">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-gray-700 mb-1">
@@ -363,7 +358,7 @@
 
                 <!-- Perfume Toggle Button -->
                 <div class="border-t border-gray-200 pt-3">
-                    <button type="button" onclick="togglePerfumeSettings()" class="flex items-center justify-between w-full p-3 bg-purple-50 hover:bg-purple-100 rounded-lg border border-purple-200 transition-all duration-200">
+                    <button type="button" onclick="manualTogglePerfumeSettings()" class="flex items-center justify-between w-full p-3 bg-purple-50 hover:bg-purple-100 rounded-lg border border-purple-200 transition-all duration-200" style="display: none;">
                         <div class="flex items-center">
                             <i class="fas fa-spray-can text-purple-600 mr-2"></i>
                             <span class="text-sm font-semibold text-gray-700">Perfume Product Settings</span>
@@ -539,34 +534,23 @@
                            placeholder="Enter product name">
                 </div>
 
-                <!-- Category and SKU -->
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">
-                            <i class="fas fa-folder text-gray-400 mr-1"></i>Category
-                        </label>
-                        <select id="edit-category-id" name="category_id" required
-                                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
-                            <option value="">Select Category</option>
-                        </select>
-                        <div class="mt-2 flex items-center justify-between">
-                            <p class="text-xs text-gray-500">
-                                Don't see your category? <a href="/categories" target="_blank" class="text-blue-600 hover:text-blue-500 underline font-medium">Create new category</a>
-                            </p>
-                            <button type="button" onclick="loadCategoriesForEdit()" class="text-xs text-gray-500 hover:text-gray-700 flex items-center transition-colors duration-200">
-                                <i class="fas fa-refresh mr-1"></i>
-                                Refresh
-                            </button>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">
-                            <i class="fas fa-barcode text-gray-400 mr-1"></i>SKU
-                        </label>
-                        <input type="text" id="edit-sku" name="sku" readonly
-                               class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
-                               placeholder="SKU cannot be changed">
-                        <p class="text-xs text-gray-500 mt-1">SKU cannot be modified after creation</p>
+                <!-- Category -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                        <i class="fas fa-folder text-gray-400 mr-1"></i>Category
+                    </label>
+                    <select id="edit-category-id" name="category_id" required
+                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
+                        <option value="">Select Category</option>
+                    </select>
+                    <div class="mt-2 flex items-center justify-between">
+                        <p class="text-xs text-gray-500">
+                            Don't see your category? <a href="/categories" target="_blank" class="text-blue-600 hover:text-blue-500 underline font-medium">Create new category</a>
+                        </p>
+                        <button type="button" onclick="loadCategoriesForEdit()" class="text-xs text-gray-500 hover:text-gray-700 flex items-center transition-colors duration-200">
+                            <i class="fas fa-refresh mr-1"></i>
+                            Refresh
+                        </button>
                     </div>
                 </div>
 
@@ -648,18 +632,10 @@
                         </label>
                         <input type="number" id="edit-min-stock-level" name="min_stock_level" min="0" value="10"
                                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                               placeholder="10">
+                               placeholder="4">
                         <p class="text-xs text-gray-500 mt-1">Alert when stock falls to this level</p>
                     </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">
-                            <i class="fas fa-layer-group text-gray-400 mr-1"></i>Max Stock Level
-                        </label>
-                        <input type="number" id="edit-max-stock-level" name="max_stock_level" min="0"
-                               class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                               placeholder="Optional">
-                        <p class="text-xs text-gray-500 mt-1">Maximum stock to maintain</p>
-                    </div>
+
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
@@ -700,14 +676,7 @@
                                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                placeholder="Optional">
                     </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">
-                            <i class="fas fa-map-marker-alt text-gray-400 mr-1"></i>Location
-                        </label>
-                        <input type="text" id="edit-location" name="location"
-                               class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                               placeholder="Storage location">
-                    </div>
+
                 </div>
 
                 <!-- Description -->
@@ -1032,7 +1001,7 @@
                     <!-- Product Info -->
                     <div class="bg-gray-50 rounded-lg p-4 mb-4">
                         <div class="font-semibold text-gray-900" id="delete-product-name">Product Name</div>
-                        <div class="text-sm text-gray-600" id="delete-product-sku">SKU: ABC123</div>
+                        <div class="text-sm text-gray-600" id="delete-product-category">Category: Unknown</div>
                     </div>
 
                     <!-- Warning Details -->
@@ -1112,8 +1081,53 @@ function closeAddProductModal() {
     document.getElementById('is-decantable').checked = false;
 }
 
-// Toggle perfume settings section visibility
+// Toggle perfume settings section visibility based on category selection
 function togglePerfumeSettings() {
+    const categorySelect = document.getElementById('category-select');
+    const perfumeSettings = document.getElementById('perfume-settings');
+    const toggleIcon = document.getElementById('perfume-toggle-icon');
+    const perfumeToggleButton = perfumeSettings.parentElement.querySelector('button');
+
+    if (!categorySelect || !perfumeSettings) return;
+
+    // Get selected category name
+    const selectedOption = categorySelect.options[categorySelect.selectedIndex];
+    const categoryName = selectedOption ? selectedOption.text.toLowerCase() : '';
+
+    // Check if category contains "perfume" (case-insensitive)
+    const isPerfumeCategory = categoryName.includes('perfume');
+
+    console.log('Category detection:', { categoryName, isPerfumeCategory });
+
+    if (isPerfumeCategory) {
+        // Show perfume settings automatically for perfume category
+        perfumeSettings.classList.remove('hidden');
+        toggleIcon.classList.remove('fa-chevron-down');
+        toggleIcon.classList.add('fa-chevron-up');
+        perfumeToggleButton.style.display = 'flex';
+
+        // Load scents when perfume settings are opened
+        loadScents();
+    } else {
+        // Hide perfume settings for non-perfume categories
+        perfumeSettings.classList.add('hidden');
+        toggleIcon.classList.remove('fa-chevron-up');
+        toggleIcon.classList.add('fa-chevron-down');
+        perfumeToggleButton.style.display = 'none';
+
+        // Reset perfume fields when hiding
+        document.querySelector('input[name="bottle_size_ml"]').value = '';
+        const scentSelect = document.getElementById('scent-select');
+        if (scentSelect) {
+            Array.from(scentSelect.options).forEach(option => option.selected = false);
+        }
+        document.getElementById('is-decantable').checked = false;
+        toggleDecantFields(); // This will hide decant fields and clear them
+    }
+}
+
+// Manual toggle function for the button click
+function manualTogglePerfumeSettings() {
     const perfumeSettings = document.getElementById('perfume-settings');
     const toggleIcon = document.getElementById('perfume-toggle-icon');
 
@@ -1132,7 +1146,9 @@ function togglePerfumeSettings() {
         // Reset perfume fields when hiding
         document.querySelector('input[name="bottle_size_ml"]').value = '';
         const scentSelect = document.getElementById('scent-select');
-        Array.from(scentSelect.options).forEach(option => option.selected = false);
+        if (scentSelect) {
+            Array.from(scentSelect.options).forEach(option => option.selected = false);
+        }
         document.getElementById('is-decantable').checked = false;
         toggleDecantFields(); // This will hide decant fields and clear them
     }
@@ -1833,12 +1849,10 @@ function generateProductRows(products) {
             </td>
             <td class="px-3 py-3 whitespace-nowrap">
                 <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                    ${product.category_name}
+                    ${product.category_name || 'No Category'}
                 </span>
             </td>
-            <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-900">
-                ${product.sku}
-            </td>
+
             <td class="px-3 py-3 whitespace-nowrap">
                 <div class="text-sm text-gray-900 font-medium">UGX ${product.price.toLocaleString('en-UG')}</div>
                 ${product.is_perfume_with_decants && product.decant ? `
@@ -1930,10 +1944,15 @@ function showLoadingIndicator() {
     const loadingRow = document.createElement('tr');
     loadingRow.id = 'loading-indicator';
     loadingRow.innerHTML = `
-        <td colspan="7" class="px-3 py-4 text-center text-gray-500">
-            <div class="flex items-center justify-center space-x-2">
-                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-                <span class="text-sm">Loading more products...</span>
+        <td colspan="6" class="px-3 py-6 text-center">
+            <div class="flex items-center justify-center space-x-3 text-gray-600">
+                <div class="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent"></div>
+                <span class="text-sm font-medium">Loading more products...</span>
+                <div class="flex space-x-1">
+                    <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0ms"></div>
+                    <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 150ms"></div>
+                    <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 300ms"></div>
+                </div>
             </div>
         </td>
     `;
@@ -1949,11 +1968,29 @@ function hideLoadingIndicator() {
 
 // Status update functions
 function showAutoLoadingProductsState() {
-    document.getElementById('auto-loading-products-indicator').classList.remove('hidden');
+    const indicator = document.getElementById('auto-loading-products-indicator');
+    indicator.classList.remove('hidden');
+    // Add smooth fade-in animation
+    setTimeout(() => {
+        indicator.style.opacity = '0';
+        indicator.style.transform = 'translateY(10px)';
+        indicator.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+        setTimeout(() => {
+            indicator.style.opacity = '1';
+            indicator.style.transform = 'translateY(0)';
+        }, 10);
+    }, 10);
 }
 
 function hideAutoLoadingProductsState() {
-    document.getElementById('auto-loading-products-indicator').classList.add('hidden');
+    const indicator = document.getElementById('auto-loading-products-indicator');
+    indicator.style.opacity = '0';
+    indicator.style.transform = 'translateY(-10px)';
+    setTimeout(() => {
+        indicator.classList.add('hidden');
+        indicator.style.opacity = '';
+        indicator.style.transform = '';
+    }, 300);
 }
 
 function updateProductsScrollStatus() {
@@ -1965,11 +2002,21 @@ function updateProductsScrollStatus() {
     showingCountEl.textContent = loadedProductsCount;
     totalCountEl.textContent = totalProducts;
 
-    // Show/hide end message
+    // Show/hide end message with animation
     if (hasMoreProducts) {
         endOfResults.classList.add('hidden');
     } else {
         endOfResults.classList.remove('hidden');
+        // Add smooth fade-in animation
+        setTimeout(() => {
+            endOfResults.style.opacity = '0';
+            endOfResults.style.transform = 'translateY(20px)';
+            endOfResults.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+            setTimeout(() => {
+                endOfResults.style.opacity = '1';
+                endOfResults.style.transform = 'translateY(0)';
+            }, 10);
+        }, 10);
     }
 }
 
@@ -1998,15 +2045,15 @@ function setupInfiniteScroll() {
                 totalProducts
             });
 
-            // Trigger when user is within 200px of the bottom
-            if (scrollTop + windowHeight >= documentHeight - 200) {
+            // Trigger when user is within 300px of the bottom (increased for better UX)
+            if (scrollTop + windowHeight >= documentHeight - 300) {
                 console.log('Near bottom detected!');
                 if (!isLoading && hasMoreProducts) {
                     console.log('Loading more products...');
                     loadProducts(false); // false = don't reset pagination
                 }
             }
-        }, 100);
+        }, 50); // Reduced debounce time for more responsive scrolling
     });
 }
 
@@ -2169,16 +2216,15 @@ function editProduct(productId) {
 
         // Populate the form
         document.getElementById('edit-name').value = product.name || '';
-        document.getElementById('edit-sku').value = product.sku || '';
         document.getElementById('edit-price').value = product.price || '';
         document.getElementById('edit-cost-price').value = product.cost_price || '';
         document.getElementById('edit-stock-quantity').value = product.stock_quantity || 0;
-        document.getElementById('edit-min-stock-level').value = product.min_stock_level || 10;
-        document.getElementById('edit-max-stock-level').value = product.max_stock_level || '';
+        document.getElementById('edit-min-stock-level').value = product.min_stock_level || 4;
+
         document.getElementById('edit-unit').value = product.unit || 'pcs';
         document.getElementById('edit-supplier').value = product.supplier || '';
         document.getElementById('edit-barcode').value = product.barcode || '';
-        document.getElementById('edit-location').value = product.location || '';
+
         document.getElementById('edit-payment-method').value = product.payment_method || '';
         document.getElementById('edit-description').value = product.description || '';
         document.getElementById('edit-is-active').checked = product.is_active !== false;
@@ -2482,11 +2528,7 @@ function validateEditForm() {
         errors.push({ field: 'edit-min-stock-level', message: 'Min stock level must be 0 or greater' });
     }
 
-    // Validate max stock level if provided
-    const maxStock = document.getElementById('edit-max-stock-level').value;
-    if (maxStock && (parseInt(maxStock) < 0 || parseInt(maxStock) < minStock)) {
-        errors.push({ field: 'edit-max-stock-level', message: 'Max stock level must be greater than min stock level' });
-    }
+
 
     // Validate perfume fields if perfume settings are visible
     const perfumeSettings = document.getElementById('edit-perfume-settings');
@@ -2569,7 +2611,6 @@ function addEditFormValidationListeners() {
         'edit-cost-price',
         'edit-stock-quantity',
         'edit-min-stock-level',
-        'edit-max-stock-level',
         'edit-bottle-size-ml',
         'edit-decant-size-ml',
         'edit-decant-price'
@@ -2884,8 +2925,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!isNaN(parsedMinStock)) updateData.min_stock_level = parsedMinStock;
             }
 
-            const maxStockLevel = formData.get('max_stock_level');
-            if (maxStockLevel) updateData.max_stock_level = parseInt(maxStockLevel);
+
 
             const unit = formData.get('unit');
             if (unit && unit.trim()) updateData.unit = unit.trim();
@@ -3040,14 +3080,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const productData = {
                 name: formData.get('name').trim(),
                 description: formData.get('description')?.trim() || null,
-                sku: formData.get('sku').trim(),
                 barcode: formData.get('barcode')?.trim() || null,
                 category_id: formData.get('category_id') || null,
                 price: parseFloat(formData.get('price')),
                 cost_price: formData.get('cost_price') ? parseFloat(formData.get('cost_price')) : null,
                 stock_quantity: parseInt(formData.get('stock_quantity')),
                 min_stock_level: parseInt(formData.get('min_stock_level')),
-                max_stock_level: formData.get('max_stock_level') ? parseInt(formData.get('max_stock_level')) : null,
                 unit: formData.get('unit').trim(),
                 supplier: formData.get('supplier')?.trim() || null,
                 is_active: true
@@ -3234,23 +3272,23 @@ function deleteProduct(productId) {
 
         // Extract product information from the table row
         const productNameElement = productRow.querySelector('td:nth-child(1) .font-medium');
-        const productSkuElement = productRow.querySelector('td:nth-child(3)'); // SKU is in the 3rd column
+        const productCategoryElement = productRow.querySelector('td:nth-child(2) span'); // Category is in the 2nd column
 
         const productName = productNameElement ? productNameElement.textContent.trim() : 'Unknown Product';
-        const productSku = productSkuElement ? productSkuElement.textContent.trim() : '';
+        const productCategory = productCategoryElement ? productCategoryElement.textContent.trim() : 'No Category';
 
-        console.log('Product details:', { productName, productSku });
+        console.log('Product details:', { productName, productCategory });
 
         // Store product info globally for the modal
         productToDelete = {
             id: productId,
             name: productName,
-            sku: productSku
+            category: productCategory
         };
 
         // Update modal content
         document.getElementById('delete-product-name').textContent = productName;
-        document.getElementById('delete-product-sku').textContent = productSku ? `SKU: ${productSku}` : 'No SKU';
+        document.getElementById('delete-product-category').textContent = `Category: ${productCategory}`;
 
         // Clear previous input and errors
         document.getElementById('delete-confirmation-input').value = '';
@@ -3545,9 +3583,7 @@ function displayProductDetails(product) {
                                     <h2 class="text-lg font-bold text-slate-800 truncate">${product.name}</h2>
                                 </div>
                             <div class="flex flex-wrap items-center gap-1.5 text-xs text-slate-600 mb-2">
-                                <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-white/60 backdrop-blur-sm">
-                                    <i class="fas fa-tag text-blue-500 mr-1 text-xs"></i>${product.sku}
-                                </span>
+
                                 <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-white/60 backdrop-blur-sm">
                                     <i class="fas fa-folder text-indigo-500 mr-1 text-xs"></i>${product.category_name || 'No category'}
                                 </span>
@@ -3610,15 +3646,7 @@ function displayProductDetails(product) {
                     <div class="text-xs font-semibold text-slate-700">${product.min_stock_level} ${product.unit}</div>
                 </div>
 
-                <div class="group bg-white rounded p-2 border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 hover:border-purple-300">
-                    <div class="flex items-center justify-between mb-1">
-                        <div class="w-5 h-5 bg-purple-100 rounded flex items-center justify-center group-hover:bg-purple-200 transition-colors">
-                            <i class="fas fa-arrow-up text-purple-600 text-xs"></i>
-                        </div>
-                        <span class="text-xs font-medium text-slate-500 uppercase tracking-wide">Max</span>
-                    </div>
-                    <div class="text-xs font-semibold text-slate-700">${product.max_stock_level ? product.max_stock_level + ' ' + product.unit : 'Not set'}</div>
-                </div>
+
             </div>
 
             <!-- Perfume Details and Suppliers Side by Side -->
@@ -3717,14 +3745,14 @@ function displayProductDetails(product) {
                                     ${supplier.email ? `
                                     <div class="flex items-center">
                                         <i class="fas fa-envelope text-teal-500 mr-2 w-3"></i>
-                                        <span class="text-teal-700">${supplier.email}</span>
+                                        <a href="mailto:${supplier.email}" class="text-teal-700 hover:text-teal-900 hover:underline transition-colors duration-200" title="Send email to ${supplier.email}">${supplier.email}</a>
                                     </div>
                                     ` : ''}
 
                                     ${supplier.phone ? `
                                     <div class="flex items-center">
                                         <i class="fas fa-phone text-cyan-500 mr-2 w-3"></i>
-                                        <span class="text-cyan-700">${supplier.phone}</span>
+                                        <a href="tel:${supplier.phone}" class="text-cyan-700 hover:text-cyan-900 hover:underline transition-colors duration-200" title="Call ${supplier.phone}">${supplier.phone}</a>
                                     </div>
                                     ` : ''}
 
@@ -3827,14 +3855,14 @@ function displayProductDetails(product) {
                             ${supplier.email ? `
                             <div class="flex items-center">
                                 <i class="fas fa-envelope text-teal-500 mr-2 w-3"></i>
-                                <span class="text-teal-700">${supplier.email}</span>
+                                <a href="mailto:${supplier.email}" class="text-teal-700 hover:text-teal-900 hover:underline transition-colors duration-200" title="Send email to ${supplier.email}">${supplier.email}</a>
                             </div>
                             ` : ''}
 
                             ${supplier.phone ? `
                             <div class="flex items-center">
                                 <i class="fas fa-phone text-cyan-500 mr-2 w-3"></i>
-                                <span class="text-cyan-700">${supplier.phone}</span>
+                                <a href="tel:${supplier.phone}" class="text-cyan-700 hover:text-cyan-900 hover:underline transition-colors duration-200" title="Call ${supplier.phone}">${supplier.phone}</a>
                             </div>
                             ` : ''}
 

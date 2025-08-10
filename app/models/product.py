@@ -48,14 +48,12 @@ class Product(BaseModel):
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
     name: str = Field(..., min_length=2, max_length=200)
     description: Optional[str] = Field(None, max_length=1000)
-    sku: str = Field(..., min_length=3, max_length=50)  # Stock Keeping Unit
     barcode: Optional[str] = Field(None, max_length=50)
     category_id: Optional[PyObjectId] = None
     price: float = Field(..., gt=0)
     cost_price: Optional[float] = Field(None, ge=0)
     stock_quantity: int = Field(..., ge=0)
-    min_stock_level: int = Field(default=10, ge=0)  # For restock alerts
-    max_stock_level: Optional[int] = Field(None, ge=0)
+    min_stock_level: int = Field(default=4, ge=0)  # For restock alerts
     unit: str = Field(default="pcs", max_length=20)  # pieces, kg, liters, etc.
     supplier: Optional[str] = Field(None, max_length=200)
     is_active: bool = True
@@ -120,7 +118,6 @@ class Product(BaseModel):
                 {
                     "name": "iPhone 15 Pro",
                     "description": "Latest iPhone model with advanced features",
-                    "sku": "IPH15PRO001",
                     "barcode": "1234567890123",
                     "price": 999.99,
                     "cost_price": 750.00,
@@ -132,7 +129,6 @@ class Product(BaseModel):
                 {
                     "name": "Chanel No. 5",
                     "description": "Classic luxury perfume",
-                    "sku": "CHANEL5-100",
                     "barcode": "3145891355000",
                     "price": 250000.0,
                     "cost_price": 180000.0,

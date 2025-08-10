@@ -88,14 +88,12 @@ class CategoryResponse(BaseModel):
 class ProductCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=200)
     description: Optional[str] = Field(None, max_length=1000)
-    sku: str = Field(..., min_length=3, max_length=50)
     barcode: Optional[str] = Field(None, max_length=50)
     category_id: Optional[str] = None
     price: float = Field(..., gt=0)
     cost_price: Optional[float] = Field(None, ge=0)
     stock_quantity: int = Field(..., ge=0)
-    min_stock_level: int = Field(default=10, ge=0)
-    max_stock_level: Optional[int] = Field(None, ge=0)
+    min_stock_level: int = Field(default=4, ge=0)
     unit: str = Field(default="pcs", max_length=20)
     supplier: Optional[str] = Field(None, max_length=200)
 
@@ -113,7 +111,6 @@ class ProductCreate(BaseModel):
             "example": {
                 "name": "iPhone 15 Pro",
                 "description": "Latest iPhone model with advanced features",
-                "sku": "IPH15PRO001",
                 "barcode": "1234567890123",
                 "price": 999.99,
                 "cost_price": 750.00,
@@ -134,7 +131,6 @@ class ProductUpdate(BaseModel):
     cost_price: Optional[float] = Field(None, ge=0)
     stock_quantity: Optional[int] = Field(None, ge=0)
     min_stock_level: Optional[int] = Field(None, ge=0)
-    max_stock_level: Optional[int] = Field(None, ge=0)
     unit: Optional[str] = Field(None, max_length=20)
     supplier: Optional[str] = Field(None, max_length=200)
     is_active: Optional[bool] = None
@@ -163,7 +159,6 @@ class ProductResponse(BaseModel):
     id: str
     name: str
     description: Optional[str] = None
-    sku: str
     barcode: Optional[str] = None
     category_id: Optional[str] = None
     category_name: Optional[str] = None
@@ -171,7 +166,6 @@ class ProductResponse(BaseModel):
     cost_price: Optional[float] = None
     stock_quantity: int
     min_stock_level: int
-    max_stock_level: Optional[int] = None
     unit: str
     supplier: Optional[str] = None
     is_active: bool
@@ -196,7 +190,6 @@ class ProductResponse(BaseModel):
                 "id": "507f1f77bcf86cd799439011",
                 "name": "iPhone 15 Pro",
                 "description": "Latest iPhone model with advanced features",
-                "sku": "IPH15PRO001",
                 "barcode": "1234567890123",
                 "category_name": "Electronics",
                 "price": 999.99,

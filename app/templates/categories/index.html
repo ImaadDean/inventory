@@ -9,7 +9,11 @@
         <div class="flex flex-col md:flex-row md:items-center md:justify-between">
             <div class="mb-2 md:mb-0">
                 <h1 class="text-xl md:text-2xl font-bold">Category Management</h1>
-                <p class="text-purple-100 text-sm">Organize your products with categories and subcategories</p>
+                <p class="text-purple-100 text-sm">Organize your products with flat categories</p>
+                <p class="text-purple-200 text-xs mt-1">
+                    <i class="fas fa-layer-group mr-1"></i>
+                    Simple category structure - no hierarchical relationships
+                </p>
             </div>
             <button onclick="openAddCategoryModal()" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-all duration-200 text-sm">
                 <i class="fas fa-plus"></i>
@@ -64,50 +68,52 @@
             </div>
         </div>
 
-        <!-- Parent Categories -->
+        <!-- Categories with Products -->
         <div class="bg-white overflow-hidden shadow-md rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
             <div class="p-4">
                 <div class="flex items-center">
                     <div class="flex-shrink-0">
                         <div class="w-8 h-8 bg-gradient-to-r from-purple-400 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
-                            <i class="fas fa-sitemap text-white text-xs"></i>
+                            <i class="fas fa-box text-white text-xs"></i>
                         </div>
                     </div>
                     <div class="ml-3 flex-1">
-                        <dt class="text-xs font-medium text-gray-500 truncate">Parent Categories</dt>
-                        <dd class="text-base font-bold text-gray-900 mt-0.5" id="parent-categories">0</dd>
+                        <dt class="text-xs font-medium text-gray-500 truncate">With Products</dt>
+                        <dd class="text-base font-bold text-gray-900 mt-0.5" id="categories-with-products">0</dd>
                     </div>
                 </div>
             </div>
             <div class="bg-gradient-to-r from-purple-50 to-purple-100 px-4 py-2">
                 <div class="text-xs">
-                    <span class="text-purple-700 font-medium">Main categories</span>
+                    <span class="text-purple-700 font-medium">Categories in use</span>
                 </div>
             </div>
         </div>
 
-        <!-- Subcategories -->
+        <!-- Empty Categories -->
         <div class="bg-white overflow-hidden shadow-md rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
             <div class="p-4">
                 <div class="flex items-center">
                     <div class="flex-shrink-0">
                         <div class="w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center shadow-md">
-                            <i class="fas fa-layer-group text-white text-xs"></i>
+                            <i class="fas fa-folder-open text-white text-xs"></i>
                         </div>
                     </div>
                     <div class="ml-3 flex-1">
-                        <dt class="text-xs font-medium text-gray-500 truncate">Subcategories</dt>
-                        <dd class="text-base font-bold text-gray-900 mt-0.5" id="subcategories">0</dd>
+                        <dt class="text-xs font-medium text-gray-500 truncate">Empty Categories</dt>
+                        <dd class="text-base font-bold text-gray-900 mt-0.5" id="empty-categories">0</dd>
                     </div>
                 </div>
             </div>
             <div class="bg-gradient-to-r from-yellow-50 to-orange-100 px-4 py-2">
                 <div class="text-xs">
-                    <span class="text-orange-700 font-medium">Nested categories</span>
+                    <span class="text-orange-700 font-medium">No products assigned</span>
                 </div>
             </div>
         </div>
     </div>
+
+
 
     <!-- Categories Table -->
     <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300" id="table-view">
@@ -144,10 +150,7 @@
                             <i class="fas fa-times text-xs"></i>
                             <span>Clear</span>
                         </button>
-                        <button onclick="toggleTreeView()" id="tree-view-btn" class="bg-purple-500 hover:bg-purple-600 text-white px-2 py-1.5 rounded-lg flex items-center space-x-1 text-xs transition-all duration-200">
-                            <i class="fas fa-sitemap text-xs"></i>
-                            <span>Tree View</span>
-                        </button>
+
                         <button onclick="exportCategories()" class="bg-green-500 hover:bg-green-600 text-white px-2 py-1.5 rounded-lg flex items-center space-x-1 text-xs transition-all duration-200">
                             <i class="fas fa-download text-xs"></i>
                             <span>Export</span>
@@ -162,7 +165,6 @@
                     <tr>
                         <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Category</th>
                         <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Description</th>
-                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Parent</th>
                         <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Products</th>
                         <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
                         <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Created</th>
@@ -176,20 +178,7 @@
         </div>
     </div>
 
-    <!-- Tree View -->
-    <div class="bg-white rounded-2xl shadow-lg p-6 hidden hover:shadow-xl transition-all duration-300" id="tree-view">
-        <div class="border-b border-gray-200 pb-4 mb-6">
-            <div class="flex items-center">
-                <div class="w-8 h-8 bg-gradient-to-r from-green-500 to-teal-600 rounded-lg flex items-center justify-center mr-3">
-                    <i class="fas fa-sitemap text-white text-sm"></i>
-                </div>
-                <h3 class="text-lg font-semibold text-gray-900">Category Tree Structure</h3>
-            </div>
-        </div>
-        <div id="category-tree" class="space-y-3">
-            <!-- Tree structure will be loaded here -->
-        </div>
-    </div>
+
 </div>
 
 <!-- Add Category Modal -->
@@ -222,15 +211,7 @@
                     </label>
                     <textarea name="description" rows="2" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 resize-none" placeholder="Enter category description (optional)"></textarea>
                 </div>
-                <div>
-                    <label class="block text-xs font-semibold text-gray-700 mb-1">
-                        <i class="fas fa-sitemap text-gray-400 mr-1"></i>Parent Category
-                    </label>
-                    <select name="parent_id" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200">
-                        <option value="">None (Root Category)</option>
-                        <!-- Parent categories will be loaded here -->
-                    </select>
-                </div>
+
                 <div class="flex items-center p-3 bg-purple-50 rounded-lg border border-purple-200">
                     <input type="checkbox" name="is_active" checked class="h-3 w-3 text-purple-600 focus:ring-purple-500 border-gray-300 rounded">
                     <label class="ml-2 block text-xs font-medium text-purple-900">
@@ -283,15 +264,7 @@
                     </label>
                     <textarea id="edit-category-description" rows="2" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none" placeholder="Enter category description (optional)"></textarea>
                 </div>
-                <div>
-                    <label class="block text-xs font-semibold text-gray-700 mb-1">
-                        <i class="fas fa-sitemap text-gray-400 mr-1"></i>Parent Category
-                    </label>
-                    <select id="edit-category-parent" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
-                        <option value="">None (Root Category)</option>
-                        <!-- Parent categories will be loaded here -->
-                    </select>
-                </div>
+
                 <div class="flex items-center p-3 bg-blue-50 rounded-lg border border-blue-200">
                     <input type="checkbox" id="edit-category-active" class="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
                     <label class="ml-2 block text-xs font-medium text-blue-900">
@@ -375,7 +348,7 @@
 </div>
 
 <script>
-let isTreeView = false;
+
 
 // Load category stats for dashboard cards
 function loadCategoryStats() {
@@ -414,7 +387,7 @@ function loadCategoryStats() {
         console.error('Error loading category stats:', error);
 
         // Set default values on error
-        ['total-categories', 'active-categories', 'parent-categories', 'subcategories'].forEach(id => {
+        ['total-categories', 'active-categories', 'categories-with-products', 'empty-categories'].forEach(id => {
             const element = document.getElementById(id);
             if (element) {
                 element.textContent = '0';
@@ -425,7 +398,6 @@ function loadCategoryStats() {
 
 // Category management functionality
 function openAddCategoryModal() {
-    loadParentCategories();
     document.getElementById('add-category-modal').classList.remove('hidden');
 }
 
@@ -461,11 +433,10 @@ function editCategory(categoryId) {
         document.getElementById('edit-category-id').value = data.id;
         document.getElementById('edit-category-name').value = data.name;
         document.getElementById('edit-category-description').value = data.description || '';
-        document.getElementById('edit-category-parent').value = data.parent_id || '';
+
         document.getElementById('edit-category-active').checked = data.is_active;
 
-        // Load parent categories for the dropdown
-        loadParentCategoriesForEdit(data.id);
+
 
         // Show the modal
         document.getElementById('edit-category-modal').classList.remove('hidden');
@@ -486,36 +457,7 @@ function closeEditCategoryModal() {
     document.getElementById('edit-category-form').reset();
 }
 
-function loadParentCategoriesForEdit(excludeCategoryId) {
-    const parentSelect = document.getElementById('edit-category-parent');
 
-    // Clear existing options
-    parentSelect.innerHTML = '<option value="">None (Root Category)</option>';
-
-    // Load categories for the dropdown (excluding the current category)
-    fetch('/api/categories/simple', {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-            'Content-Type': 'application/json',
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.categories) {
-            data.categories.forEach(category => {
-                // Exclude the current category from parent options
-                if (category.id !== excludeCategoryId) {
-                    const option = new Option(category.name, category.id);
-                    parentSelect.appendChild(option);
-                }
-            });
-        }
-    })
-    .catch(error => {
-        console.error('Error loading parent categories:', error);
-    });
-}
 
 // Handle edit form submission
 function handleEditCategorySubmit(event) {
@@ -524,7 +466,6 @@ function handleEditCategorySubmit(event) {
     const categoryId = document.getElementById('edit-category-id').value;
     const name = document.getElementById('edit-category-name').value.trim();
     const description = document.getElementById('edit-category-description').value.trim();
-    const parentId = document.getElementById('edit-category-parent').value;
     const isActive = document.getElementById('edit-category-active').checked;
 
     if (!name) {
@@ -535,7 +476,6 @@ function handleEditCategorySubmit(event) {
     const updateData = {
         name: name,
         description: description || null,
-        parent_id: parentId || null,
         is_active: isActive
     };
 
@@ -575,7 +515,11 @@ function handleEditCategorySubmit(event) {
     })
     .then(data => {
         console.log('Category updated successfully:', data);
-        showToast(data.message || 'Category updated successfully!', 'success');
+        let successMessage = data.message || 'Category updated successfully!';
+
+
+
+        showToast(successMessage, 'success');
 
         // Close modal
         closeEditCategoryModal();
@@ -595,24 +539,7 @@ function handleEditCategorySubmit(event) {
     });
 }
 
-function toggleTreeView() {
-    const tableView = document.getElementById('table-view');
-    const treeView = document.getElementById('tree-view');
-    const btn = document.getElementById('tree-view-btn');
-    
-    if (isTreeView) {
-        tableView.classList.remove('hidden');
-        treeView.classList.add('hidden');
-        btn.innerHTML = '<i class="fas fa-sitemap"></i><span>Tree View</span>';
-        isTreeView = false;
-    } else {
-        tableView.classList.add('hidden');
-        treeView.classList.remove('hidden');
-        btn.innerHTML = '<i class="fas fa-table"></i><span>Table View</span>';
-        loadCategoryTree();
-        isTreeView = true;
-    }
-}
+
 
 function loadCategories() {
     // Get current filter values
@@ -688,9 +615,6 @@ function displayCategories(categories) {
                 <span class="text-sm text-gray-600">${category.description || 'No description'}</span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
-                <span class="text-sm text-gray-600">${category.parent_name || 'Root Category'}</span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
                 <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
                     ${category.product_count || 0} products
                 </span>
@@ -721,15 +645,9 @@ function displayCategories(categories) {
     `).join('');
 }
 
-function loadParentCategories() {
-    // This would load parent categories for the dropdown
-    console.log('Loading parent categories...');
-}
 
-function loadCategoryTree() {
-    // This would load the hierarchical tree structure
-    console.log('Loading category tree...');
-}
+
+
 
 // Delete category functionality
 let currentDeleteCategoryId = null;
