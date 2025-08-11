@@ -238,6 +238,15 @@
                             <label class="block text-xs font-semibold text-gray-700 mb-2">Amount Received</label>
                             <input type="number" id="amount-received" placeholder="0" min="0" step="0.01"
                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200">
+
+                            <!-- Payment status message -->
+                            <div id="payment-status" class="text-xs mt-1 hidden">
+                                <span class="text-red-600">
+                                    <i class="fas fa-exclamation-circle mr-1"></i>
+                                    <span id="payment-status-text">Insufficient amount</span>
+                                </span>
+                            </div>
+
                             <div class="flex justify-between items-center p-2 bg-indigo-50 rounded-lg mt-2">
                                 <span class="text-gray-600 text-sm font-medium">Change:</span>
                                 <span id="change" class="text-sm font-bold text-gray-900">UGX 0</span>
@@ -525,6 +534,80 @@
                     </button>
                     <button type="button" onclick="confirmAndOpenBottle()" class="px-3 py-2 text-xs font-medium text-white bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 rounded-lg transition-all duration-200">
                         <i class="fas fa-unlock mr-1"></i>Open Bottle & Add Decant
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Item Discount Modal -->
+<div id="item-discount-modal" class="fixed inset-0 bg-black bg-opacity-75 backdrop-blur-sm hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all duration-300">
+            <div class="px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-t-xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                            <i class="fas fa-percent text-white text-xs"></i>
+                        </div>
+                        <h3 class="text-base font-semibold text-white">Item Discount</h3>
+                    </div>
+                    <button type="button" onclick="closeItemDiscountModal()" class="text-white hover:text-gray-200 transition-colors duration-200">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-4">
+                <div class="mb-4">
+                    <div class="bg-gray-50 rounded-lg p-3 mb-4">
+                        <div class="flex items-center mb-2">
+                            <i class="fas fa-box text-gray-500 mr-2"></i>
+                            <span class="text-sm font-semibold text-gray-800" id="discount-item-name">Product Name</span>
+                        </div>
+                        <div class="text-xs text-gray-600 space-y-1">
+                            <div>Quantity: <span id="discount-item-quantity" class="font-medium">1</span></div>
+                            <div>Unit Price: UGX <span id="discount-item-price" class="font-medium">0</span></div>
+                            <div>Subtotal: UGX <span id="discount-item-subtotal" class="font-medium">0</span></div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 mb-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Discount Type</label>
+                            <select id="item-discount-type" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200">
+                                <option value="fixed">Fixed Amount (UGX)</option>
+                                <option value="percentage">Percentage (%)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Discount Value</label>
+                            <input type="number" id="item-discount-value" step="1" min="0" placeholder="0"
+                                   class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200">
+                        </div>
+                    </div>
+
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-gray-700">Discount Amount:</span>
+                            <span class="font-bold text-green-600" id="calculated-discount">UGX 0</span>
+                        </div>
+                        <div class="flex justify-between items-center text-sm mt-1">
+                            <span class="text-gray-700">Final Price:</span>
+                            <span class="font-bold text-gray-900" id="final-item-price">UGX 0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="removeItemDiscount()" class="px-3 py-2 text-xs font-medium text-red-700 bg-red-100 hover:bg-red-200 rounded-lg transition-all duration-200">
+                        <i class="fas fa-trash mr-1"></i>Remove Discount
+                    </button>
+                    <button type="button" onclick="closeItemDiscountModal()" class="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200">
+                        <i class="fas fa-times mr-1"></i>Cancel
+                    </button>
+                    <button type="button" onclick="applyItemDiscount()" class="px-3 py-2 text-xs font-medium text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 rounded-lg transition-all duration-200">
+                        <i class="fas fa-check mr-1"></i>Apply Discount
                     </button>
                 </div>
             </div>
@@ -1000,7 +1083,8 @@ function addToCart(id, name, price, sku, stockQuantity) {
             sku: sku,
             quantity: 1,
             stockQuantity: stockQuantity,
-            isDecant: isDecant
+            isDecant: isDecant,
+            discount_amount: 0       // Initialize with no discount
         });
     }
 
@@ -1164,9 +1248,35 @@ function updateCartDisplay() {
                     </button>
                 </div>
             </div>
-            <div class="mt-2 pt-2 border-t border-purple-200 flex justify-between items-center">
-                <span class="text-xs text-gray-600">Item Total:</span>
-                <span class="text-sm font-bold text-purple-600">UGX ${(item.price * item.quantity).toLocaleString()}</span>
+            <div class="mt-2 pt-2 border-t border-purple-200">
+                <!-- Item discount controls -->
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center space-x-2">
+                        <button onclick="toggleItemDiscount('${item.cartItemId}')"
+                                class="text-xs px-2 py-1 rounded-md transition-all duration-200 ${item.discount_amount > 0 ? 'bg-green-100 text-green-700 border border-green-300' : 'bg-gray-100 text-gray-600 border border-gray-300'} hover:bg-green-200">
+                            <i class="fas fa-percent mr-1"></i>
+                            ${item.discount_amount > 0 ? 'Edit Discount' : 'Add Discount'}
+                        </button>
+                        ${item.discount_amount > 0 ? `
+                        <span class="text-xs text-green-600 font-medium">
+                            -UGX ${item.discount_amount.toLocaleString()}
+                        </span>
+                        ` : ''}
+                    </div>
+                </div>
+
+                <!-- Item total calculation -->
+                <div class="flex justify-between items-center">
+                    <span class="text-xs text-gray-600">Item Total:</span>
+                    <div class="text-right">
+                        ${item.discount_amount > 0 ? `
+                        <div class="text-xs text-gray-500 line-through">UGX ${(item.price * item.quantity).toLocaleString()}</div>
+                        <div class="text-sm font-bold text-purple-600">UGX ${((item.price * item.quantity) - item.discount_amount).toLocaleString()}</div>
+                        ` : `
+                        <div class="text-sm font-bold text-purple-600">UGX ${(item.price * item.quantity).toLocaleString()}</div>
+                        `}
+                    </div>
+                </div>
             </div>
             ${openBottleOption}
         </div>
@@ -1227,35 +1337,190 @@ function toggleDiscount() {
 
 // Calculate totals
 function updateTotals() {
+    // Calculate subtotal (before any discounts)
     subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-    // Calculate discount
+    // Calculate total item discounts
+    const itemDiscounts = cart.reduce((sum, item) => sum + (item.discount_amount || 0), 0);
+
+    // Calculate order-level discount
     const discountToggle = document.getElementById('discount-toggle');
     const discountType = document.getElementById('discount-type').value;
     const discountValue = parseFloat(document.getElementById('discount-value').value) || 0;
 
+    let orderDiscount = 0;
     if (discountToggle.checked && discountValue > 0) {
+        // Apply order discount to subtotal after item discounts
+        const discountableAmount = subtotal - itemDiscounts;
         if (discountType === 'percentage') {
-            discount = (subtotal * discountValue) / 100;
+            orderDiscount = (discountableAmount * discountValue) / 100;
         } else {
-            discount = Math.min(discountValue, subtotal);
+            orderDiscount = Math.min(discountValue, discountableAmount);
         }
-    } else {
-        discount = 0;
     }
 
+    // Total discount is item discounts + order discount
+    discount = itemDiscounts + orderDiscount;
+
+    // Final total
     total = subtotal - discount;
 
     // Update display
     document.getElementById('subtotal').textContent = `UGX ${Math.round(subtotal).toLocaleString()}`;
-    document.getElementById('discount').textContent = `UGX ${Math.round(discount).toLocaleString()}`;
+
+    // Show breakdown if there are item discounts
+    const discountElement = document.getElementById('discount');
+    if (itemDiscounts > 0 && orderDiscount > 0) {
+        discountElement.innerHTML = `
+            <div class="text-xs text-gray-500">Item Discounts: UGX ${Math.round(itemDiscounts).toLocaleString()}</div>
+            <div class="text-xs text-gray-500">Order Discount: UGX ${Math.round(orderDiscount).toLocaleString()}</div>
+            <div class="font-semibold">Total: UGX ${Math.round(discount).toLocaleString()}</div>
+        `;
+    } else if (itemDiscounts > 0) {
+        discountElement.innerHTML = `
+            <div class="text-xs text-gray-500">Item Discounts</div>
+            <div class="font-semibold">UGX ${Math.round(discount).toLocaleString()}</div>
+        `;
+    } else {
+        discountElement.textContent = `UGX ${Math.round(discount).toLocaleString()}`;
+    }
+
     document.getElementById('total').textContent = `UGX ${Math.round(total).toLocaleString()}`;
 
-    // Enable/disable process sale button
-    document.getElementById('process-sale').disabled = cart.length === 0;
-
-    // Update change calculation
+    // Update change calculation and button state
     updateChange();
+    updateProcessSaleButton();
+}
+
+// Item discount functionality
+let currentDiscountItemId = null;
+
+function toggleItemDiscount(cartItemId) {
+    const item = cart.find(item => item.cartItemId === cartItemId);
+    if (!item) return;
+
+    currentDiscountItemId = cartItemId;
+
+    // Populate modal with item details
+    document.getElementById('discount-item-name').textContent = item.name;
+    document.getElementById('discount-item-quantity').textContent = item.quantity;
+    document.getElementById('discount-item-price').textContent = item.price.toLocaleString();
+    document.getElementById('discount-item-subtotal').textContent = (item.price * item.quantity).toLocaleString();
+
+    // Set current discount values if any
+    if (item.discount_amount > 0) {
+        // Try to determine if it was percentage or fixed
+        const itemSubtotal = item.price * item.quantity;
+        const discountPercentage = (item.discount_amount / itemSubtotal) * 100;
+
+        if (discountPercentage % 1 === 0 && discountPercentage <= 100) {
+            // Likely a percentage discount
+            document.getElementById('item-discount-type').value = 'percentage';
+            document.getElementById('item-discount-value').value = discountPercentage;
+        } else {
+            // Fixed amount discount
+            document.getElementById('item-discount-type').value = 'fixed';
+            document.getElementById('item-discount-value').value = item.discount_amount;
+        }
+    } else {
+        document.getElementById('item-discount-type').value = 'fixed';
+        document.getElementById('item-discount-value').value = '';
+    }
+
+    // Add event listeners for real-time calculation
+    document.getElementById('item-discount-type').addEventListener('change', calculateItemDiscount);
+    document.getElementById('item-discount-value').addEventListener('input', calculateItemDiscount);
+
+    // Calculate initial discount
+    calculateItemDiscount();
+
+    // Show modal
+    document.getElementById('item-discount-modal').classList.remove('hidden');
+}
+
+function calculateItemDiscount() {
+    if (!currentDiscountItemId) return;
+
+    const item = cart.find(item => item.cartItemId === currentDiscountItemId);
+    if (!item) return;
+
+    const discountType = document.getElementById('item-discount-type').value;
+    const discountValue = parseFloat(document.getElementById('item-discount-value').value) || 0;
+    const itemSubtotal = item.price * item.quantity;
+
+    let discountAmount = 0;
+
+    if (discountValue > 0) {
+        if (discountType === 'percentage') {
+            discountAmount = Math.min((itemSubtotal * discountValue) / 100, itemSubtotal);
+        } else {
+            discountAmount = Math.min(discountValue, itemSubtotal);
+        }
+    }
+
+    const finalPrice = itemSubtotal - discountAmount;
+
+    // Update display
+    document.getElementById('calculated-discount').textContent = `UGX ${Math.round(discountAmount).toLocaleString()}`;
+    document.getElementById('final-item-price').textContent = `UGX ${Math.round(finalPrice).toLocaleString()}`;
+}
+
+function applyItemDiscount() {
+    if (!currentDiscountItemId) return;
+
+    const item = cart.find(item => item.cartItemId === currentDiscountItemId);
+    if (!item) return;
+
+    const discountType = document.getElementById('item-discount-type').value;
+    const discountValue = parseFloat(document.getElementById('item-discount-value').value) || 0;
+    const itemSubtotal = item.price * item.quantity;
+
+    let discountAmount = 0;
+
+    if (discountValue > 0) {
+        if (discountType === 'percentage') {
+            discountAmount = Math.min((itemSubtotal * discountValue) / 100, itemSubtotal);
+        } else {
+            discountAmount = Math.min(discountValue, itemSubtotal);
+        }
+    }
+
+    // Apply discount to item
+    item.discount_amount = discountAmount;
+
+    // Update cart display and totals
+    updateCartDisplay();
+    updateTotals();
+
+    // Close modal
+    closeItemDiscountModal();
+}
+
+function removeItemDiscount() {
+    if (!currentDiscountItemId) return;
+
+    const item = cart.find(item => item.cartItemId === currentDiscountItemId);
+    if (item) {
+        item.discount_amount = 0;
+        updateCartDisplay();
+        updateTotals();
+    }
+
+    closeItemDiscountModal();
+}
+
+function closeItemDiscountModal() {
+    document.getElementById('item-discount-modal').classList.add('hidden');
+    currentDiscountItemId = null;
+
+    // Remove event listeners
+    document.getElementById('item-discount-type').removeEventListener('change', calculateItemDiscount);
+    document.getElementById('item-discount-value').removeEventListener('input', calculateItemDiscount);
+
+    // Reset form
+    document.getElementById('item-discount-value').value = '';
+    document.getElementById('calculated-discount').textContent = 'UGX 0';
+    document.getElementById('final-item-price').textContent = 'UGX 0';
 }
 
 // Payment method handling
@@ -1265,24 +1530,93 @@ function handlePaymentMethodChange() {
 
     if (paymentMethod === 'cash') {
         cashFields.style.display = 'block';
+        // Focus on amount received field for better UX
+        setTimeout(() => {
+            document.getElementById('amount-received').focus();
+        }, 100);
     } else {
         cashFields.style.display = 'none';
         document.getElementById('amount-received').value = '';
         updateChange();
     }
+
+    // Update button state immediately when payment method changes
+    updateProcessSaleButton();
 }
 
 function updateChange() {
     const paymentMethod = document.getElementById('payment-method').value;
     const amountReceived = parseFloat(document.getElementById('amount-received').value) || 0;
     const changeElement = document.getElementById('change');
+    const amountReceivedInput = document.getElementById('amount-received');
+    const paymentStatus = document.getElementById('payment-status');
+    const paymentStatusText = document.getElementById('payment-status-text');
 
     if (paymentMethod === 'cash') {
         const change = Math.max(0, amountReceived - total);
         changeElement.textContent = `UGX ${Math.round(change).toLocaleString()}`;
+
+        // Update change color and input field styling based on sufficiency
+        if (amountReceived >= total) {
+            // Sufficient amount
+            changeElement.classList.remove('text-red-600');
+            changeElement.classList.add('text-green-600');
+            amountReceivedInput.classList.remove('border-red-300', 'focus:ring-red-500', 'focus:border-red-500');
+            amountReceivedInput.classList.add('border-green-300', 'focus:ring-green-500', 'focus:border-green-500');
+            paymentStatus.classList.add('hidden');
+        } else {
+            // Insufficient amount
+            changeElement.classList.remove('text-green-600');
+            changeElement.classList.add('text-red-600');
+            amountReceivedInput.classList.remove('border-green-300', 'focus:ring-green-500', 'focus:border-green-500');
+            amountReceivedInput.classList.add('border-red-300', 'focus:ring-red-500', 'focus:border-red-500');
+
+            // Show payment status message
+            const shortfall = total - amountReceived;
+            paymentStatusText.textContent = `Need UGX ${Math.round(shortfall).toLocaleString()} more`;
+            paymentStatus.classList.remove('hidden');
+        }
     } else {
         changeElement.textContent = 'UGX 0';
+        changeElement.classList.remove('text-red-600', 'text-green-600');
+        amountReceivedInput.classList.remove('border-red-300', 'focus:ring-red-500', 'focus:border-red-500', 'border-green-300', 'focus:ring-green-500', 'focus:border-green-500');
+        paymentStatus.classList.add('hidden');
     }
+
+    // Update process sale button state
+    updateProcessSaleButton();
+}
+
+// Function to update process sale button state
+function updateProcessSaleButton() {
+    const processSaleButton = document.getElementById('process-sale');
+    const paymentMethod = document.getElementById('payment-method').value;
+    const amountReceived = parseFloat(document.getElementById('amount-received').value) || 0;
+
+    // Check basic conditions
+    if (cart.length === 0) {
+        processSaleButton.disabled = true;
+        processSaleButton.innerHTML = '<i class="fas fa-shopping-cart mr-2"></i>Add Items to Cart';
+        processSaleButton.classList.remove('bg-gradient-to-r', 'from-green-500', 'to-emerald-600', 'hover:from-green-600', 'hover:to-emerald-700');
+        processSaleButton.classList.add('bg-gray-400', 'cursor-not-allowed');
+        return;
+    }
+
+    // Check cash payment sufficiency
+    if (paymentMethod === 'cash' && amountReceived < total) {
+        processSaleButton.disabled = true;
+        const shortfall = total - amountReceived;
+        processSaleButton.innerHTML = `<i class="fas fa-exclamation-triangle mr-2"></i>Need UGX ${Math.round(shortfall).toLocaleString()} More`;
+        processSaleButton.classList.remove('bg-gradient-to-r', 'from-green-500', 'to-emerald-600', 'hover:from-green-600', 'hover:to-emerald-700');
+        processSaleButton.classList.add('bg-red-400', 'cursor-not-allowed');
+        return;
+    }
+
+    // Enable button - all conditions met
+    processSaleButton.disabled = false;
+    processSaleButton.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Process Sale';
+    processSaleButton.classList.remove('bg-gray-400', 'bg-red-400', 'cursor-not-allowed');
+    processSaleButton.classList.add('bg-gradient-to-r', 'from-green-500', 'to-emerald-600', 'hover:from-green-600', 'hover:to-emerald-700');
 }
 
 // Client functionality
@@ -1480,30 +1814,22 @@ async function processSale() {
     }
 
     const saleData = {
-        client_id: selectedClient ? selectedClient.id : null,
-        client_name: selectedClient ? selectedClient.name : "Walk-in Client",
-        client_email: "",
-        client_phone: selectedClient ? selectedClient.phone : "",
-        is_guest_client: !selectedClient,
+        customer_id: selectedClient ? selectedClient.id : null,
+        customer_name: selectedClient ? selectedClient.name : "Walk-in Client",
         items: cart.map(item => ({
             product_id: item.id,
-            name: item.name,
-            sku: item.sku,
-            price: item.price,
             quantity: item.quantity,
-            total: item.price * item.quantity
+            discount_amount: item.discount_amount || 0
         })),
-        subtotal: subtotal,
-        tax: 0,
-        discount: discount,
-        total: total,
+        tax_rate: 0.0,
+        discount_amount: discount - cart.reduce((sum, item) => sum + (item.discount_amount || 0), 0), // Order-level discount only
         payment_method: paymentMethod,
-        notes: '',
-        created_by: '{{ user.id }}'
+        payment_received: amountReceived,
+        notes: ''
     };
 
     try {
-        const response = await fetch('/api/pos/orders', {
+        const response = await fetch('/api/pos/sales', {
             method: 'POST',
             credentials: 'include',
             headers: {
@@ -1618,7 +1944,12 @@ function showReceipt(receiptData) {
 
             <div class="receipt-items mb-4">
                 <div class="text-sm font-semibold mb-2">ITEMS:</div>
-                ${receiptData.cart.map(item => `
+                ${receiptData.cart.map(item => {
+                    const itemSubtotal = item.price * item.quantity;
+                    const itemDiscount = item.discount_amount || 0;
+                    const itemTotal = itemSubtotal - itemDiscount;
+
+                    return `
                     <div class="text-sm mb-2">
                         <div class="flex justify-between">
                             <div class="flex-1">
@@ -1628,10 +1959,21 @@ function showReceipt(receiptData) {
                         </div>
                         <div class="flex justify-between mt-1">
                             <div>${item.quantity} x UGX ${Math.round(item.price).toLocaleString('en-UG')}</div>
-                            <div class="font-medium">UGX ${Math.round(item.price * item.quantity).toLocaleString('en-UG')}</div>
+                            <div class="font-medium">UGX ${Math.round(itemSubtotal).toLocaleString('en-UG')}</div>
                         </div>
+                        ${itemDiscount > 0 ? `
+                        <div class="flex justify-between mt-1 text-green-600">
+                            <div class="text-xs">Item Discount:</div>
+                            <div class="text-xs">-UGX ${Math.round(itemDiscount).toLocaleString('en-UG')}</div>
+                        </div>
+                        <div class="flex justify-between mt-1 font-medium">
+                            <div class="text-xs">Item Total:</div>
+                            <div class="text-xs">UGX ${Math.round(itemTotal).toLocaleString('en-UG')}</div>
+                        </div>
+                        ` : ''}
                     </div>
-                `).join('')}
+                    `;
+                }).join('')}
                 <div class="border-b border-gray-300 my-2"></div>
             </div>
 
@@ -1640,12 +1982,39 @@ function showReceipt(receiptData) {
                     <span>Subtotal:</span>
                     <span>UGX ${Math.round(receiptData.subtotal || 0).toLocaleString('en-UG')}</span>
                 </div>
-                ${receiptData.discount && receiptData.discount > 0 ? `
-                <div class="flex justify-between text-green-600">
-                    <span>Discount:</span>
-                    <span>-UGX ${Math.round(receiptData.discount).toLocaleString('en-UG')}</span>
-                </div>
-                ` : ''}
+                ${(() => {
+                    const itemDiscounts = receiptData.cart.reduce((sum, item) => sum + (item.discount_amount || 0), 0);
+                    const totalDiscount = receiptData.discount || 0;
+                    const orderDiscount = totalDiscount - itemDiscounts;
+
+                    let discountHtml = '';
+
+                    if (itemDiscounts > 0) {
+                        discountHtml += `
+                        <div class="flex justify-between text-green-600">
+                            <span>Item Discounts:</span>
+                            <span>-UGX ${Math.round(itemDiscounts).toLocaleString('en-UG')}</span>
+                        </div>`;
+                    }
+
+                    if (orderDiscount > 0) {
+                        discountHtml += `
+                        <div class="flex justify-between text-green-600">
+                            <span>Order Discount:</span>
+                            <span>-UGX ${Math.round(orderDiscount).toLocaleString('en-UG')}</span>
+                        </div>`;
+                    }
+
+                    if (totalDiscount > 0 && (itemDiscounts > 0 || orderDiscount > 0)) {
+                        discountHtml += `
+                        <div class="flex justify-between text-green-600 font-medium border-t border-green-200 pt-1 mt-1">
+                            <span>Total Discounts:</span>
+                            <span>-UGX ${Math.round(totalDiscount).toLocaleString('en-UG')}</span>
+                        </div>`;
+                    }
+
+                    return discountHtml;
+                })()}
                 <div class="flex justify-between font-bold text-lg border-t border-gray-300 pt-2">
                     <span>TOTAL:</span>
                     <span>UGX ${Math.round(receiptData.total || 0).toLocaleString('en-UG')}</span>
