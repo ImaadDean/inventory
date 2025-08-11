@@ -65,73 +65,168 @@
         </div>
     </div>
 
-    <!-- Compact Sales Summary Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+    <!-- Sales Summary Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
         <!-- Total Revenue Card -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow duration-200">
-            <div class="flex items-center justify-between mb-2">
-                <div class="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-money-bill-wave text-white text-sm"></i>
+        <div class="bg-white overflow-hidden shadow-md rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+            <div class="p-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-gradient-to-r from-green-400 to-green-600 rounded-lg flex items-center justify-center shadow-md">
+                            <i class="fas fa-money-bill-wave text-white text-xs"></i>
+                        </div>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <dt class="text-xs font-medium text-gray-500 truncate">Total Revenue</dt>
+                        <dd class="text-lg font-bold text-gray-900 mt-0.5">
+                            <span class="text-xs text-gray-500 font-medium">UGX</span>
+                            <span id="totalRevenue">0</span>
+                            <span id="totalRevenueLoading" class="hidden">
+                                <i class="fas fa-spinner fa-spin text-gray-400"></i>
+                            </span>
+                        </dd>
+                    </div>
                 </div>
-                <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
             </div>
-            <div>
-                <p class="text-xs font-medium text-gray-600 mb-1">Total Revenue</p>
-                <p class="text-lg font-bold text-gray-900" id="totalRevenue">UGX 0</p>
-                <p class="text-xs text-green-600">
-                    <i class="fas fa-arrow-up mr-1"></i>Revenue earned
-                </p>
+            <div class="bg-gradient-to-r from-green-50 to-green-100 px-4 py-2">
+                <div class="text-xs">
+                    <span class="text-green-700 font-medium">
+                        <i class="fas fa-arrow-up mr-1"></i>Revenue earned
+                        <span id="revenueInfoLoading" class="hidden">
+                            <i class="fas fa-spinner fa-spin text-green-400 ml-1"></i>
+                        </span>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Profit Card -->
+        <div class="bg-white overflow-hidden shadow-md rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+            <div class="p-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center shadow-md">
+                            <i class="fas fa-chart-pie text-white text-xs"></i>
+                        </div>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <dt class="text-xs font-medium text-gray-500 truncate">Total Profit</dt>
+                        <dd class="text-lg font-bold text-gray-900 mt-0.5">
+                            <span class="text-xs text-gray-500 font-medium">UGX</span>
+                            <span id="totalProfit">0</span>
+                            <span id="totalProfitLoading" class="hidden">
+                                <i class="fas fa-spinner fa-spin text-gray-400"></i>
+                            </span>
+                        </dd>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gradient-to-r from-yellow-50 to-orange-100 px-4 py-2">
+                <div class="text-xs">
+                    <span class="text-orange-700 font-medium">
+                        <i class="fas fa-percentage mr-1"></i><span id="profitMargin">0%</span> margin
+                        <span id="profitMarginLoading" class="hidden">
+                            <i class="fas fa-spinner fa-spin text-orange-400 ml-1"></i>
+                        </span>
+                    </span>
+                </div>
             </div>
         </div>
 
         <!-- Total Orders Card -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow duration-200">
-            <div class="flex items-center justify-between mb-2">
-                <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-shopping-bag text-white text-sm"></i>
+        <div class="bg-white overflow-hidden shadow-md rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+            <div class="p-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-gradient-to-r from-blue-400 to-blue-600 rounded-lg flex items-center justify-center shadow-md">
+                            <i class="fas fa-shopping-bag text-white text-xs"></i>
+                        </div>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <dt class="text-xs font-medium text-gray-500 truncate">Total Orders</dt>
+                        <dd class="text-lg font-bold text-gray-900 mt-0.5">
+                            <span id="totalOrders">0</span>
+                            <span id="totalOrdersLoading" class="hidden">
+                                <i class="fas fa-spinner fa-spin text-gray-400"></i>
+                            </span>
+                        </dd>
+                    </div>
                 </div>
-                <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
             </div>
-            <div>
-                <p class="text-xs font-medium text-gray-600 mb-1">Total Orders</p>
-                <p class="text-lg font-bold text-gray-900" id="totalOrders">0</p>
-                <p class="text-xs text-blue-600">
-                    <i class="fas fa-check-circle mr-1"></i>Completed orders
-                </p>
+            <div class="bg-gradient-to-r from-blue-50 to-blue-100 px-4 py-2">
+                <div class="text-xs">
+                    <span class="text-blue-700 font-medium">
+                        <i class="fas fa-check-circle mr-1"></i>Completed orders
+                        <span id="ordersInfoLoading" class="hidden">
+                            <i class="fas fa-spinner fa-spin text-blue-400 ml-1"></i>
+                        </span>
+                    </span>
+                </div>
             </div>
         </div>
 
         <!-- Average Order Card -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow duration-200">
-            <div class="flex items-center justify-between mb-2">
-                <div class="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-chart-line text-white text-sm"></i>
+        <div class="bg-white overflow-hidden shadow-md rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+            <div class="p-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-gradient-to-r from-purple-400 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
+                            <i class="fas fa-chart-line text-white text-xs"></i>
+                        </div>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <dt class="text-xs font-medium text-gray-500 truncate">Average Order</dt>
+                        <dd class="text-lg font-bold text-gray-900 mt-0.5">
+                            <span class="text-xs text-gray-500 font-medium">UGX</span>
+                            <span id="avgOrder">0</span>
+                            <span id="avgOrderLoading" class="hidden">
+                                <i class="fas fa-spinner fa-spin text-gray-400"></i>
+                            </span>
+                        </dd>
+                    </div>
                 </div>
-                <div class="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
             </div>
-            <div>
-                <p class="text-xs font-medium text-gray-600 mb-1">Average Order</p>
-                <p class="text-lg font-bold text-gray-900" id="avgOrder">UGX 0</p>
-                <p class="text-xs text-purple-600">
-                    <i class="fas fa-calculator mr-1"></i>Per transaction
-                </p>
+            <div class="bg-gradient-to-r from-purple-50 to-purple-100 px-4 py-2">
+                <div class="text-xs">
+                    <span class="text-purple-700 font-medium">
+                        <i class="fas fa-calculator mr-1"></i>Per transaction
+                        <span id="avgOrderInfoLoading" class="hidden">
+                            <i class="fas fa-spinner fa-spin text-purple-400 ml-1"></i>
+                        </span>
+                    </span>
+                </div>
             </div>
         </div>
 
         <!-- Growth Rate Card -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow duration-200" title="Revenue growth compared to the previous period of the same duration">
-            <div class="flex items-center justify-between mb-2">
-                <div class="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-trending-up text-white text-sm"></i>
+        <div class="bg-white overflow-hidden shadow-md rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1" title="Revenue growth compared to the previous period of the same duration">
+            <div class="p-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-gradient-to-r from-orange-400 to-red-500 rounded-lg flex items-center justify-center shadow-md">
+                            <i class="fas fa-trending-up text-white text-xs"></i>
+                        </div>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <dt class="text-xs font-medium text-gray-500 truncate">Growth Rate</dt>
+                        <dd class="text-lg font-bold text-gray-900 mt-0.5">
+                            <span id="growthRate">0%</span>
+                            <span id="growthRateLoading" class="hidden">
+                                <i class="fas fa-spinner fa-spin text-gray-400"></i>
+                            </span>
+                        </dd>
+                    </div>
                 </div>
-                <div class="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
             </div>
-            <div>
-                <p class="text-xs font-medium text-gray-600 mb-1">Growth Rate</p>
-                <p class="text-lg font-bold text-gray-900" id="growthRate">0%</p>
-                <p class="text-xs text-orange-600">
-                    <i class="fas fa-chart-bar mr-1"></i>vs previous period
-                </p>
+            <div class="bg-gradient-to-r from-orange-50 to-red-100 px-4 py-2">
+                <div class="text-xs">
+                    <span class="text-red-700 font-medium">
+                        <i class="fas fa-chart-bar mr-1"></i>vs previous period
+                        <span id="growthRateInfoLoading" class="hidden">
+                            <i class="fas fa-spinner fa-spin text-red-400 ml-1"></i>
+                        </span>
+                    </span>
+                </div>
             </div>
         </div>
     </div>
@@ -315,10 +410,88 @@ function formatMoney(value, showFull = false) {
     }
 }
 
+// Money formatting function without currency prefix
+function formatMoneyWithoutCurrency(value, showFull = false) {
+    if (value === 0) return '0';
 
+    const absValue = Math.abs(value);
+    const isNegative = value < 0;
+    const prefix = isNegative ? '-' : '';
+
+    if (showFull) {
+        // For tooltips, show full amount with commas
+        return prefix + absValue.toLocaleString();
+    }
+
+    if (absValue >= 1000000000) {
+        return prefix + (absValue / 1000000000).toFixed(1) + 'B';
+    } else if (absValue >= 1000000) {
+        return prefix + (absValue / 1000000).toFixed(1) + 'M';
+    } else if (absValue >= 1000) {
+        return prefix + (absValue / 1000).toFixed(1) + 'K';
+    } else {
+        return prefix + absValue.toLocaleString();
+    }
+}
+
+
+
+// Show loading state for all cards
+function showCardsLoading() {
+    // Revenue card
+    const totalRevenueEl = document.getElementById('totalRevenue');
+    const totalRevenueLoadingEl = document.getElementById('totalRevenueLoading');
+    const revenueInfoLoadingEl = document.getElementById('revenueInfoLoading');
+
+    // Profit card
+    const totalProfitEl = document.getElementById('totalProfit');
+    const totalProfitLoadingEl = document.getElementById('totalProfitLoading');
+    const profitMarginEl = document.getElementById('profitMargin');
+    const profitMarginLoadingEl = document.getElementById('profitMarginLoading');
+
+    // Orders card
+    const totalOrdersEl = document.getElementById('totalOrders');
+    const totalOrdersLoadingEl = document.getElementById('totalOrdersLoading');
+    const ordersInfoLoadingEl = document.getElementById('ordersInfoLoading');
+
+    // Average Order card
+    const avgOrderEl = document.getElementById('avgOrder');
+    const avgOrderLoadingEl = document.getElementById('avgOrderLoading');
+    const avgOrderInfoLoadingEl = document.getElementById('avgOrderInfoLoading');
+
+    // Growth Rate card
+    const growthRateEl = document.getElementById('growthRate');
+    const growthRateLoadingEl = document.getElementById('growthRateLoading');
+    const growthRateInfoLoadingEl = document.getElementById('growthRateInfoLoading');
+
+    // Show loading for all cards
+    if (totalRevenueEl) totalRevenueEl.textContent = '';
+    if (totalRevenueLoadingEl) totalRevenueLoadingEl.classList.remove('hidden');
+    if (revenueInfoLoadingEl) revenueInfoLoadingEl.classList.remove('hidden');
+
+    if (totalProfitEl) totalProfitEl.textContent = '';
+    if (totalProfitLoadingEl) totalProfitLoadingEl.classList.remove('hidden');
+    if (profitMarginEl) profitMarginEl.textContent = '';
+    if (profitMarginLoadingEl) profitMarginLoadingEl.classList.remove('hidden');
+
+    if (totalOrdersEl) totalOrdersEl.textContent = '';
+    if (totalOrdersLoadingEl) totalOrdersLoadingEl.classList.remove('hidden');
+    if (ordersInfoLoadingEl) ordersInfoLoadingEl.classList.remove('hidden');
+
+    if (avgOrderEl) avgOrderEl.textContent = '';
+    if (avgOrderLoadingEl) avgOrderLoadingEl.classList.remove('hidden');
+    if (avgOrderInfoLoadingEl) avgOrderInfoLoadingEl.classList.remove('hidden');
+
+    if (growthRateEl) growthRateEl.textContent = '';
+    if (growthRateLoadingEl) growthRateLoadingEl.classList.remove('hidden');
+    if (growthRateInfoLoadingEl) growthRateInfoLoadingEl.classList.remove('hidden');
+}
 
 async function loadSalesData() {
     console.log('🚀 loadSalesData function called');
+
+    // Show loading state for all cards
+    showCardsLoading();
 
     const fromDateEl = document.getElementById('fromDate');
     const toDateEl = document.getElementById('toDate');
@@ -346,17 +519,7 @@ async function loadSalesData() {
         return;
     }
 
-    // Show loading state
-    console.log('⏳ Setting loading state');
-    const totalRevenueEl = document.getElementById('totalRevenue');
-    const totalOrdersEl = document.getElementById('totalOrders');
-    const avgOrderEl = document.getElementById('avgOrder');
-    const growthRateEl = document.getElementById('growthRate');
 
-    if (totalRevenueEl) totalRevenueEl.textContent = 'Loading...';
-    if (totalOrdersEl) totalOrdersEl.textContent = 'Loading...';
-    if (avgOrderEl) avgOrderEl.textContent = 'Loading...';
-    if (growthRateEl) growthRateEl.textContent = 'Loading...';
 
     try {
         const url = `/reports/api/sales-data?from_date=${fromDate}&to_date=${toDate}`;
@@ -386,18 +549,52 @@ async function loadSalesData() {
 
             // Update summary cards
             const totalRevenueEl = document.getElementById('totalRevenue');
-            const totalOrdersEl = document.getElementById('totalOrders');
-            const avgOrderEl = document.getElementById('avgOrder');
-            const growthRateEl = document.getElementById('growthRate');
+            const totalRevenueLoadingEl = document.getElementById('totalRevenueLoading');
+            const revenueInfoLoadingEl = document.getElementById('revenueInfoLoading');
 
+            const totalProfitEl = document.getElementById('totalProfit');
+            const totalProfitLoadingEl = document.getElementById('totalProfitLoading');
+            const profitMarginEl = document.getElementById('profitMargin');
+            const profitMarginLoadingEl = document.getElementById('profitMarginLoading');
+
+            const totalOrdersEl = document.getElementById('totalOrders');
+            const totalOrdersLoadingEl = document.getElementById('totalOrdersLoading');
+            const ordersInfoLoadingEl = document.getElementById('ordersInfoLoading');
+
+            const avgOrderEl = document.getElementById('avgOrder');
+            const avgOrderLoadingEl = document.getElementById('avgOrderLoading');
+            const avgOrderInfoLoadingEl = document.getElementById('avgOrderInfoLoading');
+
+            const growthRateEl = document.getElementById('growthRate');
+            const growthRateLoadingEl = document.getElementById('growthRateLoading');
+            const growthRateInfoLoadingEl = document.getElementById('growthRateInfoLoading');
+
+            // Update values and hide loading indicators
             if (totalRevenueEl) {
-                totalRevenueEl.textContent = formatMoney(data.summary.total_revenue);
+                totalRevenueEl.textContent = formatMoneyWithoutCurrency(data.summary.total_revenue);
+                if (totalRevenueLoadingEl) totalRevenueLoadingEl.classList.add('hidden');
+                if (revenueInfoLoadingEl) revenueInfoLoadingEl.classList.add('hidden');
             }
+
+            if (totalProfitEl) {
+                totalProfitEl.textContent = formatMoneyWithoutCurrency(data.summary.profit);
+                if (totalProfitLoadingEl) totalProfitLoadingEl.classList.add('hidden');
+            }
+            if (profitMarginEl) {
+                profitMarginEl.textContent = `${data.summary.profit_margin}%`;
+                if (profitMarginLoadingEl) profitMarginLoadingEl.classList.add('hidden');
+            }
+
             if (totalOrdersEl) {
                 totalOrdersEl.textContent = data.summary.total_orders.toLocaleString();
+                if (totalOrdersLoadingEl) totalOrdersLoadingEl.classList.add('hidden');
+                if (ordersInfoLoadingEl) ordersInfoLoadingEl.classList.add('hidden');
             }
+
             if (avgOrderEl) {
-                avgOrderEl.textContent = formatMoney(Math.round(data.summary.avg_order_value));
+                avgOrderEl.textContent = formatMoneyWithoutCurrency(Math.round(data.summary.avg_order_value));
+                if (avgOrderLoadingEl) avgOrderLoadingEl.classList.add('hidden');
+                if (avgOrderInfoLoadingEl) avgOrderInfoLoadingEl.classList.add('hidden');
             }
             if (growthRateEl) {
                 const growthRate = data.summary.growth_rate;
@@ -443,6 +640,10 @@ async function loadSalesData() {
                         growthSubtext.innerHTML = '<i class="fas fa-minus mr-1"></i>vs previous period';
                     }
                 }
+
+                // Hide loading indicators
+                if (growthRateLoadingEl) growthRateLoadingEl.classList.add('hidden');
+                if (growthRateInfoLoadingEl) growthRateInfoLoadingEl.classList.add('hidden');
             }
 
             // Update sales table
@@ -476,16 +677,47 @@ async function loadSalesData() {
 
         showToast(errorMessage, 'error');
 
-        // Reset to default values safely
+        // Reset to default values safely and hide all loading indicators
         const totalRevenueEl = document.getElementById('totalRevenue');
-        const totalOrdersEl = document.getElementById('totalOrders');
-        const avgOrderEl = document.getElementById('avgOrder');
-        const growthRateEl = document.getElementById('growthRate');
+        const totalRevenueLoadingEl = document.getElementById('totalRevenueLoading');
+        const revenueInfoLoadingEl = document.getElementById('revenueInfoLoading');
 
-        if (totalRevenueEl) totalRevenueEl.textContent = formatMoney(0);
+        const totalProfitEl = document.getElementById('totalProfit');
+        const totalProfitLoadingEl = document.getElementById('totalProfitLoading');
+        const profitMarginEl = document.getElementById('profitMargin');
+        const profitMarginLoadingEl = document.getElementById('profitMarginLoading');
+
+        const totalOrdersEl = document.getElementById('totalOrders');
+        const totalOrdersLoadingEl = document.getElementById('totalOrdersLoading');
+        const ordersInfoLoadingEl = document.getElementById('ordersInfoLoading');
+
+        const avgOrderEl = document.getElementById('avgOrder');
+        const avgOrderLoadingEl = document.getElementById('avgOrderLoading');
+        const avgOrderInfoLoadingEl = document.getElementById('avgOrderInfoLoading');
+
+        const growthRateEl = document.getElementById('growthRate');
+        const growthRateLoadingEl = document.getElementById('growthRateLoading');
+        const growthRateInfoLoadingEl = document.getElementById('growthRateInfoLoading');
+
+        // Reset values
+        if (totalRevenueEl) totalRevenueEl.textContent = '0';
+        if (totalProfitEl) totalProfitEl.textContent = '0';
+        if (profitMarginEl) profitMarginEl.textContent = '0%';
         if (totalOrdersEl) totalOrdersEl.textContent = '0';
-        if (avgOrderEl) avgOrderEl.textContent = formatMoney(0);
+        if (avgOrderEl) avgOrderEl.textContent = '0';
         if (growthRateEl) growthRateEl.textContent = '0%';
+
+        // Hide all loading indicators
+        if (totalRevenueLoadingEl) totalRevenueLoadingEl.classList.add('hidden');
+        if (revenueInfoLoadingEl) revenueInfoLoadingEl.classList.add('hidden');
+        if (totalProfitLoadingEl) totalProfitLoadingEl.classList.add('hidden');
+        if (profitMarginLoadingEl) profitMarginLoadingEl.classList.add('hidden');
+        if (totalOrdersLoadingEl) totalOrdersLoadingEl.classList.add('hidden');
+        if (ordersInfoLoadingEl) ordersInfoLoadingEl.classList.add('hidden');
+        if (avgOrderLoadingEl) avgOrderLoadingEl.classList.add('hidden');
+        if (avgOrderInfoLoadingEl) avgOrderInfoLoadingEl.classList.add('hidden');
+        if (growthRateLoadingEl) growthRateLoadingEl.classList.add('hidden');
+        if (growthRateInfoLoadingEl) growthRateInfoLoadingEl.classList.add('hidden');
 
         // Show chart placeholders
         showChartPlaceholders();

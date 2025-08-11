@@ -32,14 +32,23 @@
                     <div class="ml-3 flex-1">
                         <dt class="text-xs font-medium text-gray-500 truncate">Today's Sales</dt>
                         <dd class="text-base font-bold text-gray-900 mt-0.5">
-                            <span class="text-xs text-gray-500 font-medium">UGX</span> {{ "{:,.0f}".format(dashboard.sales_overview['total_sales']) }}
+                            <span class="text-xs text-gray-500 font-medium">UGX</span>
+                            <span id="todaysSales">0</span>
+                            <span id="todaysSalesLoading" class="hidden">
+                                <i class="fas fa-spinner fa-spin text-gray-400"></i>
+                            </span>
                         </dd>
                     </div>
                 </div>
             </div>
             <div class="bg-gradient-to-r from-green-50 to-green-100 px-4 py-2">
                 <div class="text-xs">
-                    <span class="text-green-700 font-medium">{{ dashboard.sales_overview['total_transactions'] }} transactions</span>
+                    <span class="text-green-700 font-medium">
+                        <span id="totalTransactions">0</span> transactions
+                        <span id="totalTransactionsLoading" class="hidden">
+                            <i class="fas fa-spinner fa-spin text-green-400 ml-1"></i>
+                        </span>
+                    </span>
                 </div>
             </div>
         </div>
@@ -55,13 +64,23 @@
                     </div>
                     <div class="ml-3 flex-1">
                         <dt class="text-xs font-medium text-gray-500 truncate">Total Products</dt>
-                        <dd class="text-base font-bold text-gray-900 mt-0.5">{{ dashboard.inventory_overview['total_products'] }}</dd>
+                        <dd class="text-base font-bold text-gray-900 mt-0.5">
+                            <span id="totalProducts">0</span>
+                            <span id="totalProductsLoading" class="hidden">
+                                <i class="fas fa-spinner fa-spin text-gray-400"></i>
+                            </span>
+                        </dd>
                     </div>
                 </div>
             </div>
             <div class="bg-gradient-to-r from-blue-50 to-blue-100 px-4 py-2">
                 <div class="text-xs">
-                    <span class="text-blue-700 font-medium">{{ dashboard.inventory_overview['active_products'] }} active</span>
+                    <span class="text-blue-700 font-medium">
+                        <span id="activeProducts">0</span> active
+                        <span id="activeProductsLoading" class="hidden">
+                            <i class="fas fa-spinner fa-spin text-blue-400 ml-1"></i>
+                        </span>
+                    </span>
                 </div>
             </div>
         </div>
@@ -77,7 +96,12 @@
                     </div>
                     <div class="ml-3 flex-1">
                         <dt class="text-xs font-medium text-gray-500 truncate">Low Stock</dt>
-                        <dd class="text-base font-bold text-gray-900 mt-0.5">{{ dashboard['low_stock_alerts'] }}</dd>
+                        <dd class="text-base font-bold text-gray-900 mt-0.5">
+                            <span id="lowStockAlerts">0</span>
+                            <span id="lowStockAlertsLoading" class="hidden">
+                                <i class="fas fa-spinner fa-spin text-gray-400"></i>
+                            </span>
+                        </dd>
                     </div>
                 </div>
             </div>
@@ -100,7 +124,11 @@
                     <div class="ml-3 flex-1">
                         <dt class="text-xs font-medium text-gray-500 truncate">Inventory Value</dt>
                         <dd class="text-base font-bold text-gray-900 mt-0.5">
-                            <span class="text-xs text-gray-500 font-medium">UGX</span> {{ "{:,.0f}".format(dashboard.inventory_overview['total_inventory_value']) }}
+                            <span class="text-xs text-gray-500 font-medium">UGX</span>
+                            <span id="inventoryValue">0</span>
+                            <span id="inventoryValueLoading" class="hidden">
+                                <i class="fas fa-spinner fa-spin text-gray-400"></i>
+                            </span>
                         </dd>
                     </div>
                 </div>
@@ -135,8 +163,15 @@
                 </div>
             </div>
             <div class="p-4">
-                <div class="h-64">
-                    <canvas id="salesChart"></canvas>
+                <div class="h-64 relative">
+                    <div id="salesChart" class="w-full h-full"></div>
+                    <!-- Sales chart loading overlay -->
+                    <div id="salesChartLoading" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90 rounded-lg hidden">
+                        <div class="text-center">
+                            <i class="fas fa-spinner fa-spin text-2xl text-blue-500 mb-2"></i>
+                            <p class="text-sm text-gray-600 font-medium">Loading sales data...</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -156,8 +191,10 @@
                     </div>
                     <div class="text-right">
                         <p class="text-xs text-green-100">Top Product</p>
-                        <p class="text-sm font-bold text-white" id="top-product-name">Loading...</p>
-                        <p class="text-xs text-green-200" id="top-product-sales">0</p>
+                        <p class="text-sm font-bold text-white" id="top-product-name">
+                            <i class="fas fa-spinner fa-spin text-green-200"></i>
+                        </p>
+                        <p class="text-xs text-green-200" id="top-product-sales">Loading...</p>
                     </div>
                 </div>
             </div>
@@ -165,19 +202,34 @@
                 <div class="grid grid-cols-1 xl:grid-cols-5 lg:grid-cols-1 gap-4">
                     <!-- Chart Section -->
                     <div class="xl:col-span-2 flex items-center justify-center">
-                        <div class="w-full max-w-[320px] xl:max-w-[300px]">
-                            <canvas id="topProductsChart" width="300" height="300"></canvas>
+                        <div class="w-full max-w-[250px] xl:max-w-[220px] h-[220px] relative">
+                            <div id="topProductsChart" class="w-full h-full"></div>
+                            <!-- Chart loading overlay -->
+                            <div id="topProductsChartLoading" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90 rounded-lg hidden">
+                                <div class="text-center">
+                                    <i class="fas fa-spinner fa-spin text-xl text-green-500 mb-2"></i>
+                                    <p class="text-xs text-gray-600 font-medium">Loading...</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Products List Section -->
-                    <div class="xl:col-span-3 space-y-2">
-                        <h4 class="text-sm font-semibold text-gray-700 mb-2 flex items-center">
-                            <i class="fas fa-list-ol text-gray-500 mr-2"></i>
-                            Product Rankings
-                        </h4>
-                        <div id="top-products-list" class="space-y-1.5 max-h-48 xl:max-h-44 overflow-y-auto">
-                            <div class="text-sm text-gray-500 text-center py-4">Loading products...</div>
+                    <div class="xl:col-span-3 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-sm font-semibold text-gray-700 flex items-center">
+                                <i class="fas fa-trophy text-yellow-500 mr-2"></i>
+                                Product Rankings
+                            </h4>
+                        </div>
+                        <div id="top-products-list" class="space-y-1.5 max-h-44 xl:max-h-40 overflow-y-auto scrollbar-thin px-2 py-2">
+                            <div class="text-sm text-gray-500 text-center py-8">
+                                <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <i class="fas fa-spinner fa-spin text-gray-400 text-lg"></i>
+                                </div>
+                                <p class="font-medium">Loading products...</p>
+                                <p class="text-xs text-gray-400 mt-1">Analyzing sales data</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -372,19 +424,17 @@
     </div>
 </div>
 
-<!-- Chart.js CDN -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- ApexCharts is already included in base.html -->
 
-<!-- Prevent auto-scrolling styles -->
+<!-- ApexCharts styling -->
 <style>
-    /* Prevent chart interactions from causing scroll */
-    canvas {
+    /* ApexCharts container styling */
+    .apexcharts-canvas {
         -webkit-user-select: none;
         -moz-user-select: none;
         -ms-user-select: none;
         user-select: none;
         -webkit-tap-highlight-color: transparent;
-        touch-action: none;
     }
 
     /* Ensure stable layout */
@@ -393,18 +443,269 @@
         overflow: hidden;
     }
 
-    /* Prevent focus-related scrolling */
-    canvas:focus {
-        outline: none;
-    }
-
     /* Smooth scroll behavior for the page */
     html {
         scroll-behavior: auto !important;
     }
+
+    /* ApexCharts tooltip styling */
+    .apexcharts-tooltip {
+        background: rgba(0, 0, 0, 0.8) !important;
+        border: 1px solid #3B82F6 !important;
+        border-radius: 8px !important;
+    }
+
+    .apexcharts-tooltip-title {
+        background: transparent !important;
+        border: none !important;
+        color: #fff !important;
+    }
+
+    .apexcharts-tooltip-text-y-value,
+    .apexcharts-tooltip-text-y-label {
+        color: #fff !important;
+    }
+
+    /* Enhanced chart interactions */
+    .apexcharts-pie-slice {
+        transition: all 0.3s ease !important;
+    }
+
+    .apexcharts-pie-slice:hover {
+        filter: brightness(1.1) !important;
+        transform: scale(1.05) !important;
+    }
+
+    /* Scrollbar styling for products list */
+    #top-products-list::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    #top-products-list::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 2px;
+    }
+
+    #top-products-list::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 2px;
+    }
+
+    #top-products-list::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+
+    /* Product list item animations */
+    #top-products-list > div {
+        transition: all 0.3s ease;
+    }
+
+    #top-products-list > div:hover {
+        transform: translateX(2px);
+    }
 </style>
 
 <script>
+    // Show loading state for charts
+    function showChartsLoading() {
+        // Add loading overlay to chart containers
+        const salesChartContainer = document.getElementById('salesChart');
+        const topProductsChartContainer = document.getElementById('topProductsChart');
+
+        if (salesChartContainer) {
+            salesChartContainer.innerHTML = `
+                <div class="flex items-center justify-center h-full">
+                    <div class="text-center">
+                        <i class="fas fa-spinner fa-spin text-2xl text-blue-500 mb-2"></i>
+                        <p class="text-sm text-gray-500">Loading sales data...</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        if (topProductsChartContainer) {
+            topProductsChartContainer.innerHTML = `
+                <div class="flex items-center justify-center h-full">
+                    <div class="text-center">
+                        <i class="fas fa-spinner fa-spin text-2xl text-green-500 mb-2"></i>
+                        <p class="text-sm text-gray-500">Loading products data...</p>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    // Show loading state for all dashboard cards
+    function showDashboardLoading() {
+        // Sales card
+        const todaysSalesEl = document.getElementById('todaysSales');
+        const todaysSalesLoadingEl = document.getElementById('todaysSalesLoading');
+        const totalTransactionsEl = document.getElementById('totalTransactions');
+        const totalTransactionsLoadingEl = document.getElementById('totalTransactionsLoading');
+
+        // Products card
+        const totalProductsEl = document.getElementById('totalProducts');
+        const totalProductsLoadingEl = document.getElementById('totalProductsLoading');
+        const activeProductsEl = document.getElementById('activeProducts');
+        const activeProductsLoadingEl = document.getElementById('activeProductsLoading');
+
+        // Low stock card
+        const lowStockAlertsEl = document.getElementById('lowStockAlerts');
+        const lowStockAlertsLoadingEl = document.getElementById('lowStockAlertsLoading');
+
+        // Inventory value card
+        const inventoryValueEl = document.getElementById('inventoryValue');
+        const inventoryValueLoadingEl = document.getElementById('inventoryValueLoading');
+
+        // Show loading for all cards
+        if (todaysSalesEl) todaysSalesEl.textContent = '';
+        if (todaysSalesLoadingEl) todaysSalesLoadingEl.classList.remove('hidden');
+        if (totalTransactionsEl) totalTransactionsEl.textContent = '';
+        if (totalTransactionsLoadingEl) totalTransactionsLoadingEl.classList.remove('hidden');
+
+        if (totalProductsEl) totalProductsEl.textContent = '';
+        if (totalProductsLoadingEl) totalProductsLoadingEl.classList.remove('hidden');
+        if (activeProductsEl) activeProductsEl.textContent = '';
+        if (activeProductsLoadingEl) activeProductsLoadingEl.classList.remove('hidden');
+
+        if (lowStockAlertsEl) lowStockAlertsEl.textContent = '';
+        if (lowStockAlertsLoadingEl) lowStockAlertsLoadingEl.classList.remove('hidden');
+
+        if (inventoryValueEl) inventoryValueEl.textContent = '';
+        if (inventoryValueLoadingEl) inventoryValueLoadingEl.classList.remove('hidden');
+    }
+
+    // Load dashboard data from API
+    async function loadDashboardData() {
+        console.log('🚀 Loading dashboard data...');
+
+        // Show loading state
+        showDashboardLoading();
+
+        try {
+            const response = await fetch('/api/dashboard/summary', {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log('✅ Dashboard data loaded:', data);
+
+            // Update cards with data (API returns data directly)
+            updateDashboardCards(data);
+
+        } catch (error) {
+            console.error('❌ Error loading dashboard data:', error);
+            // Reset to default values and hide loading indicators
+            resetDashboardCards();
+        }
+    }
+
+    // Update dashboard cards with fetched data
+    function updateDashboardCards(data) {
+        // Sales card elements
+        const todaysSalesEl = document.getElementById('todaysSales');
+        const todaysSalesLoadingEl = document.getElementById('todaysSalesLoading');
+        const totalTransactionsEl = document.getElementById('totalTransactions');
+        const totalTransactionsLoadingEl = document.getElementById('totalTransactionsLoading');
+
+        // Products card elements
+        const totalProductsEl = document.getElementById('totalProducts');
+        const totalProductsLoadingEl = document.getElementById('totalProductsLoading');
+        const activeProductsEl = document.getElementById('activeProducts');
+        const activeProductsLoadingEl = document.getElementById('activeProductsLoading');
+
+        // Low stock card elements
+        const lowStockAlertsEl = document.getElementById('lowStockAlerts');
+        const lowStockAlertsLoadingEl = document.getElementById('lowStockAlertsLoading');
+
+        // Inventory value card elements
+        const inventoryValueEl = document.getElementById('inventoryValue');
+        const inventoryValueLoadingEl = document.getElementById('inventoryValueLoading');
+
+        // Update values and hide loading indicators
+        if (todaysSalesEl && data.sales_overview) {
+            todaysSalesEl.textContent = formatMoneyWithoutCurrency(data.sales_overview.total_sales || 0);
+            if (todaysSalesLoadingEl) todaysSalesLoadingEl.classList.add('hidden');
+        }
+
+        if (totalTransactionsEl && data.sales_overview) {
+            totalTransactionsEl.textContent = (data.sales_overview.total_transactions || 0).toLocaleString();
+            if (totalTransactionsLoadingEl) totalTransactionsLoadingEl.classList.add('hidden');
+        }
+
+        if (totalProductsEl && data.inventory_overview) {
+            totalProductsEl.textContent = (data.inventory_overview.total_products || 0).toLocaleString();
+            if (totalProductsLoadingEl) totalProductsLoadingEl.classList.add('hidden');
+        }
+
+        if (activeProductsEl && data.inventory_overview) {
+            activeProductsEl.textContent = (data.inventory_overview.active_products || 0).toLocaleString();
+            if (activeProductsLoadingEl) activeProductsLoadingEl.classList.add('hidden');
+        }
+
+        if (lowStockAlertsEl) {
+            lowStockAlertsEl.textContent = (data.low_stock_alerts || 0).toLocaleString();
+            if (lowStockAlertsLoadingEl) lowStockAlertsLoadingEl.classList.add('hidden');
+        }
+
+        if (inventoryValueEl && data.inventory_overview) {
+            inventoryValueEl.textContent = formatMoneyWithoutCurrency(data.inventory_overview.total_inventory_value || 0);
+            if (inventoryValueLoadingEl) inventoryValueLoadingEl.classList.add('hidden');
+        }
+    }
+
+    // Reset dashboard cards to default values
+    function resetDashboardCards() {
+        const elements = [
+            { id: 'todaysSales', value: '0', loadingId: 'todaysSalesLoading' },
+            { id: 'totalTransactions', value: '0', loadingId: 'totalTransactionsLoading' },
+            { id: 'totalProducts', value: '0', loadingId: 'totalProductsLoading' },
+            { id: 'activeProducts', value: '0', loadingId: 'activeProductsLoading' },
+            { id: 'lowStockAlerts', value: '0', loadingId: 'lowStockAlertsLoading' },
+            { id: 'inventoryValue', value: '0', loadingId: 'inventoryValueLoading' }
+        ];
+
+        elements.forEach(element => {
+            const el = document.getElementById(element.id);
+            const loadingEl = document.getElementById(element.loadingId);
+
+            if (el) el.textContent = element.value;
+            if (loadingEl) loadingEl.classList.add('hidden');
+        });
+    }
+
+    // Money formatting function without currency prefix (same as sales report)
+    function formatMoneyWithoutCurrency(value, showFull = false) {
+        if (value === 0) return '0';
+
+        const absValue = Math.abs(value);
+        const isNegative = value < 0;
+        const prefix = isNegative ? '-' : '';
+
+        if (showFull) {
+            // For tooltips, show full amount with commas
+            return prefix + absValue.toLocaleString();
+        }
+
+        if (absValue >= 1000000000) {
+            return prefix + (absValue / 1000000000).toFixed(1) + 'B';
+        } else if (absValue >= 1000000) {
+            return prefix + (absValue / 1000000).toFixed(1) + 'M';
+        } else if (absValue >= 1000) {
+            return prefix + (absValue / 1000).toFixed(1) + 'K';
+        } else {
+            return prefix + absValue.toLocaleString();
+        }
+    }
+
     // Display current date and time in Kampala timezone
     function updateDateTime() {
         const now = new Date();
@@ -441,174 +742,347 @@
 
     // Initialize Charts
     function initializeCharts() {
-        // Sales Chart (Line Chart)
-        const salesCtx = document.getElementById('salesChart').getContext('2d');
-
-        // Create gradient for the chart
-        const gradient = salesCtx.createLinearGradient(0, 0, 0, 400);
-        gradient.addColorStop(0, 'rgba(59, 130, 246, 0.2)');
-        gradient.addColorStop(0.5, 'rgba(59, 130, 246, 0.1)');
-        gradient.addColorStop(1, 'rgba(59, 130, 246, 0.02)');
-
-        const salesChart = new Chart(salesCtx, {
-            type: 'line',
-            data: {
-                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                datasets: [{
-                    label: 'Daily Sales',
-                    data: [0, 0, 0, 0, 0, 0, 0], // Will be populated with real data
-                    borderColor: 'rgb(59, 130, 246)',
-                    backgroundColor: gradient,
-                    borderWidth: 3,
-                    fill: true,
-                    tension: 0.4,
-                    pointBackgroundColor: 'rgb(59, 130, 246)',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 3,
-                    pointRadius: 6,
-                    pointHoverRadius: 8,
-                    pointHoverBackgroundColor: 'rgb(37, 99, 235)',
-                    pointHoverBorderColor: '#fff',
-                    pointHoverBorderWidth: 3
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: {
-                    intersect: false,
-                    mode: 'index'
+        // Sales Chart (ApexCharts Line Chart)
+        const salesChartOptions = {
+            series: [{
+                name: 'Daily Sales',
+                data: [0, 0, 0, 0, 0, 0, 0] // Will be populated with real data
+            }],
+            chart: {
+                type: 'area',
+                height: 256,
+                toolbar: {
+                    show: false
                 },
-                plugins: {
-                    legend: {
-                        display: false
+                zoom: {
+                    enabled: false
+                },
+                animations: {
+                    enabled: true,
+                    easing: 'easeinout',
+                    speed: 800,
+                    animateGradually: {
+                        enabled: true,
+                        delay: 150
                     },
-                    tooltip: {
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        titleColor: '#fff',
-                        bodyColor: '#fff',
-                        borderColor: 'rgb(59, 130, 246)',
-                        borderWidth: 1,
-                        cornerRadius: 8,
-                        displayColors: false,
-                        callbacks: {
-                            title: function(context) {
-                                return context[0].label;
+                    dynamicAnimation: {
+                        enabled: true,
+                        speed: 350
+                    }
+                }
+            },
+            dataLabels: {
+                enabled: false
+            },
+            stroke: {
+                curve: 'smooth',
+                width: 3,
+                colors: ['#3B82F6']
+            },
+            fill: {
+                type: 'gradient',
+                gradient: {
+                    shadeIntensity: 1,
+                    opacityFrom: 0.3,
+                    opacityTo: 0.05,
+                    stops: [0, 90, 100],
+                    colorStops: [
+                        {
+                            offset: 0,
+                            color: '#3B82F6',
+                            opacity: 0.3
+                        },
+                        {
+                            offset: 50,
+                            color: '#3B82F6',
+                            opacity: 0.1
+                        },
+                        {
+                            offset: 100,
+                            color: '#3B82F6',
+                            opacity: 0.02
+                        }
+                    ]
+                }
+            },
+            xaxis: {
+                categories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                labels: {
+                    style: {
+                        colors: '#6B7280',
+                        fontSize: '12px',
+                        fontWeight: 500
+                    }
+                },
+                axisBorder: {
+                    show: false
+                },
+                axisTicks: {
+                    show: false
+                }
+            },
+            yaxis: {
+                labels: {
+                    style: {
+                        colors: '#6B7280',
+                        fontSize: '12px'
+                    },
+                    formatter: function(value) {
+                        return formatCurrency(value);
+                    }
+                }
+            },
+            grid: {
+                borderColor: 'rgba(0, 0, 0, 0.06)',
+                strokeDashArray: 0,
+                xaxis: {
+                    lines: {
+                        show: false
+                    }
+                },
+                yaxis: {
+                    lines: {
+                        show: true
+                    }
+                }
+            },
+            markers: {
+                size: 6,
+                colors: ['#3B82F6'],
+                strokeColors: '#fff',
+                strokeWidth: 3,
+                hover: {
+                    size: 8,
+                    sizeOffset: 2
+                }
+            },
+            tooltip: {
+                theme: 'dark',
+                style: {
+                    fontSize: '12px',
+                    fontFamily: undefined
+                },
+                x: {
+                    show: true
+                },
+                y: {
+                    formatter: function(value) {
+                        return 'Sales: ' + value.toLocaleString() + ' (Formatted: ' + formatCurrency(value) + ')';
+                    }
+                }
+            },
+            colors: ['#3B82F6']
+        };
+
+        const salesChart = new ApexCharts(document.querySelector("#salesChart"), salesChartOptions);
+
+        // Top Selling Products Chart (Enhanced ApexCharts Donut Chart)
+        const topProductsChartOptions = {
+            series: [1], // Will be populated with real data
+            chart: {
+                type: 'donut',
+                height: 220,
+                toolbar: {
+                    show: false
+                },
+                animations: {
+                    enabled: true,
+                    easing: 'easeinout',
+                    speed: 1200,
+                    animateGradually: {
+                        enabled: true,
+                        delay: 200
+                    },
+                    dynamicAnimation: {
+                        enabled: true,
+                        speed: 500
+                    }
+                },
+                events: {
+                    dataPointSelection: function(event, chartContext, config) {
+                        // Highlight corresponding item in the list
+                        highlightProductInList(config.dataPointIndex);
+                    },
+                    dataPointMouseEnter: function(event, chartContext, config) {
+                        // Add subtle highlight effect
+                        const listItems = document.querySelectorAll('#top-products-list > div');
+                        if (listItems[config.dataPointIndex]) {
+                            listItems[config.dataPointIndex].classList.add('ring-2', 'ring-blue-200', 'bg-blue-50');
+                        }
+                    },
+                    dataPointMouseLeave: function(event, chartContext, config) {
+                        // Remove highlight effect
+                        const listItems = document.querySelectorAll('#top-products-list > div');
+                        if (listItems[config.dataPointIndex]) {
+                            listItems[config.dataPointIndex].classList.remove('ring-2', 'ring-blue-200', 'bg-blue-50');
+                        }
+                    }
+                }
+            },
+            labels: ['Loading...'],
+            colors: [
+                '#10B981', // Emerald - 1st place
+                '#3B82F6', // Blue - 2nd place
+                '#8B5CF6', // Purple - 3rd place
+                '#F59E0B', // Amber - 4th place
+                '#EF4444', // Red - 5th place
+                '#06B6D4', // Cyan - 6th place
+                '#EC4899', // Pink - 7th place
+                '#84CC16'  // Lime - 8th place
+            ],
+            plotOptions: {
+                pie: {
+                    donut: {
+                        size: '65%',
+                        labels: {
+                            show: true,
+                            name: {
+                                show: true,
+                                fontSize: '12px',
+                                fontWeight: 600,
+                                color: '#374151',
+                                offsetY: -8,
+                                formatter: function(val) {
+                                    return val.length > 10 ? val.substring(0, 8) + '...' : val;
+                                }
                             },
-                            label: function(context) {
-                                return 'Sales: ' + context.parsed.y.toLocaleString();
+                            value: {
+                                show: true,
+                                fontSize: '14px',
+                                fontWeight: 700,
+                                color: '#1F2937',
+                                offsetY: 8,
+                                formatter: function(val) {
+                                    return formatCurrency(val);
+                                }
                             },
-                            afterLabel: function(context) {
-                                return 'Formatted: ' + formatCurrency(context.parsed.y);
+                            total: {
+                                show: true,
+                                showAlways: true,
+                                label: 'Total',
+                                fontSize: '10px',
+                                fontWeight: 500,
+                                color: '#6B7280',
+                                formatter: function(w) {
+                                    const total = w.globals.seriesTotals.reduce((a, b) => a + b, 0);
+                                    return formatCurrency(total);
+                                }
+                            }
+                        }
+                    },
+                    expandOnClick: true
+                }
+            },
+            dataLabels: {
+                enabled: false
+            },
+            legend: {
+                show: false // Hide legend since we'll use a custom list
+            },
+            tooltip: {
+                theme: 'dark',
+                style: {
+                    fontSize: '12px',
+                    fontFamily: 'inherit'
+                },
+                y: {
+                    formatter: function(value, { seriesIndex, w }) {
+                        const label = w.config.labels[seriesIndex] || '';
+                        const total = w.globals.seriesTotals.reduce((a, b) => a + b, 0);
+                        const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                        return `<div class="space-y-1">
+                            <div><strong>${label}</strong></div>
+                            <div>Sales: UGX ${value.toLocaleString()}</div>
+                            <div>Share: ${percentage}% of total</div>
+                            <div>Rank: #${seriesIndex + 1}</div>
+                        </div>`;
+                    }
+                },
+                custom: function({ series, seriesIndex, dataPointIndex, w }) {
+                    const label = w.config.labels[seriesIndex] || '';
+                    const value = series[seriesIndex];
+                    const total = series.reduce((a, b) => a + b, 0);
+                    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                    const rank = seriesIndex + 1;
+
+                    return `
+                        <div class="bg-gray-900 text-white p-3 rounded-lg shadow-lg border border-gray-700">
+                            <div class="font-semibold text-sm mb-2">${label}</div>
+                            <div class="space-y-1 text-xs">
+                                <div class="flex justify-between">
+                                    <span>Sales:</span>
+                                    <span class="font-medium">UGX ${value.toLocaleString()}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Share:</span>
+                                    <span class="font-medium">${percentage}%</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Rank:</span>
+                                    <span class="font-medium">#${rank}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            },
+            stroke: {
+                width: 2,
+                colors: ['#fff']
+            },
+            states: {
+                hover: {
+                    filter: {
+                        type: 'lighten',
+                        value: 0.15
+                    }
+                },
+                active: {
+                    allowMultipleDataPointsSelection: false,
+                    filter: {
+                        type: 'darken',
+                        value: 0.1
+                    }
+                }
+            },
+            responsive: [{
+                breakpoint: 480,
+                options: {
+                    chart: {
+                        height: 180
+                    },
+                    plotOptions: {
+                        pie: {
+                            donut: {
+                                size: '70%',
+                                labels: {
+                                    show: true,
+                                    name: {
+                                        fontSize: '10px'
+                                    },
+                                    value: {
+                                        fontSize: '12px'
+                                    },
+                                    total: {
+                                        fontSize: '8px'
+                                    }
+                                }
                             }
                         }
                     }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return formatCurrency(value);
-                            },
-                            color: '#6B7280',
-                            font: {
-                                size: 12
-                            },
-                            padding: 8
-                        },
-                        grid: {
-                            color: 'rgba(0, 0, 0, 0.06)',
-                            lineWidth: 1
-                        },
-                        border: {
-                            display: false
-                        }
-                    },
-                    x: {
-                        ticks: {
-                            color: '#6B7280',
-                            font: {
-                                size: 12,
-                                weight: '500'
-                            },
-                            padding: 8
-                        },
-                        grid: {
-                            display: false
-                        },
-                        border: {
-                            display: false
-                        }
-                    }
-                },
-                elements: {
-                    point: {
-                        hoverBackgroundColor: 'rgb(37, 99, 235)',
-                        hoverBorderColor: '#fff'
-                    }
-                },
-                animation: {
-                    duration: 800,
-                    easing: 'easeInOutQuart'
-                },
-                onHover: (event, activeElements) => {
-                    event.native.preventDefault();
-                },
-                onClick: (event, activeElements) => {
-                    event.native.preventDefault();
                 }
-            }
-        });
+            }]
+        };
 
-        // Top Selling Products Chart (Doughnut Chart)
-        const topProductsCtx = document.getElementById('topProductsChart').getContext('2d');
-        const topProductsChart = new Chart(topProductsCtx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Loading...'],
-                datasets: [{
-                    data: [1], // Will be populated with real data
-                    backgroundColor: [
-                        '#10B981', // Emerald - 1st place
-                        '#3B82F6', // Blue - 2nd place
-                        '#8B5CF6', // Purple - 3rd place
-                        '#F59E0B', // Amber - 4th place
-                        '#EF4444', // Red - 5th place
-                        '#06B6D4', // Cyan - 6th place
-                        '#EC4899', // Pink - 7th place
-                        '#84CC16'  // Lime - 8th place
-                    ],
-                    borderWidth: 0,
-                    hoverOffset: 4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false  // Hide legend since we'll use a custom list
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const label = context.label || '';
-                                const value = context.parsed;
-                                return `${label}: ${value.toLocaleString()}`;
-                            }
-                        }
-                    }
-                },
-                cutout: '60%',
-                onHover: (event, activeElements) => {
-                    event.native.preventDefault();
-                },
-                onClick: (event, activeElements) => {
-                    event.native.preventDefault();
-                }
-            }
-        });
+        const topProductsChart = new ApexCharts(document.querySelector("#topProductsChart"), topProductsChartOptions);
+
+        // Store chart instances globally for interaction
+        window.salesChartInstance = salesChart;
+        window.topProductsChartInstance = topProductsChart;
+
+        // Render the charts first
+        salesChart.render();
+        topProductsChart.render();
 
         // Load real data for charts
         loadChartData(salesChart, topProductsChart);
@@ -628,13 +1102,19 @@
         .then(data => {
             if (data.success) {
                 // Update chart data and labels
-                salesChart.data.labels = data.labels;
-                salesChart.data.datasets[0].data = data.sales_data;
-                salesChart.update();
+                salesChart.updateOptions({
+                    xaxis: {
+                        categories: data.labels
+                    }
+                });
+                salesChart.updateSeries([{
+                    name: 'Daily Sales',
+                    data: data.sales_data
+                }]);
 
                 // Update total revenue
                 const totalRevenue = data.total_revenue || data.sales_data.reduce((sum, value) => sum + value, 0);
-                document.getElementById('total-revenue').textContent = formatCurrency(totalRevenue);
+                document.getElementById('total-revenue').textContent = 'UGX ' + formatCurrency(totalRevenue);
 
                 console.log('Sales chart updated:', data.sales_data);
                 console.log('Labels:', data.labels);
@@ -645,11 +1125,13 @@
             console.log('Sales chart data not available, using sample data');
             // Use sample data if API fails
             const sampleSalesData = [12000, 19000, 8000, 15000, 22000, 18000, 25000];
-            salesChart.data.datasets[0].data = sampleSalesData;
-            salesChart.update();
+            salesChart.updateSeries([{
+                name: 'Daily Sales',
+                data: sampleSalesData
+            }]);
 
             const totalRevenue = sampleSalesData.reduce((sum, value) => sum + value, 0);
-            document.getElementById('total-revenue').textContent = formatCurrency(totalRevenue);
+            document.getElementById('total-revenue').textContent = 'UGX ' + formatCurrency(totalRevenue);
         });
 
         // Load top products data
@@ -663,9 +1145,10 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                topProductsChart.data.labels = data.product_names;
-                topProductsChart.data.datasets[0].data = data.sales_amounts;
-                topProductsChart.update();
+                topProductsChart.updateOptions({
+                    labels: data.product_names
+                });
+                topProductsChart.updateSeries(data.sales_amounts);
 
                 // Update top product in header
                 if (data.product_names && data.product_names.length > 0) {
@@ -683,7 +1166,11 @@
                 }
 
                 // Update products list
-                updateProductsList(data.product_names, data.sales_amounts, topProductsChart.data.datasets[0].backgroundColor);
+                const chartColors = [
+                    '#10B981', '#3B82F6', '#8B5CF6', '#F59E0B', '#EF4444',
+                    '#06B6D4', '#EC4899', '#84CC16'
+                ];
+                updateProductsList(data.product_names, data.sales_amounts, chartColors);
 
                 console.log('Top products chart updated:', data.product_names);
                 console.log('Sales amounts:', data.sales_amounts);
@@ -694,17 +1181,43 @@
             // Use sample data if API fails
             const sampleProductNames = ['Product A', 'Product B', 'Product C', 'Product D', 'Product E'];
             const sampleSalesData = [500000, 300000, 200000, 150000, 100000];
-            topProductsChart.data.labels = sampleProductNames;
-            topProductsChart.data.datasets[0].data = sampleSalesData;
-            topProductsChart.update();
+            topProductsChart.updateOptions({
+                labels: sampleProductNames
+            });
+            topProductsChart.updateSeries(sampleSalesData);
 
             // Update top product with sample data
             document.getElementById('top-product-name').textContent = sampleProductNames[0];
             document.getElementById('top-product-sales').textContent = formatCurrency(sampleSalesData[0]);
 
             // Update products list with sample data
-            updateProductsList(sampleProductNames, sampleSalesData, topProductsChart.data.datasets[0].backgroundColor);
+            const chartColors = [
+                '#10B981', '#3B82F6', '#8B5CF6', '#F59E0B', '#EF4444',
+                '#06B6D4', '#EC4899', '#84CC16'
+            ];
+            updateProductsList(sampleProductNames, sampleSalesData, chartColors);
         });
+    }
+
+    // Function to highlight product in list
+    function highlightProductInList(index) {
+        const listItems = document.querySelectorAll('#top-products-list > div');
+
+        // Remove previous highlights
+        listItems.forEach(item => {
+            item.classList.remove('ring-2', 'ring-blue-400', 'bg-blue-100', 'scale-105');
+        });
+
+        // Add highlight to selected item
+        if (listItems[index]) {
+            listItems[index].classList.add('ring-2', 'ring-blue-400', 'bg-blue-100', 'scale-105');
+            listItems[index].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            // Remove highlight after 3 seconds
+            setTimeout(() => {
+                listItems[index].classList.remove('ring-2', 'ring-blue-400', 'bg-blue-100', 'scale-105');
+            }, 3000);
+        }
     }
 
     // Function to update the products list
@@ -725,27 +1238,51 @@
             const totalSales = salesAmounts.reduce((sum, value) => sum + value, 0);
             const percentage = totalSales > 0 ? ((sales / totalSales) * 100).toFixed(1) : 0;
 
+            // Get rank styling
+            const getRankStyling = (rank) => {
+                switch(rank) {
+                    case 1: return 'ring-2 ring-yellow-300 bg-gradient-to-r from-yellow-50 to-yellow-100';
+                    case 2: return 'ring-2 ring-gray-300 bg-gradient-to-r from-gray-50 to-gray-100';
+                    case 3: return 'ring-2 ring-orange-300 bg-gradient-to-r from-orange-50 to-orange-100';
+                    default: return 'bg-gray-50';
+                }
+            };
+
+            const getRankIcon = (rank) => {
+                switch(rank) {
+                    case 1: return '<i class="fas fa-crown text-yellow-500 ml-1"></i>';
+                    case 2: return '<i class="fas fa-medal text-gray-500 ml-1"></i>';
+                    case 3: return '<i class="fas fa-award text-orange-500 ml-1"></i>';
+                    default: return '';
+                }
+            };
+
             return `
-                <div class="flex items-center justify-between p-2.5 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <div class="flex items-center justify-between p-2 ${getRankStyling(rank)} rounded-lg hover:shadow-md transition-all duration-300 cursor-pointer transform hover:scale-[1.01]"
+                     onclick="highlightChartSegment(${index})"
+                     data-product-index="${index}">
                     <div class="flex items-center flex-1 min-w-0">
-                        <div class="flex items-center justify-center w-5 h-5 rounded-full text-white text-xs font-bold mr-2.5 flex-shrink-0" style="background-color: ${color}">
+                        <div class="flex items-center justify-center w-5 h-5 rounded-full text-white text-xs font-bold mr-2 flex-shrink-0 shadow-sm" style="background-color: ${color}">
                             ${rank}
                         </div>
-                        <div class="flex-1 min-w-0 mr-3">
-                            <div class="text-sm font-medium text-gray-900 truncate" title="${name}">
+                        <div class="flex-1 min-w-0 mr-2">
+                            <div class="text-xs font-semibold text-gray-900 truncate flex items-center" title="${name}">
                                 ${name}
+                                ${getRankIcon(rank)}
                             </div>
-                            <div class="text-xs text-gray-500">
+                            <div class="text-xs text-gray-500 flex items-center">
+                                <span class="inline-block w-1.5 h-1.5 rounded-full mr-1" style="background-color: ${color}"></span>
                                 ${percentage}% of total
                             </div>
                         </div>
                     </div>
                     <div class="text-right flex-shrink-0">
-                        <div class="text-sm font-bold text-gray-900">
+                        <div class="text-xs font-bold text-gray-900">
+                            <span class="text-xs text-gray-500 font-medium">UGX</span>
                             ${formatCurrency(sales)}
                         </div>
                         <div class="text-xs text-gray-500">
-                            ${sales > 1000 ? (sales/1000).toFixed(0) + 'K' : sales}
+                            ${sales.toLocaleString()}
                         </div>
                     </div>
                 </div>
@@ -755,23 +1292,43 @@
         productsList.innerHTML = productsHtml;
     }
 
-    // Prevent auto-scrolling
-    function preventAutoScroll() {
-        // Prevent chart-related scrolling
-        document.querySelectorAll('canvas').forEach(canvas => {
-            canvas.addEventListener('wheel', function(e) {
-                e.preventDefault();
-            }, { passive: false });
+    // Function to highlight chart segment when list item is clicked
+    function highlightChartSegment(index) {
+        // This will trigger the chart's dataPointSelection event
+        // which will highlight the corresponding segment
+        if (window.topProductsChartInstance) {
+            // Toggle selection on the chart
+            window.topProductsChartInstance.toggleDataPointSelection(index);
 
-            canvas.addEventListener('touchmove', function(e) {
-                e.preventDefault();
-            }, { passive: false });
-
-            // Prevent focus scrolling
-            canvas.addEventListener('focus', function(e) {
-                e.preventDefault();
+            // Add visual feedback
+            const listItems = document.querySelectorAll('#top-products-list > div');
+            listItems.forEach((item, i) => {
+                if (i === index) {
+                    item.classList.add('ring-2', 'ring-blue-400', 'shadow-lg');
+                    setTimeout(() => {
+                        item.classList.remove('ring-2', 'ring-blue-400', 'shadow-lg');
+                    }, 2000);
+                }
             });
-        });
+        }
+    }
+
+    // Enhanced chart loading management
+    function showChartLoading(chartId, show = true) {
+        const loadingElement = document.getElementById(chartId + 'Loading');
+        if (loadingElement) {
+            if (show) {
+                loadingElement.classList.remove('hidden');
+            } else {
+                loadingElement.classList.add('hidden');
+            }
+        }
+    }
+
+    // Prevent auto-scrolling (ApexCharts handles this automatically)
+    function preventAutoScroll() {
+        // ApexCharts handles scroll prevention automatically
+        // No additional configuration needed
     }
 
     // Load recent expenses
@@ -881,6 +1438,10 @@
 
     // Initialize charts when page loads
     document.addEventListener('DOMContentLoaded', function() {
+        // Load dashboard data first
+        loadDashboardData();
+
+        // Initialize charts and other components
         initializeCharts();
         preventAutoScroll();
         loadRecentExpenses();

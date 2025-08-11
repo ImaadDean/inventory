@@ -219,26 +219,69 @@ async def reports_dashboard(request: Request):
                             },
                             "else": 0
                         }
+                    },
+                    "item_profit": {
+                        "$cond": {
+                            "if": {"$ne": ["$product_info", None]},
+                            "then": {
+                                "$subtract": [
+                                    # Use items.total (which is the final amount after discounts)
+                                    "$items.total",
+                                    # Subtract total cost for this item
+                                    {
+                                        "$multiply": [
+                                            "$items.quantity",
+                                            {
+                                                "$cond": {
+                                                    "if": {"$and": [
+                                                        {"$ne": ["$product_info.decant", None]},
+                                                        {"$eq": ["$product_info.decant.is_decantable", True]},
+                                                        {"$ne": ["$product_info.decant.decant_price", None]},
+                                                        {"$ne": ["$product_info.bottle_size_ml", None]},
+                                                        {"$ne": ["$product_info.decant.decant_size_ml", None]},
+                                                        {"$gt": ["$product_info.bottle_size_ml", 0]},
+                                                        {"$gt": ["$product_info.decant.decant_size_ml", 0]},
+                                                        # Check if item price matches decant price (within 1 UGX tolerance)
+                                                        {"$lte": [
+                                                            {"$abs": {"$subtract": ["$items.price", "$product_info.decant.decant_price"]}},
+                                                            1
+                                                        ]}
+                                                    ]},
+                                                    # This is a decant sale - calculate proportional cost
+                                                    "then": {
+                                                        "$multiply": [
+                                                            "$product_info.cost_price",
+                                                            {"$divide": [
+                                                                "$product_info.decant.decant_size_ml",
+                                                                "$product_info.bottle_size_ml"
+                                                            ]}
+                                                        ]
+                                                    },
+                                                    # This is a regular sale - use full cost price
+                                                    "else": "$product_info.cost_price"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            "else": 0
+                        }
                     }
                 }},
                 {"$group": {
                     "_id": None,
                     "total_revenue": {"$sum": "$items.total"},  # Use items.total for orders
-                    "total_cost": {"$sum": {
-                        "$multiply": ["$items.quantity", "$item_cost"]
-                    }}
+                    "total_profit": {"$sum": "$item_profit"}
                 }},
                 {"$project": {
-                    "profit": {"$subtract": ["$total_revenue", "$total_cost"]},
+                    "profit": "$total_profit",
                     "profit_margin": {
                         "$cond": {
                             "if": {"$gt": ["$total_revenue", 0]},
                             "then": {
                                 "$multiply": [
-                                    {"$divide": [
-                                        {"$subtract": ["$total_revenue", "$total_cost"]},
-                                        "$total_revenue"
-                                    ]},
+                                    {"$divide": ["$total_profit", "$total_revenue"]},
                                     100
                                 ]
                             },
@@ -544,6 +587,165 @@ async def get_sales_data(
             "avg_order_value": 0
         }
 
+        # Calculate profit for the period (revenue - cost) using orders
+        profit_pipeline = [
+            {"$match": {
+                "created_at": {"$gte": start_date_utc, "$lte": end_date_utc},
+                "status": "completed"
+            }},
+            {"$unwind": "$items"},  # Unwind items array to process each item
+            {"$lookup": {  # Join with products to get cost_price and decant info
+                "from": "products",
+                "let": {"product_id": "$items.product_id"},
+                "pipeline": [
+                    {"$match": {
+                        "$expr": {
+                            "$or": [
+                                {"$eq": ["$_id", {"$toObjectId": "$$product_id"}]},
+                                {"$eq": ["$_id", "$$product_id"]}
+                            ]
+                        }
+                    }}
+                ],
+                "as": "product_info"
+            }},
+            {"$unwind": {
+                "path": "$product_info",
+                "preserveNullAndEmptyArrays": True
+            }},
+            {"$addFields": {
+                "is_decant_sale": {
+                    "$cond": {
+                        "if": {"$and": [
+                            {"$ne": ["$product_info", None]},
+                            {"$ne": ["$product_info.decant", None]},
+                            {"$eq": ["$product_info.decant.is_decantable", True]},
+                            {"$ne": ["$product_info.decant.decant_price", None]},
+                            # Check if item price matches decant price (within 1 UGX tolerance)
+                            {"$lte": [
+                                {"$abs": {"$subtract": ["$items.price", "$product_info.decant.decant_price"]}},
+                                1
+                            ]}
+                        ]},
+                        "then": True,
+                        "else": False
+                    }
+                },
+                "item_cost": {
+                    "$cond": {
+                        "if": {"$ne": ["$product_info", None]},
+                        "then": {
+                            "$cond": {
+                                "if": {"$and": [
+                                    {"$ne": ["$product_info.decant", None]},
+                                    {"$eq": ["$product_info.decant.is_decantable", True]},
+                                    {"$ne": ["$product_info.decant.decant_price", None]},
+                                    {"$ne": ["$product_info.bottle_size_ml", None]},
+                                    {"$ne": ["$product_info.decant.decant_size_ml", None]},
+                                    {"$gt": ["$product_info.bottle_size_ml", 0]},
+                                    {"$gt": ["$product_info.decant.decant_size_ml", 0]},
+                                    # Check if item price matches decant price (within 1 UGX tolerance)
+                                    {"$lte": [
+                                        {"$abs": {"$subtract": ["$items.price", "$product_info.decant.decant_price"]}},
+                                        1
+                                    ]}
+                                ]},
+                                # This is a decant sale - calculate proportional cost
+                                "then": {
+                                    "$multiply": [
+                                        "$product_info.cost_price",
+                                        {"$divide": [
+                                            "$product_info.decant.decant_size_ml",
+                                            "$product_info.bottle_size_ml"
+                                        ]}
+                                    ]
+                                },
+                                # This is a regular sale - use full cost price
+                                "else": "$product_info.cost_price"
+                            }
+                        },
+                        "else": 0
+                    }
+                },
+                "item_profit": {
+                    "$cond": {
+                        "if": {"$ne": ["$product_info", None]},
+                        "then": {
+                            "$subtract": [
+                                # Use items.total (which is the final amount after discounts)
+                                "$items.total",
+                                # Subtract total cost for this item
+                                {
+                                    "$multiply": [
+                                        "$items.quantity",
+                                        {
+                                            "$cond": {
+                                                "if": {"$and": [
+                                                    {"$ne": ["$product_info.decant", None]},
+                                                    {"$eq": ["$product_info.decant.is_decantable", True]},
+                                                    {"$ne": ["$product_info.decant.decant_price", None]},
+                                                    {"$ne": ["$product_info.bottle_size_ml", None]},
+                                                    {"$ne": ["$product_info.decant.decant_size_ml", None]},
+                                                    {"$gt": ["$product_info.bottle_size_ml", 0]},
+                                                    {"$gt": ["$product_info.decant.decant_size_ml", 0]},
+                                                    # Check if item price matches decant price (within 1 UGX tolerance)
+                                                    {"$lte": [
+                                                        {"$abs": {"$subtract": ["$items.price", "$product_info.decant.decant_price"]}},
+                                                        1
+                                                    ]}
+                                                ]},
+                                                # This is a decant sale - calculate proportional cost
+                                                "then": {
+                                                    "$multiply": [
+                                                        "$product_info.cost_price",
+                                                        {"$divide": [
+                                                            "$product_info.decant.decant_size_ml",
+                                                            "$product_info.bottle_size_ml"
+                                                        ]}
+                                                    ]
+                                                },
+                                                # This is a regular sale - use full cost price
+                                                "else": "$product_info.cost_price"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        "else": 0
+                    }
+                }
+            }},
+            {"$group": {
+                "_id": None,
+                "total_revenue": {"$sum": "$items.total"},  # Use items.total for orders
+                "total_profit": {"$sum": "$item_profit"}
+            }},
+            {"$project": {
+                "profit": "$total_profit",
+                "profit_margin": {
+                    "$cond": {
+                        "if": {"$gt": ["$total_revenue", 0]},
+                        "then": {
+                            "$multiply": [
+                                {"$divide": ["$total_profit", "$total_revenue"]},
+                                100
+                            ]
+                        },
+                        "else": 0
+                    }
+                }
+            }}
+        ]
+
+        profit_result = await db.orders.aggregate(profit_pipeline).to_list(length=1)
+        if profit_result:
+            summary["profit"] = profit_result[0].get("profit", 0)
+            summary["profit_margin"] = profit_result[0].get("profit_margin", 0)
+        else:
+            summary["profit"] = 0
+            summary["profit_margin"] = 0
+
         # Calculate growth rate by comparing with previous period
         period_duration = (end_date - start_date).days + 1  # +1 to include both start and end dates
         previous_start_date = start_date - timedelta(days=period_duration)
@@ -670,6 +872,8 @@ async def get_sales_data(
                 "total_revenue": summary["total_revenue"],
                 "total_orders": summary["total_orders"],
                 "avg_order_value": summary["avg_order_value"],
+                "profit": summary["profit"],
+                "profit_margin": round(summary["profit_margin"], 1),
                 "growth_rate": round(growth_rate, 1)  # Round to 1 decimal place
             },
             "daily_trend": daily_data,
