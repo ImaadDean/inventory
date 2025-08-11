@@ -1,28 +1,24 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 
 
 class CustomerCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
-    email: Optional[EmailStr] = None
     phone: str = Field(..., min_length=1, max_length=20)
     address: Optional[str] = Field(None, max_length=500)
     city: Optional[str] = Field(None, max_length=100)
-    postal_code: Optional[str] = Field(None, max_length=20)
     country: Optional[str] = Field(None, max_length=100)
     date_of_birth: Optional[datetime] = None
     notes: Optional[str] = Field(None, max_length=1000)
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "name": "Jane Smith",
-                "email": "jane@example.com",
                 "phone": "+1234567890",
                 "address": "123 Main St",
                 "city": "New York",
-                "postal_code": "10001",
                 "country": "USA",
                 "notes": "VIP customer"
             }
@@ -31,21 +27,18 @@ class CustomerCreate(BaseModel):
 
 class CustomerUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=2, max_length=100)
-    email: Optional[EmailStr] = None
     phone: Optional[str] = Field(None, max_length=20)
     address: Optional[str] = Field(None, max_length=500)
     city: Optional[str] = Field(None, max_length=100)
-    postal_code: Optional[str] = Field(None, max_length=20)
     country: Optional[str] = Field(None, max_length=100)
     date_of_birth: Optional[datetime] = None
     is_active: Optional[bool] = None
     notes: Optional[str] = Field(None, max_length=1000)
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "name": "Jane Doe",
-                "email": "jane.doe@example.com",
                 "phone": "+1234567891",
                 "is_active": True
             }
@@ -55,11 +48,9 @@ class CustomerUpdate(BaseModel):
 class CustomerResponse(BaseModel):
     id: str
     name: str
-    email: Optional[str] = None
     phone: Optional[str] = None
     address: Optional[str] = None
     city: Optional[str] = None
-    postal_code: Optional[str] = None
     country: Optional[str] = None
     date_of_birth: Optional[datetime] = None
     is_active: bool
@@ -71,15 +62,13 @@ class CustomerResponse(BaseModel):
     notes: Optional[str] = None
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "id": "507f1f77bcf86cd799439011",
                 "name": "Jane Smith",
-                "email": "jane@example.com",
                 "phone": "+1234567890",
                 "address": "123 Main St",
                 "city": "New York",
-                "postal_code": "10001",
                 "country": "USA",
                 "is_active": True,
                 "total_purchases": 2500.50,
@@ -97,13 +86,13 @@ class CustomerList(BaseModel):
     size: int
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "customers": [
                     {
                         "id": "507f1f77bcf86cd799439011",
                         "name": "Jane Smith",
-                        "email": "jane@example.com",
+                        "phone": "+1234567890",
                         "total_purchases": 2500.50,
                         "total_orders": 15,
                         "is_active": True
@@ -142,12 +131,12 @@ class CustomerPurchaseHistory(BaseModel):
     total_purchases_count: int
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "customer": {
                     "id": "507f1f77bcf86cd799439011",
                     "name": "Jane Smith",
-                    "email": "jane@example.com"
+                    "phone": "+1234567890"
                 },
                 "purchases": [
                     {

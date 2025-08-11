@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 from bson import ObjectId
@@ -9,11 +9,9 @@ from ..utils.timezone import now_kampala, kampala_to_utc
 class Customer(BaseModel):
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
     name: str = Field(..., min_length=2, max_length=100)
-    email: Optional[EmailStr] = None
     phone: Optional[str] = Field(None, max_length=20)
     address: Optional[str] = Field(None, max_length=500)
     city: Optional[str] = Field(None, max_length=100)
-    postal_code: Optional[str] = Field(None, max_length=20)
     country: Optional[str] = Field(None, max_length=100)
     date_of_birth: Optional[datetime] = None
     is_active: bool = True
@@ -31,11 +29,9 @@ class Customer(BaseModel):
         json_schema_extra = {
             "example": {
                 "name": "Jane Smith",
-                "email": "jane@example.com",
                 "phone": "+1234567890",
                 "address": "123 Main St",
                 "city": "New York",
-                "postal_code": "10001",
                 "country": "USA"
             }
         }

@@ -51,11 +51,9 @@ async def customers_page(request: Request):
 async def create_customer(
     request: Request,
     name: str = Form(...),
-    email: str = Form(None),
     phone: str = Form(None),
     address: str = Form(None),
     city: str = Form(None),
-    postal_code: str = Form(None),
     country: str = Form(None),
     notes: str = Form(None)
 ):
@@ -79,11 +77,9 @@ async def create_customer(
         # Create customer document
         customer_doc = {
             "name": name.strip(),
-            "email": email.strip() if email else None,
             "phone": phone.strip() if phone else None,
             "address": address.strip() if address else None,
             "city": city.strip() if city else None,
-            "postal_code": postal_code.strip() if postal_code else None,
             "country": country.strip() if country else None,
             "date_of_birth": None,  # Can be added later via edit
             "is_active": True,

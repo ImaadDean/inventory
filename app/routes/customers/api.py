@@ -166,7 +166,7 @@ async def test_get_customer_no_auth(customer_id: str):
             "success": True,
             "customer_id": str(customer["_id"]),
             "name": customer.get("name", "Unknown"),
-            "email": customer.get("email", "No email"),
+            "phone": customer.get("phone", "No phone"),
             "is_active": customer.get("is_active", True)
         }
 
@@ -332,11 +332,9 @@ async def get_customer_data(customer_id: str):
             "success": True,
             "id": str(customer["_id"]),
             "name": customer["name"],
-            "email": customer.get("email"),
             "phone": customer.get("phone"),
             "address": customer.get("address"),
             "city": customer.get("city"),
-            "postal_code": customer.get("postal_code"),
             "country": customer.get("country"),
             "date_of_birth": customer.get("date_of_birth"),
             "is_active": customer["is_active"],
@@ -377,7 +375,6 @@ async def get_customers(
     if search:
         filter_query["$or"] = [
             {"name": {"$regex": search, "$options": "i"}},
-            {"email": {"$regex": search, "$options": "i"}},
             {"phone": {"$regex": search, "$options": "i"}}
         ]
     if is_active is not None:
@@ -419,11 +416,9 @@ async def get_customers(
         customers.append({
             "id": customer_id,
             "name": customer["name"],
-            "email": customer.get("email", ""),
             "phone": customer.get("phone", ""),
             "address": customer.get("address", ""),
             "city": customer.get("city", ""),
-            "postal_code": customer.get("postal_code", ""),
             "country": customer.get("country", ""),
             "date_of_birth": customer.get("date_of_birth"),
             "is_active": customer["is_active"],
@@ -453,23 +448,14 @@ async def create_customer(
     """Create a new customer"""
     db = await get_database()
 
-    # Check if customer with same email already exists
-    if customer_data.email:
-        existing_customer = await db.customers.find_one({"email": customer_data.email})
-        if existing_customer:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Customer with this email already exists"
-            )
+
 
     # Create customer document
     customer_doc = {
         "name": customer_data.name,
-        "email": customer_data.email,
         "phone": customer_data.phone,
         "address": customer_data.address,
         "city": customer_data.city,
-        "postal_code": customer_data.postal_code,
         "country": customer_data.country,
         "date_of_birth": customer_data.date_of_birth,
         "is_active": True,
@@ -490,11 +476,9 @@ async def create_customer(
     return CustomerResponse(
         id=str(created_customer["_id"]),
         name=created_customer["name"],
-        email=created_customer.get("email"),
         phone=created_customer.get("phone"),
         address=created_customer.get("address"),
         city=created_customer.get("city"),
-        postal_code=created_customer.get("postal_code"),
         country=created_customer.get("country"),
         date_of_birth=created_customer.get("date_of_birth"),
         is_active=created_customer["is_active"],
@@ -544,7 +528,6 @@ async def get_customers_for_table(
             customer_dict = {
                 "id": str(customer["_id"]),
                 "name": customer.get("name", ""),
-                "email": customer.get("email"),
                 "phone": customer.get("phone"),
                 "total_orders": customer.get("total_orders", 0),
                 "total_purchases": customer.get("total_purchases", 0.0),
@@ -673,11 +656,9 @@ async def get_customer(
         return {
             "id": str(customer["_id"]),
             "name": customer["name"],
-            "email": customer.get("email"),
             "phone": customer.get("phone"),
             "address": customer.get("address"),
             "city": customer.get("city"),
-            "postal_code": customer.get("postal_code"),
             "country": customer.get("country"),
             "date_of_birth": customer.get("date_of_birth"),
             "is_active": customer["is_active"],
@@ -815,17 +796,7 @@ async def update_customer(
                 detail="Customer not found"
             )
 
-        # Check if email is being changed and if new email already exists
-        if customer_data.email and customer_data.email != existing_customer.get("email"):
-            email_exists = await db.customers.find_one({
-                "email": customer_data.email,
-                "_id": {"$ne": ObjectId(customer_id)}
-            })
-            if email_exists:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Customer with this email already exists"
-                )
+
 
         # Build update document
         update_doc = {"updated_at": kampala_to_utc(now_kampala())}
@@ -833,16 +804,12 @@ async def update_customer(
         # Only update fields that are provided
         if customer_data.name is not None:
             update_doc["name"] = customer_data.name
-        if customer_data.email is not None:
-            update_doc["email"] = customer_data.email
         if customer_data.phone is not None:
             update_doc["phone"] = customer_data.phone
         if customer_data.address is not None:
             update_doc["address"] = customer_data.address
         if customer_data.city is not None:
             update_doc["city"] = customer_data.city
-        if customer_data.postal_code is not None:
-            update_doc["postal_code"] = customer_data.postal_code
         if customer_data.country is not None:
             update_doc["country"] = customer_data.country
         if customer_data.date_of_birth is not None:
@@ -864,11 +831,9 @@ async def update_customer(
         return CustomerResponse(
             id=str(updated_customer["_id"]),
             name=updated_customer["name"],
-            email=updated_customer.get("email"),
             phone=updated_customer.get("phone"),
             address=updated_customer.get("address"),
             city=updated_customer.get("city"),
-            postal_code=updated_customer.get("postal_code"),
             country=updated_customer.get("country"),
             date_of_birth=updated_customer.get("date_of_birth"),
             is_active=updated_customer["is_active"],

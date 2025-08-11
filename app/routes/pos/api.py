@@ -106,7 +106,6 @@ async def search_customers(
             {"is_active": True},
             {"$or": [
                 {"name": {"$regex": query, "$options": "i"}},
-                {"email": {"$regex": query, "$options": "i"}},
                 {"phone": {"$regex": query, "$options": "i"}}
             ]}
         ]
@@ -119,7 +118,6 @@ async def search_customers(
         {
             "id": str(customer["_id"]),
             "name": customer["name"],
-            "email": customer.get("email", ""),
             "phone": customer.get("phone", ""),
             "address": customer.get("address", ""),
             "city": customer.get("city", ""),
@@ -150,14 +148,7 @@ async def create_customer_pos(customer_data: CustomerCreate):
                 detail="Customer phone number is required"
             )
 
-        # Check if customer with same email already exists (if email provided)
-        if customer_data.email and customer_data.email.strip():
-            existing_customer = await db.customers.find_one({"email": customer_data.email.strip()})
-            if existing_customer:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Customer with this email already exists"
-                )
+
 
         # Check if customer with same phone already exists
         existing_phone = await db.customers.find_one({"phone": customer_data.phone.strip()})
@@ -170,11 +161,9 @@ async def create_customer_pos(customer_data: CustomerCreate):
         # Create customer document
         customer_doc = {
             "name": customer_data.name.strip(),
-            "email": customer_data.email.strip() if customer_data.email else None,
             "phone": customer_data.phone.strip(),
             "address": customer_data.address.strip() if customer_data.address else None,
             "city": customer_data.city.strip() if customer_data.city else None,
-            "postal_code": customer_data.postal_code.strip() if customer_data.postal_code else None,
             "country": customer_data.country.strip() if customer_data.country else None,
             "date_of_birth": customer_data.date_of_birth,
             "is_active": True,
@@ -195,11 +184,9 @@ async def create_customer_pos(customer_data: CustomerCreate):
         return CustomerResponse(
             id=str(created_customer["_id"]),
             name=created_customer["name"],
-            email=created_customer.get("email"),
             phone=created_customer.get("phone"),
             address=created_customer.get("address"),
             city=created_customer.get("city"),
-            postal_code=created_customer.get("postal_code"),
             country=created_customer.get("country"),
             date_of_birth=created_customer.get("date_of_birth"),
             is_active=created_customer["is_active"],
