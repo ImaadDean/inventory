@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     MONGO_HOST: str = "79.72.88.5"
     MONGO_PORT: int = 27017
     
-    MONGO_DATABASE: str = "Test"
+    MONGO_DATABASE: str = "perfumesandmore"
     MONGO_POOL_SIZE: int = 20
 
     # JWT Configuration
