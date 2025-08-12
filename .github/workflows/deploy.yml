@@ -46,7 +46,7 @@ jobs:
               -e MONGODB_PORT=27017 \
               -e MONGODB_DATABASE=inventory \
               -e MONGODB_USERNAME=imaad \
-              -e MONGODB_PASSWORD=password123 \
+              -e MONGODB_PASSWORD=Ertdfgxc \
               inventory
             # Show running containers
             docker ps
