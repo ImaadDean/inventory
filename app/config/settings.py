@@ -16,10 +16,10 @@ class Settings(BaseSettings):
     # MongoDB Configuration
     MONGO_USERNAME: str = "imaad"
     MONGO_PASSWORD: str = "Ertdfgxc"
-    MONGO_HOST: str = "127.0.0.1"
+    MONGO_HOST: str = "13.223.77.89"
     MONGO_PORT: int = 27017
     
-    MONGO_DATABASE: str = "Test"
+    MONGO_DATABASE: str = "perfumesandmore"
     MONGO_POOL_SIZE: int = 20
 
     # JWT Configuration
