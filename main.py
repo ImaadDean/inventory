@@ -25,6 +25,7 @@ from app.routes.pos.api import router as pos_api_router
 from app.routes.orders.api import router as orders_api_router
 from app.routes.dashboard.api import router as dashboard_api_router
 from app.routes.scents.api import router as scents_api_router
+from app.routes.installments.api import router as installments_api_router
 
 # Import HTML route routers
 from app.routes.auth.route import auth_routes
@@ -39,6 +40,7 @@ from app.routes.pos.route import pos_routes
 from app.routes.orders.route import orders_routes
 from app.routes.reports.route import reports_routes
 from app.routes.scents.route import scents_routes
+from app.routes.installments.route import router as installments_routes
 
 # Import authentication utilities
 from app.utils.auth import verify_token, get_user_by_username
@@ -189,6 +191,7 @@ app.include_router(pos_api_router)
 app.include_router(orders_api_router)
 app.include_router(dashboard_api_router)
 app.include_router(scents_api_router)
+app.include_router(installments_api_router)
 
 # Include HTML route routers
 app.include_router(auth_routes)
@@ -203,6 +206,7 @@ app.include_router(pos_routes)
 app.include_router(orders_routes)
 app.include_router(reports_routes, prefix="/reports")
 app.include_router(scents_routes)
+app.include_router(installments_routes)
 
 
 # Root endpoint - redirect based on authentication status and role

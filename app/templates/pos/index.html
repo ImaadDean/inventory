@@ -229,6 +229,9 @@
                             <select id="payment-method" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200">
                                 <option value="cash">Cash</option>
                                 <option value="mobile_money">Mobile Money</option>
+                                {% if user and (user.role == 'admin' or user.role == 'manager') %}
+                                <option value="installment">Installment Plan</option>
+                                {% endif %}
                                 <option value="not_paid">Not Paid</option>
                             </select>
                         </div>
@@ -250,6 +253,64 @@
                             <div class="flex justify-between items-center p-2 bg-indigo-50 rounded-lg mt-2">
                                 <span class="text-gray-600 text-sm font-medium">Change:</span>
                                 <span id="change" class="text-sm font-bold text-gray-900">UGX 0</span>
+                            </div>
+                        </div>
+
+                        <!-- Installment Payment Fields -->
+                        <div id="installment-payment-fields" style="display: none;">
+                            <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 space-y-3">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-credit-card text-purple-600 mr-2"></i>
+                                    <span class="text-sm font-semibold text-purple-800">Installment Plan Setup</span>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-700 mb-1">Down Payment</label>
+                                        <input type="number" id="down-payment" placeholder="0" min="0" step="1000"
+                                               class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-700 mb-1">Number of Payments</label>
+                                        <select id="installment-payments" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200">
+                                            <option value="2">2 Payments</option>
+                                            <option value="3">3 Payments</option>
+                                            <option value="4" selected>4 Payments</option>
+                                            <option value="6">6 Payments</option>
+                                            <option value="12">12 Payments</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-700 mb-1">Payment Frequency</label>
+                                    <select id="payment-frequency" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200">
+                                        <option value="weekly">Weekly</option>
+                                        <option value="bi-weekly">Bi-weekly</option>
+                                        <option value="monthly" selected>Monthly</option>
+                                    </select>
+                                </div>
+
+                                <div class="bg-white border border-purple-200 rounded-lg p-3">
+                                    <div class="text-xs text-gray-600 space-y-1">
+                                        <div class="flex justify-between">
+                                            <span>Total Amount:</span>
+                                            <span class="font-medium" id="installment-total">UGX 0</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span>Down Payment:</span>
+                                            <span class="font-medium" id="installment-down">UGX 0</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span>Remaining Amount:</span>
+                                            <span class="font-medium" id="installment-remaining">UGX 0</span>
+                                        </div>
+                                        <div class="flex justify-between border-t border-gray-200 pt-1">
+                                            <span>Payment per Installment:</span>
+                                            <span class="font-bold text-purple-600" id="installment-per-payment">UGX 0</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -637,6 +698,14 @@ function initializePOS() {
     document.getElementById('discount-value').addEventListener('input', updateTotals);
     document.getElementById('payment-method').addEventListener('change', handlePaymentMethodChange);
     document.getElementById('amount-received').addEventListener('input', updateChange);
+
+    // Installment field event listeners
+    document.getElementById('down-payment').addEventListener('input', function() {
+        updateInstallmentCalculation();
+        updateProcessSaleButton();
+    });
+    document.getElementById('installment-payments').addEventListener('change', updateInstallmentCalculation);
+    document.getElementById('payment-frequency').addEventListener('change', updateInstallmentCalculation);
     document.getElementById('process-sale').addEventListener('click', processSale);
     document.getElementById('client-search').addEventListener('input', searchClients);
     document.getElementById('add-client-btn').addEventListener('click', openAddClientModal);
@@ -1390,6 +1459,12 @@ function updateTotals() {
     // Update change calculation and button state
     updateChange();
     updateProcessSaleButton();
+
+    // Update installment calculation if installment payment is selected
+    const paymentMethod = document.getElementById('payment-method').value;
+    if (paymentMethod === 'installment') {
+        updateInstallmentCalculation();
+    }
 }
 
 // Item discount functionality
@@ -1527,6 +1602,11 @@ function closeItemDiscountModal() {
 function handlePaymentMethodChange() {
     const paymentMethod = document.getElementById('payment-method').value;
     const cashFields = document.getElementById('cash-payment-fields');
+    const installmentFields = document.getElementById('installment-payment-fields');
+
+    // Hide all payment-specific fields first
+    cashFields.style.display = 'none';
+    installmentFields.style.display = 'none';
 
     if (paymentMethod === 'cash') {
         cashFields.style.display = 'block';
@@ -1534,14 +1614,37 @@ function handlePaymentMethodChange() {
         setTimeout(() => {
             document.getElementById('amount-received').focus();
         }, 100);
+    } else if (paymentMethod === 'installment') {
+        installmentFields.style.display = 'block';
+        updateInstallmentCalculation();
+        // Focus on down payment field
+        setTimeout(() => {
+            document.getElementById('down-payment').focus();
+        }, 100);
     } else {
-        cashFields.style.display = 'none';
+        // Clear values for other payment methods
         document.getElementById('amount-received').value = '';
         updateChange();
     }
 
     // Update button state immediately when payment method changes
     updateProcessSaleButton();
+}
+
+// Installment calculation
+function updateInstallmentCalculation() {
+    const downPayment = parseFloat(document.getElementById('down-payment').value) || 0;
+    const numberOfPayments = parseInt(document.getElementById('installment-payments').value) || 4;
+
+    const totalAmount = total;
+    const remainingAmount = Math.max(0, totalAmount - downPayment);
+    const paymentPerInstallment = remainingAmount / numberOfPayments;
+
+    // Update display
+    document.getElementById('installment-total').textContent = `UGX ${Math.round(totalAmount).toLocaleString()}`;
+    document.getElementById('installment-down').textContent = `UGX ${Math.round(downPayment).toLocaleString()}`;
+    document.getElementById('installment-remaining').textContent = `UGX ${Math.round(remainingAmount).toLocaleString()}`;
+    document.getElementById('installment-per-payment').textContent = `UGX ${Math.round(paymentPerInstallment).toLocaleString()}`;
 }
 
 function updateChange() {
@@ -1610,6 +1713,28 @@ function updateProcessSaleButton() {
         processSaleButton.classList.remove('bg-gradient-to-r', 'from-green-500', 'to-emerald-600', 'hover:from-green-600', 'hover:to-emerald-700');
         processSaleButton.classList.add('bg-red-400', 'cursor-not-allowed');
         return;
+    }
+
+    // Check installment payment validity
+    if (paymentMethod === 'installment') {
+        const downPayment = parseFloat(document.getElementById('down-payment').value) || 0;
+        const remainingAmount = total - downPayment;
+
+        if (remainingAmount <= 0) {
+            processSaleButton.disabled = true;
+            processSaleButton.innerHTML = `<i class="fas fa-exclamation-triangle mr-2"></i>Down Payment Too High`;
+            processSaleButton.classList.remove('bg-gradient-to-r', 'from-green-500', 'to-emerald-600', 'hover:from-green-600', 'hover:to-emerald-700');
+            processSaleButton.classList.add('bg-red-400', 'cursor-not-allowed');
+            return;
+        }
+
+        if (!selectedClient) {
+            processSaleButton.disabled = true;
+            processSaleButton.innerHTML = `<i class="fas fa-user-plus mr-2"></i>Select Customer for Installment`;
+            processSaleButton.classList.remove('bg-gradient-to-r', 'from-green-500', 'to-emerald-600', 'hover:from-green-600', 'hover:to-emerald-700');
+            processSaleButton.classList.add('bg-yellow-400', 'cursor-not-allowed');
+            return;
+        }
     }
 
     // Enable button - all conditions met
@@ -1806,13 +1931,87 @@ async function processSale() {
     }
 
     const paymentMethod = document.getElementById('payment-method').value;
-    const amountReceived = paymentMethod === 'cash' ? (parseFloat(document.getElementById('amount-received').value) || 0) : total;
+    let amountReceived = total;
 
-    if (paymentMethod === 'cash' && amountReceived < total) {
-        alert('Insufficient payment amount');
-        return;
+    if (paymentMethod === 'cash') {
+        amountReceived = parseFloat(document.getElementById('amount-received').value) || 0;
+        if (amountReceived < total) {
+            alert('Insufficient payment amount');
+            return;
+        }
+    } else if (paymentMethod === 'installment') {
+        if (!selectedClient) {
+            alert('Please select a customer for installment payment');
+            return;
+        }
+
+        const downPayment = parseFloat(document.getElementById('down-payment').value) || 0;
+        if (total - downPayment <= 0) {
+            alert('Down payment cannot be greater than or equal to total amount');
+            return;
+        }
+
+        amountReceived = downPayment;
     }
 
+    // Handle installment payment differently
+    if (paymentMethod === 'installment') {
+        const installmentData = {
+            customer_id: selectedClient.id,
+            customer_name: selectedClient.name,
+            customer_phone: selectedClient.phone || '',
+            items: cart.map(item => ({
+                product_id: item.id,
+                name: item.name,
+                quantity: item.quantity,
+                price: item.price,
+                total: (item.price * item.quantity) - (item.discount_amount || 0)
+            })),
+            total_amount: total,
+            down_payment: amountReceived,
+            number_of_payments: parseInt(document.getElementById('installment-payments').value),
+            payment_frequency: document.getElementById('payment-frequency').value,
+            notes: 'Created from POS system'
+        };
+
+        try {
+            const response = await fetch('/api/installments/pos', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(installmentData)
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+
+                // Show success message
+                alert(`Installment plan created successfully!\nInstallment #: ${result.installment_number}\nDown payment: UGX ${Math.round(amountReceived).toLocaleString()}`);
+
+                // Reset form
+                cart = [];
+                updateCartDisplay();
+                clearSelectedClient();
+                document.getElementById('down-payment').value = '';
+                document.getElementById('payment-method').value = 'cash';
+                handlePaymentMethodChange();
+                updateTotals();
+
+                return;
+            } else {
+                const error = await response.json();
+                throw new Error(error.detail || 'Failed to create installment plan');
+            }
+        } catch (error) {
+            console.error('Error creating installment:', error);
+            alert('Failed to create installment plan: ' + error.message);
+            return;
+        }
+    }
+
+    // Regular sale processing
     const saleData = {
         customer_id: selectedClient ? selectedClient.id : null,
         customer_name: selectedClient ? selectedClient.name : "Walk-in Client",

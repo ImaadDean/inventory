@@ -145,4 +145,5 @@ def require_roles(allowed_roles: list[UserRole]):
 # Common role dependencies
 require_admin = require_roles([UserRole.ADMIN])
 require_admin_or_inventory = require_roles([UserRole.ADMIN, UserRole.INVENTORY_MANAGER])
+require_admin_or_manager = require_roles([UserRole.ADMIN, UserRole.INVENTORY_MANAGER])  # Alias for installments
 require_any_role = require_roles([UserRole.ADMIN, UserRole.CASHIER, UserRole.INVENTORY_MANAGER])

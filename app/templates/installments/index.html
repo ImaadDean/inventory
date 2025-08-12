@@ -1,0 +1,1417 @@
+{% extends "base.html" %}
+
+{% block title %}Installment Management - Inventory Management System{% endblock %}
+
+{% block content %}
+<div class="space-y-4 animate-fade-in max-w-full overflow-x-hidden">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-purple-500 to-indigo-600 shadow-lg rounded-xl p-4 text-white">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div class="mb-2 md:mb-0">
+                <h1 class="text-xl md:text-2xl font-bold">Installment Management</h1>
+                <p class="text-purple-100 text-sm">Manage customer installment payment plans</p>
+            </div>
+            <div class="flex items-center space-x-3">
+                <a href="/pos" class="inline-flex items-center px-4 py-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 transition-all duration-300">
+                    <i class="fas fa-plus mr-2"></i>
+                    Create from POS
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <!-- Total Installments -->
+        <div class="bg-white overflow-hidden shadow-md rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+            <div class="p-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-gradient-to-r from-purple-400 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
+                            <i class="fas fa-file-invoice text-white text-xs"></i>
+                        </div>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <dt class="text-xs font-medium text-gray-500 truncate">Total Installments</dt>
+                        <dd class="text-base font-bold text-gray-900 mt-0.5">
+                            <span id="totalInstallments">0</span>
+                            <span id="totalInstallmentsLoading" class="hidden">
+                                <i class="fas fa-spinner fa-spin text-gray-400"></i>
+                            </span>
+                        </dd>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gradient-to-r from-purple-50 to-purple-100 px-4 py-2">
+                <div class="text-xs">
+                    <span class="text-purple-700 font-medium">All payment plans</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Plans -->
+        <div class="bg-white overflow-hidden shadow-md rounded-xl hover:shadow-lg transition-all duration-300">
+            <div class="p-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-gradient-to-r from-green-400 to-green-600 rounded-lg flex items-center justify-center shadow-md">
+                            <i class="fas fa-play text-white text-xs"></i>
+                        </div>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <dt class="text-xs font-medium text-gray-500 truncate">Active Plans</dt>
+                        <dd class="text-base font-bold text-gray-900 mt-0.5">
+                            <span id="activeInstallments">0</span>
+                            <span id="activeInstallmentsLoading" class="hidden">
+                                <i class="fas fa-spinner fa-spin text-gray-400"></i>
+                            </span>
+                        </dd>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gradient-to-r from-green-50 to-green-100 px-4 py-2">
+                <div class="text-xs">
+                    <span class="text-green-700 font-medium">Currently running</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Overdue -->
+        <div class="bg-white overflow-hidden shadow-md rounded-xl hover:shadow-lg transition-all duration-300">
+            <div class="p-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-gradient-to-r from-red-400 to-red-600 rounded-lg flex items-center justify-center shadow-md">
+                            <i class="fas fa-exclamation-triangle text-white text-xs"></i>
+                        </div>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <dt class="text-xs font-medium text-gray-500 truncate">Overdue</dt>
+                        <dd class="text-base font-bold text-gray-900 mt-0.5">
+                            <span id="overdueInstallments">0</span>
+                            <span id="overdueInstallmentsLoading" class="hidden">
+                                <i class="fas fa-spinner fa-spin text-gray-400"></i>
+                            </span>
+                        </dd>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gradient-to-r from-red-50 to-red-100 px-4 py-2">
+                <div class="text-xs">
+                    <a href="#" onclick="filterOverdue()" class="text-red-700 hover:text-red-800 font-medium transition-colors duration-200">View overdue →</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Outstanding Amount -->
+        <div class="bg-white overflow-hidden shadow-md rounded-xl hover:shadow-lg transition-all duration-300">
+            <div class="p-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center shadow-md">
+                            <i class="fas fa-dollar-sign text-white text-xs"></i>
+                        </div>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <dt class="text-xs font-medium text-gray-500 truncate">Outstanding Amount</dt>
+                        <dd class="text-base font-bold text-gray-900 mt-0.5">
+                            <span class="text-xs text-gray-500 font-medium">UGX</span>
+                            <span id="outstandingAmount">0</span>
+                            <span id="outstandingAmountLoading" class="hidden">
+                                <i class="fas fa-spinner fa-spin text-gray-400"></i>
+                            </span>
+                        </dd>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gradient-to-r from-yellow-50 to-orange-100 px-4 py-2">
+                <div class="text-xs">
+                    <span class="text-orange-700 font-medium">Total pending</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white shadow-md rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300">
+        <div class="px-4 py-3 bg-gradient-to-r from-gray-500 to-gray-600">
+            <div class="flex items-center">
+                <div class="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                    <i class="fas fa-filter text-white text-sm"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-semibold text-white">Filter Installments</h3>
+                    <p class="text-gray-100 text-xs">Search and filter payment plans</p>
+                </div>
+            </div>
+        </div>
+        <div class="p-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label for="customer-search" class="block text-sm font-medium text-gray-700 mb-2">Search Customer</label>
+                    <input type="text" id="customer-search" placeholder="Enter customer name..."
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200">
+                </div>
+                <div>
+                    <label for="status-filter" class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select id="status-filter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200">
+                        <option value="">All Statuses</option>
+                        <option value="active">Active</option>
+                        <option value="completed">Completed</option>
+                        <option value="overdue">Overdue</option>
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <label class="flex items-center">
+                        <input type="checkbox" id="overdue-filter" class="rounded border-gray-300 text-purple-600 focus:ring-purple-500">
+                        <span class="ml-2 text-sm text-gray-700">Show only overdue</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Installments Table -->
+    <div class="bg-white shadow-md rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300">
+        <div class="px-4 py-3 bg-gradient-to-r from-indigo-500 to-purple-600">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                        <i class="fas fa-list text-white text-sm"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-semibold text-white">Installment Plans</h3>
+                        <p class="text-indigo-100 text-xs">Manage payment schedules</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="text-xs text-indigo-100">Total Plans</p>
+                    <p class="text-sm font-bold text-white" id="table-total-count">Loading...</p>
+                </div>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <!-- Loading State -->
+            <div id="installments-loading" class="p-8 text-center">
+                <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-spinner fa-spin text-purple-500 text-xl"></i>
+                </div>
+                <p class="text-gray-600 font-medium">Loading installments...</p>
+                <p class="text-gray-400 text-sm mt-1">Please wait while we fetch the data</p>
+            </div>
+
+            <!-- Table Content -->
+            <div id="installments-table" class="hidden">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan Details</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progress</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Next Payment</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="installments-tbody" class="bg-white divide-y divide-gray-200">
+                        <!-- Content will be populated by JavaScript -->
+                    </tbody>
+                </table>
+
+                <!-- Results Info -->
+                <div class="px-6 py-4 border-t border-gray-200">
+                    <div class="text-sm text-gray-700" id="results-info">
+                        Loading results...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div id="installments-empty" class="hidden p-12 text-center">
+                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-inbox text-gray-400 text-2xl"></i>
+                </div>
+                <p class="text-gray-600 font-medium text-lg">No installments found</p>
+                <p class="text-gray-400 text-sm mt-2">Create your first installment plan to get started</p>
+                <a href="/pos" class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors mt-4">
+                    <i class="fas fa-plus mr-2"></i>
+                    Create from POS
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Global variables
+    let currentInstallments = [];
+    let filteredInstallments = [];
+    let currentFilters = {
+        customer_name: '',
+        status: '',
+        overdue_only: false
+    };
+
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('🚀 Initializing installments page...');
+
+        // Load data
+        loadInstallmentsSummary();
+        loadInstallments();
+
+        // Add event listeners for filtering
+        setupFilterListeners();
+    });
+
+    // Setup filter event listeners
+    function setupFilterListeners() {
+        const customerSearch = document.getElementById('customer-search');
+        const statusFilter = document.getElementById('status-filter');
+        const overdueFilter = document.getElementById('overdue-filter');
+
+        // Debounced search
+        let searchTimeout;
+        customerSearch.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                currentFilters.customer_name = this.value;
+                applyFilters();
+            }, 300);
+        });
+
+        statusFilter.addEventListener('change', function() {
+            currentFilters.status = this.value;
+            applyFilters();
+        });
+
+        overdueFilter.addEventListener('change', function() {
+            currentFilters.overdue_only = this.checked;
+            applyFilters();
+        });
+    }
+
+    // Load installments summary
+    async function loadInstallmentsSummary() {
+        console.log('📊 Loading installments summary...');
+
+        // Show loading states
+        showSummaryLoading();
+
+        try {
+            const response = await fetch('/api/installments/summary', {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log('✅ Summary data loaded:', data);
+
+            updateSummaryCards(data);
+
+        } catch (error) {
+            console.error('❌ Error loading summary:', error);
+            resetSummaryCards();
+        }
+    }
+
+    // Show loading state for summary cards
+    function showSummaryLoading() {
+        const loadingElements = [
+            'totalInstallmentsLoading',
+            'activeInstallmentsLoading',
+            'overdueInstallmentsLoading',
+            'outstandingAmountLoading'
+        ];
+
+        const valueElements = [
+            'totalInstallments',
+            'activeInstallments',
+            'overdueInstallments',
+            'outstandingAmount'
+        ];
+
+        loadingElements.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('hidden');
+        });
+
+        valueElements.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = '';
+        });
+    }
+
+    // Update summary cards with data
+    function updateSummaryCards(data) {
+        const updates = [
+            { id: 'totalInstallments', value: data.total_installments || 0, loadingId: 'totalInstallmentsLoading' },
+            { id: 'activeInstallments', value: data.active_installments || 0, loadingId: 'activeInstallmentsLoading' },
+            { id: 'overdueInstallments', value: data.overdue_installments || 0, loadingId: 'overdueInstallmentsLoading' },
+            { id: 'outstandingAmount', value: formatMoneyWithoutCurrency(data.total_amount_outstanding || 0), loadingId: 'outstandingAmountLoading' }
+        ];
+
+        updates.forEach(update => {
+            const el = document.getElementById(update.id);
+            const loadingEl = document.getElementById(update.loadingId);
+
+            if (el) el.textContent = update.value;
+            if (loadingEl) loadingEl.classList.add('hidden');
+        });
+    }
+
+    // Reset summary cards to default values
+    function resetSummaryCards() {
+        const updates = [
+            { id: 'totalInstallments', value: '0', loadingId: 'totalInstallmentsLoading' },
+            { id: 'activeInstallments', value: '0', loadingId: 'activeInstallmentsLoading' },
+            { id: 'overdueInstallments', value: '0', loadingId: 'overdueInstallmentsLoading' },
+            { id: 'outstandingAmount', value: '0', loadingId: 'outstandingAmountLoading' }
+        ];
+
+        updates.forEach(update => {
+            const el = document.getElementById(update.id);
+            const loadingEl = document.getElementById(update.loadingId);
+
+            if (el) el.textContent = update.value;
+            if (loadingEl) loadingEl.classList.add('hidden');
+        });
+    }
+
+    // Money formatting function (same as dashboard)
+    function formatMoneyWithoutCurrency(value, showFull = false) {
+        if (value === 0) return '0';
+
+        const absValue = Math.abs(value);
+        const isNegative = value < 0;
+        const prefix = isNegative ? '-' : '';
+
+        if (showFull) {
+            return prefix + absValue.toLocaleString();
+        }
+
+        if (absValue >= 1000000000) {
+            return prefix + (absValue / 1000000000).toFixed(1) + 'B';
+        } else if (absValue >= 1000000) {
+            return prefix + (absValue / 1000000).toFixed(1) + 'M';
+        } else if (absValue >= 1000) {
+            return prefix + (absValue / 1000).toFixed(1) + 'K';
+        } else {
+            return prefix + absValue.toLocaleString();
+        }
+    }
+
+    // Load installments data
+    async function loadInstallments() {
+        console.log('📋 Loading installments...');
+
+        try {
+            const response = await fetch('/api/installments/', {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log('✅ Installments loaded:', data);
+
+            currentInstallments = data.installments || [];
+            filteredInstallments = [...currentInstallments];
+
+            renderInstallments();
+
+        } catch (error) {
+            console.error('❌ Error loading installments:', error);
+            showInstallmentsError();
+        }
+    }
+
+    // Apply filters to installments
+    function applyFilters() {
+        filteredInstallments = currentInstallments.filter(installment => {
+            // Customer name filter
+            if (currentFilters.customer_name) {
+                const searchTerm = currentFilters.customer_name.toLowerCase();
+                if (!installment.customer_name.toLowerCase().includes(searchTerm)) {
+                    return false;
+                }
+            }
+
+            // Status filter
+            if (currentFilters.status && installment.status !== currentFilters.status) {
+                return false;
+            }
+
+            // Overdue filter
+            if (currentFilters.overdue_only) {
+                const hasOverduePayment = installment.overdue_payments && installment.overdue_payments.length > 0;
+                if (!hasOverduePayment) {
+                    return false;
+                }
+            }
+
+            return true;
+        });
+
+        renderInstallments();
+    }
+
+    // Render installments table
+    function renderInstallments() {
+        const loadingEl = document.getElementById('installments-loading');
+        const tableEl = document.getElementById('installments-table');
+        const emptyEl = document.getElementById('installments-empty');
+        const tbodyEl = document.getElementById('installments-tbody');
+        const resultsInfoEl = document.getElementById('results-info');
+        const totalCountEl = document.getElementById('table-total-count');
+
+        // Hide loading
+        if (loadingEl) loadingEl.classList.add('hidden');
+
+        // Update total count
+        if (totalCountEl) totalCountEl.textContent = filteredInstallments.length;
+
+        if (filteredInstallments.length === 0) {
+            // Show empty state
+            if (tableEl) tableEl.classList.add('hidden');
+            if (emptyEl) emptyEl.classList.remove('hidden');
+            return;
+        }
+
+        // Show table
+        if (tableEl) tableEl.classList.remove('hidden');
+        if (emptyEl) emptyEl.classList.add('hidden');
+
+        // Render table rows
+        if (tbodyEl) {
+            tbodyEl.innerHTML = filteredInstallments.map(installment => `
+                <tr class="hover:bg-gray-50 transition-colors duration-200">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${installment.installment_number}</div>
+                        <div class="text-sm text-gray-500">${formatDate(installment.created_at)}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${installment.customer_name}</div>
+                        <div class="text-sm text-gray-500">${installment.customer_phone || 'No phone'}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">
+                            <span class="text-xs text-gray-500">UGX</span> ${formatMoneyWithoutCurrency(installment.total_amount, true)}
+                        </div>
+                        <div class="text-sm text-gray-500">
+                            Down: <span class="text-xs">UGX</span> ${formatMoneyWithoutCurrency(installment.down_payment, true)}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="w-full bg-gray-200 rounded-full h-2 mb-1">
+                            <div class="bg-purple-600 h-2 rounded-full transition-all duration-300" style="width: ${installment.completion_percentage || 0}%"></div>
+                        </div>
+                        <div class="text-xs text-gray-500">${Math.round(installment.completion_percentage || 0)}% complete</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        ${installment.next_payment_due ? `
+                            <div class="text-sm font-medium text-gray-900">
+                                <span class="text-xs text-gray-500">UGX</span> ${formatMoneyWithoutCurrency(installment.next_payment_due.amount_due, true)}
+                            </div>
+                            <div class="text-sm ${installment.next_payment_due.is_overdue ? 'text-red-600' : 'text-gray-500'}">
+                                ${formatDate(installment.next_payment_due.due_date)}
+                                ${installment.next_payment_due.is_overdue ? '<span class="font-medium">(Overdue)</span>' : ''}
+                            </div>
+                        ` : '<span class="text-sm text-gray-500">No pending payments</span>'}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 text-xs font-medium rounded-full ${getStatusClasses(installment.status)}">
+                            ${installment.status ? installment.status.charAt(0).toUpperCase() + installment.status.slice(1) : 'Unknown'}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div class="flex items-center space-x-2">
+                            <button onclick="viewInstallment('${installment.id}')"
+                                    class="text-purple-600 hover:text-purple-900 transition-colors duration-200"
+                                    title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Update results info
+        if (resultsInfoEl) {
+            const total = filteredInstallments.length;
+            const isFiltered = currentFilters.customer_name || currentFilters.status || currentFilters.overdue_only;
+            resultsInfoEl.textContent = `Showing ${total} installment${total !== 1 ? 's' : ''}${isFiltered ? ' (filtered)' : ''}`;
+        }
+    }
+
+    // Show error state for installments
+    function showInstallmentsError() {
+        const loadingEl = document.getElementById('installments-loading');
+        const tableEl = document.getElementById('installments-table');
+        const emptyEl = document.getElementById('installments-empty');
+
+        if (loadingEl) loadingEl.classList.add('hidden');
+        if (tableEl) tableEl.classList.add('hidden');
+        if (emptyEl) {
+            emptyEl.classList.remove('hidden');
+            emptyEl.innerHTML = `
+                <div class="p-12 text-center">
+                    <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-exclamation-triangle text-red-500 text-2xl"></i>
+                    </div>
+                    <p class="text-gray-600 font-medium text-lg">Error loading installments</p>
+                    <p class="text-gray-400 text-sm mt-2">Please try refreshing the page</p>
+                    <button onclick="location.reload()" class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors mt-4">
+                        <i class="fas fa-refresh mr-2"></i>
+                        Refresh Page
+                    </button>
+                </div>
+            `;
+        }
+    }
+
+    // Utility functions
+    function formatDate(dateString) {
+        if (!dateString) return 'N/A';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    }
+
+    function getStatusClasses(status) {
+        switch (status) {
+            case 'active':
+                return 'bg-green-100 text-green-800';
+            case 'completed':
+                return 'bg-blue-100 text-blue-800';
+            case 'overdue':
+                return 'bg-red-100 text-red-800';
+            default:
+                return 'bg-gray-100 text-gray-800';
+        }
+    }
+
+    function viewInstallment(id) {
+        openInstallmentModal(id);
+    }
+
+    function recordPayment(id) {
+        // This function is no longer used - payments are made from the detail modal
+        console.log('Payment recording moved to detail modal');
+    }
+
+    // Modal functions
+    async function openInstallmentModal(installmentId) {
+        // Store current installment ID for payment processing
+        window.currentInstallmentId = installmentId;
+
+        const modal = document.getElementById('installment-detail-modal');
+        const loadingEl = document.getElementById('installment-modal-loading');
+        const contentEl = document.getElementById('installment-modal-content');
+        const errorEl = document.getElementById('installment-modal-error');
+
+        // Show modal and loading state
+        modal.classList.remove('hidden');
+        loadingEl.classList.remove('hidden');
+        contentEl.classList.add('hidden');
+        errorEl.classList.add('hidden');
+
+        try {
+            const response = await fetch(`/api/installments/${installmentId}`, {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const installment = await response.json();
+            populateInstallmentModal(installment);
+
+            // Show content
+            loadingEl.classList.add('hidden');
+            contentEl.classList.remove('hidden');
+
+        } catch (error) {
+            console.error('Error loading installment details:', error);
+
+            // Show error state
+            loadingEl.classList.add('hidden');
+            errorEl.classList.remove('hidden');
+        }
+    }
+
+    function populateInstallmentModal(installment) {
+        // Store installment data for payment calculations
+        window.currentInstallmentData = installment;
+
+        // Header information
+        document.getElementById('modal-installment-number').textContent = installment.installment_number || '-';
+        document.getElementById('modal-created-date').textContent = formatDate(installment.created_at);
+
+        // Status with styling
+        const statusEl = document.getElementById('modal-installment-status');
+        statusEl.innerHTML = `<span class="px-2 py-1 text-xs font-medium rounded-full ${getStatusClasses(installment.status)}">${installment.status ? installment.status.charAt(0).toUpperCase() + installment.status.slice(1) : 'Unknown'}</span>`;
+
+        // Customer information
+        document.getElementById('modal-customer-name').textContent = installment.customer_name || '-';
+        document.getElementById('modal-customer-phone').textContent = installment.customer_phone || 'Not provided';
+
+        // Financial summary
+        document.getElementById('modal-total-amount').textContent = formatMoneyWithoutCurrency(installment.total_amount || 0, true);
+        document.getElementById('modal-down-payment').textContent = formatMoneyWithoutCurrency(installment.down_payment || 0, true);
+        document.getElementById('modal-total-paid').textContent = formatMoneyWithoutCurrency(installment.total_paid || 0, true);
+        document.getElementById('modal-remaining-amount').textContent = formatMoneyWithoutCurrency(installment.total_remaining || 0, true);
+
+        // Progress bar
+        const progressPercentage = installment.completion_percentage || 0;
+        document.getElementById('modal-progress-percentage').textContent = `${Math.round(progressPercentage)}%`;
+        document.getElementById('modal-progress-bar').style.width = `${progressPercentage}%`;
+
+        // Payment schedule
+        populatePaymentSchedule(installment.payments || []);
+
+        // Items
+        populateItemsList(installment.items || []);
+    }
+
+    function populatePaymentSchedule(payments) {
+        const tbody = document.getElementById('modal-payment-schedule');
+
+        if (!payments || payments.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center py-4 text-gray-500">
+                        No payment schedule available
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        // Clear existing content
+        tbody.innerHTML = '';
+
+        // Create rows with proper event listeners
+        payments.forEach((payment, index) => {
+            const row = document.createElement('tr');
+            row.className = 'border-b border-gray-100 hover:bg-gray-50';
+
+            const paymentNumber = payment.payment_number || (index + 1).toString();
+            const amountDue = payment.amount_due || 0;
+            const amountPaid = payment.amount_paid || 0;
+            const dueDate = payment.due_date;
+            const status = payment.status || 'pending';
+
+            row.innerHTML = `
+                <td class="py-2 text-sm font-medium text-gray-900">${paymentNumber}</td>
+                <td class="py-2 text-sm text-gray-700">${formatDate(dueDate)}</td>
+                <td class="py-2 text-sm font-medium text-gray-900">
+                    <span class="text-xs text-gray-500">UGX</span> ${formatMoneyWithoutCurrency(amountDue, true)}
+                </td>
+                <td class="py-2 text-sm text-gray-700">
+                    <span class="text-xs text-gray-500">UGX</span> ${formatMoneyWithoutCurrency(amountPaid, true)}
+                </td>
+                <td class="py-2">
+                    <span class="px-2 py-1 text-xs font-medium rounded-full ${getPaymentStatusClasses(status)}">
+                        ${status.charAt(0).toUpperCase() + status.slice(1)}
+                    </span>
+                </td>
+                <td class="py-2">
+                    ${status !== 'paid' ? `
+                        <button class="payment-btn inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 rounded-lg transition-all duration-200">
+                            <i class="fas fa-money-bill mr-1"></i>Record Payment
+                        </button>
+                    ` : `
+                        <span class="inline-flex items-center px-2 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-lg">
+                            <i class="fas fa-check mr-1"></i>Paid
+                        </span>
+                    `}
+                </td>
+            `;
+
+            // Add event listener to the payment button if it exists
+            const paymentBtn = row.querySelector('.payment-btn');
+            if (paymentBtn) {
+                paymentBtn.addEventListener('click', function() {
+                    console.log('Payment button clicked for payment:', paymentNumber);
+                    openPaymentModal(paymentNumber, amountDue, formatDate(dueDate), amountPaid);
+                });
+            }
+
+            tbody.appendChild(row);
+        });
+    }
+
+    function populateItemsList(items) {
+        const container = document.getElementById('modal-items-list');
+
+        if (!items || items.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-4 text-gray-500">
+                    No items found
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = items.map(item => `
+            <div class="flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0">
+                <div class="flex-1">
+                    <p class="text-sm font-medium text-gray-900">${item.product_name || item.name || 'Unknown Item'}</p>
+                    <p class="text-xs text-gray-500">Quantity: ${item.quantity || 1}</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-sm font-medium text-gray-900">
+                        <span class="text-xs text-gray-500">UGX</span> ${formatMoneyWithoutCurrency((item.unit_price || item.price || 0), true)}
+                    </p>
+                    <p class="text-xs text-gray-500">
+                        Total: <span class="text-xs">UGX</span> ${formatMoneyWithoutCurrency((item.total_price || item.total || (item.quantity || 1) * (item.unit_price || item.price || 0)), true)}
+                    </p>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function getPaymentStatusClasses(status) {
+        switch (status) {
+            case 'paid':
+                return 'bg-green-100 text-green-800';
+            case 'partial':
+                return 'bg-yellow-100 text-yellow-800';
+            case 'pending':
+            default:
+                return 'bg-gray-100 text-gray-800';
+        }
+    }
+
+    function closeInstallmentModal() {
+        document.getElementById('installment-detail-modal').classList.add('hidden');
+    }
+
+    function openPaymentModal(paymentNumber, amountDue, dueDate, alreadyPaid = 0) {
+        console.log('🎯 Opening payment modal for:', { paymentNumber, amountDue, dueDate, alreadyPaid });
+
+        // Get all payment schedule data for allocation calculations
+        const allPayments = window.currentInstallmentData?.payments || [];
+        console.log('📋 All payments data:', allPayments);
+
+        // Store payment details for processing
+        window.currentPaymentDetails = {
+            paymentNumber: paymentNumber,
+            amountDue: amountDue,
+            dueDate: dueDate,
+            alreadyPaid: alreadyPaid,
+            installmentId: window.currentInstallmentId,
+            allPayments: allPayments
+        };
+
+        console.log('💾 Stored payment details:', window.currentPaymentDetails);
+
+        // Populate modal with payment details
+        document.getElementById('payment-number-display').textContent = paymentNumber;
+        document.getElementById('payment-due-date-display').textContent = dueDate;
+        document.getElementById('payment-amount-due-display').textContent = formatMoneyWithoutCurrency(amountDue, true);
+        document.getElementById('payment-already-paid-display').textContent = formatMoneyWithoutCurrency(alreadyPaid, true);
+
+        // Calculate amounts for quick buttons
+        const currentPaymentRemaining = amountDue - alreadyPaid;
+        const totalRemainingAmount = calculateTotalRemainingAmount(allPayments);
+
+        document.getElementById('current-payment-remaining').textContent = `UGX ${formatMoneyWithoutCurrency(currentPaymentRemaining, true)}`;
+        document.getElementById('quick-remaining-amount').textContent = formatMoneyWithoutCurrency(currentPaymentRemaining, true);
+        document.getElementById('quick-full-amount').textContent = formatMoneyWithoutCurrency(totalRemainingAmount, true);
+
+        // Set default payment amount to current payment remaining
+        document.getElementById('payment-amount').value = currentPaymentRemaining;
+
+        // Clear form
+        document.getElementById('payment-method').value = '';
+        document.getElementById('payment-notes').value = '';
+
+        // Update payment allocation display
+        updatePaymentAllocation(currentPaymentRemaining);
+
+        // Show modal
+        document.getElementById('record-payment-modal').classList.remove('hidden');
+    }
+
+    function closePaymentModal() {
+        document.getElementById('record-payment-modal').classList.add('hidden');
+        window.currentPaymentDetails = null;
+
+        // Reset form
+        document.getElementById('payment-form').reset();
+    }
+
+    // Calculate total remaining amount across all payments
+    function calculateTotalRemainingAmount(payments) {
+        return payments.reduce((total, payment) => {
+            if (payment.status !== 'paid') {
+                const remaining = payment.amount_due - (payment.amount_paid || 0);
+                return total + remaining;
+            }
+            return total;
+        }, 0);
+    }
+
+    // Calculate how payment amount will be allocated across payments
+    function calculatePaymentAllocation(paymentAmount) {
+        if (!window.currentPaymentDetails) return [];
+
+        const allPayments = window.currentPaymentDetails.allPayments;
+        const currentPaymentNumber = window.currentPaymentDetails.paymentNumber;
+        let remainingAmount = paymentAmount;
+        const allocation = [];
+
+        // Sort payments by payment number to allocate in order
+        const sortedPayments = [...allPayments].sort((a, b) => {
+            const aNum = parseInt(a.payment_number) || 0;
+            const bNum = parseInt(b.payment_number) || 0;
+            return aNum - bNum;
+        });
+
+        // Find current payment index
+        const currentIndex = sortedPayments.findIndex(p => p.payment_number === currentPaymentNumber);
+
+        // Start allocation from current payment
+        for (let i = currentIndex; i < sortedPayments.length && remainingAmount > 0; i++) {
+            const payment = sortedPayments[i];
+            if (payment.status === 'paid') continue;
+
+            const paymentRemaining = payment.amount_due - (payment.amount_paid || 0);
+            if (paymentRemaining <= 0) continue;
+
+            const allocatedAmount = Math.min(remainingAmount, paymentRemaining);
+            allocation.push({
+                paymentNumber: payment.payment_number,
+                dueDate: payment.due_date,
+                allocatedAmount: allocatedAmount,
+                isCurrentPayment: payment.payment_number === currentPaymentNumber,
+                willBeFullyPaid: allocatedAmount >= paymentRemaining
+            });
+
+            remainingAmount -= allocatedAmount;
+        }
+
+        return allocation;
+    }
+
+    // Update payment allocation display
+    function updatePaymentAllocation(paymentAmount) {
+        const allocation = calculatePaymentAllocation(paymentAmount);
+        const allocationEl = document.getElementById('payment-allocation');
+
+        if (allocation.length === 0) {
+            allocationEl.innerHTML = '';
+            return;
+        }
+
+        const currentPaymentRemaining = window.currentPaymentDetails.amountDue - window.currentPaymentDetails.alreadyPaid;
+        document.getElementById('current-payment-remaining').textContent = `UGX ${formatMoneyWithoutCurrency(Math.max(0, currentPaymentRemaining - paymentAmount), true)}`;
+
+        if (allocation.length === 1 && allocation[0].isCurrentPayment) {
+            // Only current payment
+            if (paymentAmount < currentPaymentRemaining) {
+                allocationEl.innerHTML = `
+                    <p class="text-yellow-600">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Partial payment: UGX ${formatMoneyWithoutCurrency(currentPaymentRemaining - paymentAmount, true)} will remain due
+                    </p>
+                `;
+            } else {
+                allocationEl.innerHTML = `
+                    <p class="text-green-600">
+                        <i class="fas fa-check-circle mr-1"></i>
+                        This payment will be fully paid
+                    </p>
+                `;
+            }
+        } else {
+            // Multiple payments affected
+            allocationEl.innerHTML = `
+                <div class="bg-blue-50 border border-blue-200 rounded p-2 mt-1">
+                    <p class="text-blue-800 font-medium text-xs mb-1">
+                        <i class="fas fa-calculator mr-1"></i>
+                        Payment Allocation:
+                    </p>
+                    ${allocation.map(item => `
+                        <div class="flex justify-between items-center text-xs ${item.isCurrentPayment ? 'font-medium text-blue-900' : 'text-blue-700'}">
+                            <span>Payment #${item.paymentNumber} ${item.isCurrentPayment ? '(Current)' : ''}</span>
+                            <span class="flex items-center">
+                                UGX ${formatMoneyWithoutCurrency(item.allocatedAmount, true)}
+                                ${item.willBeFullyPaid ? '<i class="fas fa-check text-green-500 ml-1"></i>' : '<i class="fas fa-clock text-yellow-500 ml-1"></i>'}
+                            </span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+    }
+
+    // Set payment amount using quick buttons
+    function setPaymentAmount(type) {
+        if (!window.currentPaymentDetails) return;
+
+        let amount = 0;
+        if (type === 'remaining') {
+            amount = window.currentPaymentDetails.amountDue - window.currentPaymentDetails.alreadyPaid;
+        } else if (type === 'full') {
+            amount = calculateTotalRemainingAmount(window.currentPaymentDetails.allPayments);
+        }
+
+        document.getElementById('payment-amount').value = amount;
+        updatePaymentAllocation(amount);
+    }
+
+    // Handle payment form submission
+    async function handlePaymentSubmission(event) {
+        event.preventDefault();
+
+        if (!window.currentPaymentDetails) {
+            showError('Payment details not found');
+            return;
+        }
+
+        const formData = new FormData(event.target);
+        const paymentAmount = parseFloat(formData.get('payment-amount'));
+        const paymentMethod = formData.get('payment-method');
+        const notes = formData.get('payment-notes') || '';
+
+        // Validate payment amount
+        if (paymentAmount <= 0) {
+            showError('Payment amount must be greater than 0');
+            return;
+        }
+
+        // Calculate allocation for confirmation
+        const allocation = calculatePaymentAllocation(paymentAmount);
+        const allocationSummary = allocation.map(item =>
+            `Payment #${item.paymentNumber}: UGX ${formatMoneyWithoutCurrency(item.allocatedAmount, true)} ${item.willBeFullyPaid ? '(Fully Paid)' : '(Partial)'}`
+        ).join('\n');
+
+        // Show confirmation with allocation details
+        const confirmMessage = `Confirm Payment Recording:\n\nAmount: UGX ${formatMoneyWithoutCurrency(paymentAmount, true)}\nMethod: ${paymentMethod}\n\nAllocation:\n${allocationSummary}\n\nProceed with this payment?`;
+
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+
+        // Disable submit button and show loading
+        const submitBtn = event.target.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Recording Payment...';
+
+        try {
+            // Submit payment to API
+            console.log('🚀 Submitting payment to API...');
+
+            const paymentData = {
+                installment_id: window.currentPaymentDetails.installmentId,
+                payment_number: parseInt(window.currentPaymentDetails.paymentNumber),
+                amount: paymentAmount,
+                payment_method: paymentMethod,
+                notes: notes
+            };
+
+            console.log('📤 Payment data:', paymentData);
+
+            const response = await fetch(`/api/installments/${window.currentPaymentDetails.installmentId}/payments`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(paymentData)
+            });
+
+            console.log('📥 API Response status:', response.status);
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ detail: 'Unknown error occurred' }));
+                throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log('✅ Payment recorded successfully:', result);
+
+            // Show success message
+            alert(`Payment Recorded Successfully! 🎉\n\nReceipt: ${result.receipt_number}\nAmount: UGX ${formatMoneyWithoutCurrency(paymentAmount, true)}\nMethod: ${paymentMethod}\n\nAllocation:\n${allocationSummary}`);
+
+            // Close modal and refresh installment details
+            closePaymentModal();
+            if (window.currentInstallmentId) {
+                // Refresh the installment details to show updated payment status
+                await openInstallmentModal(window.currentInstallmentId);
+            }
+
+            // Also refresh the main installments list to show updated data
+            await loadInstallments();
+            await loadInstallmentsSummary();
+
+        } catch (error) {
+            console.error('❌ Error recording payment:', error);
+            showError(`Failed to record payment: ${error.message}`);
+        } finally {
+            // Re-enable submit button
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+        }
+    }
+
+    // Add event listeners for modals
+    document.addEventListener('DOMContentLoaded', function() {
+        // Existing initialization code...
+
+        // Modal event listeners
+        document.getElementById('close-installment-modal').addEventListener('click', closeInstallmentModal);
+        document.getElementById('close-payment-modal').addEventListener('click', closePaymentModal);
+
+        // Payment form submission
+        document.getElementById('payment-form').addEventListener('submit', handlePaymentSubmission);
+
+        // Close modals when clicking outside
+        document.getElementById('installment-detail-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeInstallmentModal();
+            }
+        });
+
+        document.getElementById('record-payment-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closePaymentModal();
+            }
+        });
+
+        // Update payment allocation when payment amount changes
+        document.getElementById('payment-amount').addEventListener('input', function() {
+            if (window.currentPaymentDetails) {
+                const paymentAmount = parseFloat(this.value) || 0;
+                updatePaymentAllocation(paymentAmount);
+            }
+        });
+    });
+
+    function filterOverdue() {
+        const overdueFilter = document.getElementById('overdue-filter');
+        if (overdueFilter) {
+            overdueFilter.checked = true;
+            currentFilters.overdue_only = true;
+            applyFilters();
+        }
+    }
+
+    function showError(message) {
+        // TODO: Implement proper error notification
+        console.error('Error:', message);
+        alert(message);
+    }
+</script>
+
+<!-- Installment Detail Modal -->
+<div id="installment-detail-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300">
+            <div class="px-4 py-3 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-t-xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                            <i class="fas fa-file-invoice text-white text-xs"></i>
+                        </div>
+                        <h3 class="text-base font-semibold text-white">Installment Details</h3>
+                    </div>
+                    <button type="button" id="close-installment-modal" class="text-white hover:text-gray-200 transition-colors duration-200">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-4">
+                <!-- Loading State -->
+                <div id="installment-modal-loading" class="text-center py-8">
+                    <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-spinner fa-spin text-purple-500 text-xl"></i>
+                    </div>
+                    <p class="text-gray-600 font-medium">Loading installment details...</p>
+                </div>
+
+                <!-- Content -->
+                <div id="installment-modal-content" class="hidden">
+                    <!-- Installment Header -->
+                    <div class="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4 mb-4">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="text-xs font-medium text-gray-500 uppercase tracking-wider">Installment Number</label>
+                                <p class="text-sm font-bold text-gray-900" id="modal-installment-number">-</p>
+                            </div>
+                            <div>
+                                <label class="text-xs font-medium text-gray-500 uppercase tracking-wider">Status</label>
+                                <p class="text-sm" id="modal-installment-status">-</p>
+                            </div>
+                            <div>
+                                <label class="text-xs font-medium text-gray-500 uppercase tracking-wider">Created Date</label>
+                                <p class="text-sm font-medium text-gray-900" id="modal-created-date">-</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Customer Information -->
+                    <div class="bg-white border border-gray-200 rounded-lg p-4 mb-4">
+                        <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+                            <i class="fas fa-user text-purple-500 mr-2"></i>
+                            Customer Information
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-xs font-medium text-gray-500">Name</label>
+                                <p class="text-sm font-medium text-gray-900" id="modal-customer-name">-</p>
+                            </div>
+                            <div>
+                                <label class="text-xs font-medium text-gray-500">Phone</label>
+                                <p class="text-sm text-gray-700" id="modal-customer-phone">-</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Financial Summary -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                            <div class="text-xs font-medium text-blue-600 uppercase tracking-wider">Total Amount</div>
+                            <div class="text-sm font-bold text-blue-900">
+                                <span class="text-xs text-blue-600">UGX</span>
+                                <span id="modal-total-amount">0</span>
+                            </div>
+                        </div>
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                            <div class="text-xs font-medium text-green-600 uppercase tracking-wider">Down Payment</div>
+                            <div class="text-sm font-bold text-green-900">
+                                <span class="text-xs text-green-600">UGX</span>
+                                <span id="modal-down-payment">0</span>
+                            </div>
+                        </div>
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                            <div class="text-xs font-medium text-yellow-600 uppercase tracking-wider">Total Paid</div>
+                            <div class="text-sm font-bold text-yellow-900">
+                                <span class="text-xs text-yellow-600">UGX</span>
+                                <span id="modal-total-paid">0</span>
+                            </div>
+                        </div>
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                            <div class="text-xs font-medium text-red-600 uppercase tracking-wider">Remaining</div>
+                            <div class="text-sm font-bold text-red-900">
+                                <span class="text-xs text-red-600">UGX</span>
+                                <span id="modal-remaining-amount">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="bg-white border border-gray-200 rounded-lg p-4 mb-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="text-sm font-semibold text-gray-900">Payment Progress</h4>
+                            <span class="text-sm font-medium text-gray-600" id="modal-progress-percentage">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3">
+                            <div class="bg-gradient-to-r from-purple-500 to-indigo-600 h-3 rounded-full transition-all duration-500" id="modal-progress-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Schedule -->
+                    <div class="bg-white border border-gray-200 rounded-lg p-4 mb-4">
+                        <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+                            <i class="fas fa-calendar-alt text-purple-500 mr-2"></i>
+                            Payment Schedule
+                        </h4>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full">
+                                <thead>
+                                    <tr class="border-b border-gray-200">
+                                        <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2">Payment #</th>
+                                        <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2">Due Date</th>
+                                        <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2">Amount Due</th>
+                                        <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2">Amount Paid</th>
+                                        <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2">Status</th>
+                                        <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="modal-payment-schedule">
+                                    <!-- Payment rows will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Items -->
+                    <div class="bg-white border border-gray-200 rounded-lg p-4">
+                        <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+                            <i class="fas fa-box text-purple-500 mr-2"></i>
+                            Items in this Installment
+                        </h4>
+                        <div id="modal-items-list">
+                            <!-- Items will be populated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Error State -->
+                <div id="installment-modal-error" class="hidden text-center py-8">
+                    <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-exclamation-triangle text-red-500 text-2xl"></i>
+                    </div>
+                    <p class="text-gray-600 font-medium text-lg">Error loading installment</p>
+                    <p class="text-gray-400 text-sm mt-2">Please try again later</p>
+                    <button onclick="closeInstallmentModal()" class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors mt-4">
+                        <i class="fas fa-times mr-2"></i>
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Record Payment Modal -->
+<div id="record-payment-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300">
+            <div class="px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-t-xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                            <i class="fas fa-money-bill text-white text-xs"></i>
+                        </div>
+                        <h3 class="text-base font-semibold text-white">Record Payment</h3>
+                    </div>
+                    <button type="button" id="close-payment-modal" class="text-white hover:text-gray-200 transition-colors duration-200">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
+            <form id="payment-form" class="flex flex-col h-full">
+                <!-- Scrollable Content Area -->
+                <div class="flex-1 overflow-y-auto p-4">
+                    <!-- Payment Details Summary -->
+                    <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                        <h4 class="text-sm font-semibold text-gray-900 mb-3">Payment Details</h4>
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <label class="text-xs font-medium text-gray-500">Payment #</label>
+                                <p class="font-medium text-gray-900" id="payment-number-display">-</p>
+                            </div>
+                            <div>
+                                <label class="text-xs font-medium text-gray-500">Due Date</label>
+                                <p class="font-medium text-gray-900" id="payment-due-date-display">-</p>
+                            </div>
+                            <div>
+                                <label class="text-xs font-medium text-gray-500">Amount Due</label>
+                                <p class="font-medium text-gray-900">
+                                    <span class="text-xs text-gray-500">UGX</span>
+                                    <span id="payment-amount-due-display">0</span>
+                                </p>
+                            </div>
+                            <div>
+                                <label class="text-xs font-medium text-gray-500">Already Paid</label>
+                                <p class="font-medium text-gray-900">
+                                    <span class="text-xs text-gray-500">UGX</span>
+                                    <span id="payment-already-paid-display">0</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Form -->
+                    <div class="space-y-4">
+                        <div>
+                            <label for="payment-amount" class="block text-sm font-medium text-gray-700 mb-2">Payment Amount</label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">UGX</span>
+                                <input type="number"
+                                       id="payment-amount"
+                                       name="payment-amount"
+                                       step="0.01"
+                                       min="0.01"
+                                       class="w-full pl-12 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                       placeholder="0.00"
+                                       required>
+                            </div>
+                            <div class="mt-2 space-y-1">
+                                <p class="text-xs text-gray-500">
+                                    This payment remaining: <span class="font-medium text-gray-700" id="current-payment-remaining">UGX 0</span>
+                                </p>
+                                <div id="payment-allocation" class="text-xs space-y-1">
+                                    <!-- Payment allocation details will be shown here -->
+                                </div>
+                            </div>
+
+                            <!-- Quick amount buttons -->
+                            <div class="mt-3 flex flex-wrap gap-2">
+                                <button type="button" onclick="setPaymentAmount('remaining')" class="px-3 py-1 text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg transition-colors">
+                                    Pay Remaining (UGX <span id="quick-remaining-amount">0</span>)
+                                </button>
+                                <button type="button" onclick="setPaymentAmount('full')" class="px-3 py-1 text-xs bg-green-100 text-green-700 hover:bg-green-200 rounded-lg transition-colors">
+                                    Pay Full Amount (UGX <span id="quick-full-amount">0</span>)
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="payment-method" class="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+                            <select id="payment-method" name="payment-method" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" required>
+                                <option value="">Select payment method</option>
+                                <option value="cash">Cash</option>
+                                <option value="card">Card</option>
+                                <option value="mobile_money">Mobile Money</option>
+                                <option value="bank_transfer">Bank Transfer</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="payment-notes" class="block text-sm font-medium text-gray-700 mb-2">Notes (Optional)</label>
+                            <textarea id="payment-notes"
+                                      name="payment-notes"
+                                      rows="3"
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                      placeholder="Add any notes about this payment..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sticky Action Buttons -->
+                <div class="flex-shrink-0 bg-white border-t border-gray-200 p-4">
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" onclick="closePaymentModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200">
+                            <i class="fas fa-times mr-2"></i>Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 rounded-lg transition-all duration-200">
+                            <i class="fas fa-check mr-2"></i>Record Payment
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}

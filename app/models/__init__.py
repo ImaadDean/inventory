@@ -4,6 +4,7 @@ from .category import Category
 from .customer import Customer
 from .sale import Sale, SaleItem, PaymentMethod, SaleStatus
 from .scent import Scent
+from .installment import Installment, InstallmentPayment, InstallmentPaymentRecord, InstallmentStatus, PaymentStatus
 
 __all__ = [
     "User",
@@ -16,5 +17,10 @@ __all__ = [
     "SaleItem",
     "PaymentMethod",
     "SaleStatus",
-    "Scent"
+    "Scent",
+    "Installment",
+    "InstallmentPayment",
+    "InstallmentPaymentRecord",
+    "InstallmentStatus",
+    "PaymentStatus"
 ]
