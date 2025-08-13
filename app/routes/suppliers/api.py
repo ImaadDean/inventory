@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, Query, Request
 from typing import List, Optional
-from app.utils.auth import get_current_user, verify_token, get_user_by_username
+from app.utils.auth import get_current_user, get_current_user_hybrid, get_current_user_hybrid_dependency, verify_token, get_user_by_username
 from app.models.user import User
 from app.models.supplier import Supplier
 from app.schemas.supplier import SupplierCreate, SupplierUpdate, SupplierResponse
@@ -13,43 +13,15 @@ import logging
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-async def get_current_user_hybrid(request: Request) -> User:
-    """Get current user from either JWT token or cookie"""
 
-    # Try cookie authentication first (for web interface)
-    access_token = request.cookies.get("access_token")
-    if access_token:
-        try:
-            # Handle Bearer prefix in cookie value
-            token = access_token
-            if access_token.startswith("Bearer "):
-                token = access_token[7:]  # Remove "Bearer " prefix
-
-            payload = verify_token(token)
-            if payload:
-                username = payload.get("sub")
-                if username:
-                    user = await get_user_by_username(username)
-                    if user and user.is_active:
-                        return user
-        except Exception:
-            pass
-
-    # If no valid authentication found, raise HTTPException
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
 
 @router.get("/api/suppliers/", response_model=dict)
 async def get_suppliers(
-    request: Request,
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=100),
     search: Optional[str] = Query(None),
     status: Optional[str] = Query(None),
-    user: User = Depends(get_current_user_hybrid)
+    user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Get suppliers with pagination and filtering"""
     try:
@@ -142,7 +114,7 @@ async def get_suppliers(
 async def create_supplier(
     request: Request,
     supplier_data: SupplierCreate,
-    user: User = Depends(get_current_user_hybrid)
+    user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Create a new supplier"""
     try:
@@ -191,7 +163,7 @@ async def create_supplier(
 async def get_supplier(
     request: Request,
     supplier_id: str,
-    user: User = Depends(get_current_user_hybrid)
+    user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Get a specific supplier by ID"""
     try:
@@ -220,7 +192,7 @@ async def update_supplier(
     request: Request,
     supplier_id: str,
     supplier_data: SupplierUpdate,
-    user: User = Depends(get_current_user_hybrid)
+    user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Update a supplier and update related products if name changes"""
     try:
@@ -292,7 +264,7 @@ async def update_supplier(
 async def delete_supplier(
     request: Request,
     supplier_id: str,
-    user: User = Depends(get_current_user_hybrid)
+    user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Delete a supplier while keeping products they supplied"""
     try:
@@ -349,7 +321,7 @@ async def delete_supplier(
 async def deactivate_supplier(
     request: Request,
     supplier_id: str,
-    user: User = Depends(get_current_user_hybrid)
+    user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Deactivate a supplier (soft delete) while keeping all data intact"""
     try:
@@ -394,7 +366,7 @@ async def deactivate_supplier(
 async def activate_supplier(
     request: Request,
     supplier_id: str,
-    user: User = Depends(get_current_user_hybrid)
+    user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Reactivate a supplier"""
     try:
@@ -471,7 +443,7 @@ async def get_suppliers_dropdown():
 @router.post("/sync-products", response_model=dict)
 async def sync_supplier_products(
     request: Request,
-    user: User = Depends(get_current_user_hybrid)
+    user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Sync existing products with suppliers - one-time migration"""
     try:

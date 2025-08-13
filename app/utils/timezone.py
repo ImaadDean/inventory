@@ -206,3 +206,33 @@ def get_timezone_info() -> dict:
         "country": "Uganda",
         "city": "Kampala"
     }
+
+
+def now_eat() -> datetime:
+    """Get current datetime in East Africa Time (EAT) - alias for now_kampala()"""
+    return now_kampala()
+
+
+def eat_to_utc(eat_dt: datetime) -> datetime:
+    """Convert East Africa Time datetime to UTC - alias for kampala_to_utc()"""
+    return kampala_to_utc(eat_dt)
+
+
+def utc_to_eat(utc_dt: datetime) -> datetime:
+    """Convert UTC datetime to East Africa Time - alias for utc_to_kampala()"""
+    return utc_to_kampala(utc_dt)
+
+
+def format_eat_datetime(dt: datetime, format_str: str = "%Y-%m-%d %H:%M:%S") -> str:
+    """Format datetime in East Africa Time - alias for format_kampala_datetime()"""
+    return format_kampala_datetime(dt, format_str)
+
+
+def format_eat_date(dt: datetime, format_str: str = "%Y-%m-%d") -> str:
+    """Format date in East Africa Time - alias for format_kampala_date()"""
+    return format_kampala_date(dt, format_str)
+
+
+def format_eat_time(dt: datetime, format_str: str = "%H:%M:%S") -> str:
+    """Format time in East Africa Time - alias for format_kampala_time()"""
+    return format_kampala_time(dt, format_str)

@@ -242,6 +242,6 @@ async def reset_password_form(request: Request):
 @auth_routes.get("/test")
 async def test_route():
     """Test route to verify auth routes are working"""
-    return {"message": "Auth routes are working!", "timestamp": datetime.utcnow()}
+    return {"message": "Auth routes are working!", "timestamp": now_kampala()}
 
 

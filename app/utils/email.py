@@ -528,7 +528,7 @@ async def send_password_changed_notification(email: EmailStr, user_name: str) ->
                             <div class="info-icon">📅</div>
                             <div class="info-text">
                                 <strong>Change completed on:</strong>
-                                <div class="timestamp">{datetime.utcnow().strftime('%B %d, %Y at %I:%M %p UTC')}</div>
+                                <div class="timestamp">{now_kampala().strftime('%B %d, %Y at %I:%M %p EAT')}</div>
                             </div>
                         </div>
 
@@ -578,7 +578,7 @@ Hello {user_name},
 Your password for your {settings.MAIL_FROM_NAME} Inventory Management
 System account has been updated on:
 
-{datetime.utcnow().strftime('%B %d, %Y at %I:%M %p UTC')}
+{now_kampala().strftime('%B %d, %Y at %I:%M %p EAT')}
 
 🛡️ SECURITY NOTICE
 If you did not make this change, please contact your system

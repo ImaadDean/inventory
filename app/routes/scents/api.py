@@ -3,48 +3,21 @@ from typing import List, Optional
 from bson import ObjectId
 from ...models import User
 from ...schemas.scent import ScentCreate, ScentUpdate, ScentResponse
-from ...utils.auth import verify_token, get_user_by_username
+from ...utils.auth import get_current_user_hybrid, get_current_user_hybrid_dependency, verify_token, get_user_by_username
 from ...config.database import get_database
 from ...utils.timezone import now_kampala, kampala_to_utc
 
 router = APIRouter(prefix="/api/scents", tags=["Scents API"])
 
 
-async def get_current_user_hybrid(request: Request) -> User:
-    """Get current user from either JWT token or cookie"""
 
-    # Try cookie authentication first (for web interface)
-    access_token = request.cookies.get("access_token")
-    if access_token:
-        try:
-            # Handle Bearer prefix in cookie value
-            token = access_token
-            if access_token.startswith("Bearer "):
-                token = access_token[7:]  # Remove "Bearer " prefix
-
-            payload = verify_token(token)
-            if payload:
-                username = payload.get("sub")
-                if username:
-                    user = await get_user_by_username(username)
-                    if user and user.is_active:
-                        return user
-        except Exception:
-            pass
-
-    # If no valid authentication found, raise HTTPException
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
 
 
 @router.get("/debug/{scent_id}")
 async def debug_scent_products(
     scent_id: str,
     request: Request,
-    current_user: User = Depends(get_current_user_hybrid)
+    current_user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Debug endpoint to check scent-product relationships"""
     try:
@@ -117,8 +90,7 @@ async def debug_scent_products(
 
 @router.get("/stats", response_model=dict)
 async def get_scents_stats(
-    request: Request,
-    current_user: User = Depends(get_current_user_hybrid)
+    current_user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Get scents statistics for dashboard cards"""
     try:
@@ -159,9 +131,8 @@ async def get_scents_stats(
 
 @router.get("/table", response_model=List[dict])
 async def get_scents_for_table(
-    request: Request,
     active_only: Optional[bool] = Query(False),
-    current_user: User = Depends(get_current_user_hybrid)
+    current_user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Get scents with product counts for the scents table"""
     try:
@@ -217,7 +188,7 @@ async def get_scents(
     limit: int = Query(100, ge=1, le=1000),
     search: Optional[str] = Query(None),
     active_only: bool = Query(True),
-    current_user: User = Depends(get_current_user_hybrid)
+    current_user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Get all scents with optional filtering"""
     try:
@@ -297,7 +268,7 @@ async def get_scents(
 async def get_scent(
     scent_id: str,
     request: Request,
-    current_user: User = Depends(get_current_user_hybrid)
+    current_user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Get a single scent by ID"""
     try:
@@ -351,7 +322,7 @@ async def get_scent(
 async def create_scent(
     scent_data: ScentCreate,
     request: Request,
-    current_user: User = Depends(get_current_user_hybrid)
+    current_user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Create a new scent"""
     try:
@@ -406,7 +377,7 @@ async def update_scent(
     scent_id: str,
     scent_data: ScentUpdate,
     request: Request,
-    current_user: User = Depends(get_current_user_hybrid)
+    current_user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Update a scent"""
     try:
@@ -471,7 +442,7 @@ async def update_scent(
 async def delete_scent(
     scent_id: str,
     request: Request,
-    current_user: User = Depends(get_current_user_hybrid)
+    current_user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Delete a scent"""
     try:

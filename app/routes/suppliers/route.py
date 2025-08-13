@@ -8,30 +8,7 @@ from app.models.user import User
 suppliers_routes = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 
-async def get_current_user_hybrid(request: Request) -> User:
-    """Get current user from either JWT token or cookie"""
 
-    # Try cookie authentication first (for web interface)
-    access_token = request.cookies.get("access_token")
-    if access_token:
-        try:
-            # Handle Bearer prefix in cookie value
-            token = access_token
-            if access_token.startswith("Bearer "):
-                token = access_token[7:]  # Remove "Bearer " prefix
-
-            payload = verify_token(token)
-            if payload:
-                username = payload.get("sub")
-                if username:
-                    user = await get_user_by_username(username)
-                    if user and user.is_active:
-                        return user
-        except Exception:
-            pass
-
-    # If no valid authentication found, raise HTTPException
-    raise HTTPException(status_code=401, detail="Not authenticated")
 
 @suppliers_routes.get("/suppliers", response_class=HTMLResponse)
 async def suppliers_page(request: Request):

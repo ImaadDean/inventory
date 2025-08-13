@@ -8,101 +8,12 @@ from ...schemas.customer import (
     PurchaseHistory, CustomerPurchaseHistory
 )
 from ...models import Customer, User
-from ...utils.auth import get_current_user, verify_token, get_user_by_username
+from ...utils.auth import get_current_user, get_current_user_hybrid, get_current_user_hybrid_dependency, verify_token, get_user_by_username
 from ...utils.timezone import now_kampala, kampala_to_utc
 
 router = APIRouter(prefix="/api/customers", tags=["Customer Management API"])
 
-async def get_current_user_hybrid(request: Request) -> User:
-    """Get current user from either JWT token or cookie with detailed debugging"""
 
-    # Debug information
-    debug_info = {
-        "cookies": dict(request.cookies),
-        "headers": dict(request.headers),
-        "has_auth_header": bool(request.headers.get("Authorization")),
-        "cookie_token": None,
-        "header_token": None,
-        "payload": None,
-        "username": None,
-        "user_found": False,
-        "user_active": False
-    }
-
-    token = None
-    auth_method = None
-
-    # Try cookie authentication first (for web interface)
-    access_token = request.cookies.get("access_token")
-    if access_token:
-        debug_info["cookie_token"] = access_token[:20] + "..." if len(access_token) > 20 else access_token
-        try:
-            # Handle Bearer prefix in cookie value - the login sets "Bearer {token}"
-            if access_token.startswith("Bearer "):
-                token = access_token[7:]  # Remove "Bearer " prefix
-            else:
-                token = access_token
-
-            auth_method = "cookie"
-        except Exception as e:
-            debug_info["cookie_error"] = str(e)
-
-    # Try Authorization header if no cookie token
-    if not token:
-        auth_header = request.headers.get("Authorization")
-        if auth_header:
-            debug_info["header_token"] = auth_header[:20] + "..." if len(auth_header) > 20 else auth_header
-            try:
-                if auth_header.startswith("Bearer "):
-                    token = auth_header[7:]  # Remove "Bearer " prefix
-                else:
-                    token = auth_header
-
-                auth_method = "header"
-            except Exception as e:
-                debug_info["header_error"] = str(e)
-
-    # If we have a token, try to verify it
-    if token:
-        try:
-            payload = verify_token(token)
-            debug_info["payload"] = payload
-
-            if payload:
-                username = payload.get("sub")
-                debug_info["username"] = username
-
-                if username:
-                    user = await get_user_by_username(username)
-                    debug_info["user_found"] = user is not None
-
-                    if user:
-                        debug_info["user_active"] = user.is_active
-                        if user.is_active:
-                            # Success! Add debug info to response headers for testing
-                            return user
-                        else:
-                            debug_info["error"] = "User is not active"
-                    else:
-                        debug_info["error"] = "User not found in database"
-                else:
-                    debug_info["error"] = "No username in token payload"
-            else:
-                debug_info["error"] = "Token verification failed"
-        except Exception as e:
-            debug_info["token_error"] = str(e)
-    else:
-        debug_info["error"] = "No token found in cookie or header"
-
-    # Log debug info for troubleshooting
-    print(f"Authentication failed - Debug info: {debug_info}")
-
-    # If no valid authentication found, raise HTTPException
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail=f"Could not validate credentials. Debug: {debug_info}",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
 
 
 @router.get("/debug/test-connection")
@@ -360,12 +271,11 @@ async def get_customer_data(customer_id: str):
 # All specific routes should come before parameterized routes
 @router.get("/", response_model=dict)
 async def get_customers(
-    request: Request,
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=100),
     search: Optional[str] = Query(None),
     is_active: Optional[bool] = Query(None),
-    user: User = Depends(get_current_user_hybrid)
+    user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Get all customers with pagination and filtering"""
     db = await get_database()
@@ -441,9 +351,8 @@ async def get_customers(
 
 @router.post("/", response_model=CustomerResponse, status_code=status.HTTP_201_CREATED)
 async def create_customer(
-    request: Request,
     customer_data: CustomerCreate,
-    user: User = Depends(get_current_user_hybrid)
+    user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Create a new customer"""
     db = await get_database()
@@ -492,12 +401,11 @@ async def create_customer(
 
 @router.get("/table", response_model=dict)
 async def get_customers_for_table(
-    request: Request,
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=100),
     search: Optional[str] = Query(None),
     is_active: Optional[bool] = Query(None),
-    user: User = Depends(get_current_user_hybrid)
+    user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Get customers for table display with pagination"""
     try:
@@ -558,8 +466,7 @@ async def get_customers_for_table(
 
 @router.get("/stats", response_model=dict)
 async def get_customer_stats(
-    request: Request,
-    user: User = Depends(get_current_user_hybrid)
+    user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Get customer statistics without fetching all customer data"""
     try:
@@ -610,9 +517,8 @@ async def get_customer_stats(
 
 @router.get("/{customer_id}")
 async def get_customer(
-    request: Request,
     customer_id: str,
-    user: User = Depends(get_current_user_hybrid)
+    user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Get a specific customer by ID"""
     db = await get_database()
@@ -684,7 +590,7 @@ async def get_customer_orders(
     customer_id: str,
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=50),
-    user: User = Depends(get_current_user_hybrid)
+    user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Get orders for a specific customer with pagination"""
     db = await get_database()
@@ -782,7 +688,7 @@ async def update_customer(
     customer_id: str,
     request: Request,
     customer_data: CustomerUpdate,
-    user: User = Depends(get_current_user_hybrid)
+    user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Update a customer"""
     db = await get_database()
@@ -857,7 +763,7 @@ async def update_customer(
 async def delete_customer(
     customer_id: str,
     request: Request,
-    user: User = Depends(get_current_user_hybrid)
+    user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Delete a customer (soft delete by setting is_active to False)"""
     db = await get_database()

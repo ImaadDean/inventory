@@ -179,6 +179,14 @@ async def health_check():
     }
 
 
+# Handle Chrome DevTools requests to suppress 404 logs
+@app.get("/.well-known/appspecific/com.chrome.devtools.json")
+async def chrome_devtools_handler():
+    """Handle Chrome DevTools requests to suppress 404 logs"""
+    from fastapi import Response
+    return Response(status_code=204)
+
+
 # Include API routers
 app.include_router(auth_api_router)
 app.include_router(users_api_router)

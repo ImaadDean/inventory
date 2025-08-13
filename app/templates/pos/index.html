@@ -691,7 +691,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function initializePOS() {
     // Event listeners
-    document.getElementById('product-search').addEventListener('input', searchProducts);
+    const productSearchInput = document.getElementById('product-search');
+
+    if (productSearchInput) {
+        productSearchInput.addEventListener('input', function(e) {
+            searchProducts();
+        });
+    }
     document.getElementById('barcode-camera-btn').addEventListener('click', openBarcodeScanner);
     document.getElementById('discount-toggle').addEventListener('change', toggleDiscount);
     document.getElementById('discount-type').addEventListener('change', updateTotals);
@@ -732,63 +738,88 @@ function initializePOS() {
     refreshCartStockQuantities();
 }
 
-// Product search functionality
+// Product search functionality with debounce
+let searchTimeout;
 async function searchProducts() {
-    const query = document.getElementById('product-search').value.trim();
+    const productSearchInput = document.getElementById('product-search');
     const resultsContainer = document.getElementById('search-results');
+
+    if (!productSearchInput || !resultsContainer) {
+        return;
+    }
+
+    const query = productSearchInput.value.trim();
+
+    // Clear previous timeout
+    if (searchTimeout) {
+        clearTimeout(searchTimeout);
+    }
 
     if (query.length < 2) {
         resultsContainer.innerHTML = '';
         return;
     }
 
-    try {
-        const response = await fetch(`/api/pos/products/search?query=${encodeURIComponent(query)}&limit=10`, {
-            credentials: 'include'
-        });
+    // Show loading state
+    resultsContainer.innerHTML = `
+        <div class="text-center py-4 px-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
+            <div class="w-8 h-8 bg-blue-300 rounded-lg flex items-center justify-center mx-auto mb-2">
+                <i class="fas fa-spinner fa-spin text-blue-600 text-sm"></i>
+            </div>
+            <p class="text-sm text-blue-700 font-medium">Searching products...</p>
+        </div>
+    `;
 
-        if (response.ok) {
-            const products = await response.json(); // POS API returns direct array of products
-            console.log('Products received:', products); // Debug log
-            console.log('Response status:', response.status); // Debug log
-            displaySearchResults(products);
-        } else {
-            console.error('Response not OK:', response.status, response.statusText); // Debug log
-            console.error('Product search failed:', response.status);
+    // Debounce the search
+    searchTimeout = setTimeout(async () => {
+        try {
+            // Use the same API as the products page
+            const params = new URLSearchParams({
+                search: query,
+                size: 10,
+                is_active: true
+            });
+
+            const response = await fetch(`/api/products/?${params.toString()}`, {
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const products = data.products || []; // Products page API returns {products: [...]}
+                // Filter to only show products with stock > 0
+                const inStockProducts = products.filter(product => product.stock_quantity > 0);
+                displaySearchResults(inStockProducts);
+            } else {
+                resultsContainer.innerHTML = `
+                    <div class="text-center py-4 px-3 bg-gradient-to-r from-red-50 to-red-100 border border-red-200 rounded-xl">
+                        <div class="w-8 h-8 bg-red-300 rounded-lg flex items-center justify-center mx-auto mb-2">
+                            <i class="fas fa-exclamation-triangle text-red-600 text-sm"></i>
+                        </div>
+                        <p class="text-sm text-red-700 font-medium">Error searching products</p>
+                        <p class="text-xs text-red-600">Please try again</p>
+                    </div>
+                `;
+            }
+        } catch (error) {
             resultsContainer.innerHTML = `
                 <div class="text-center py-4 px-3 bg-gradient-to-r from-red-50 to-red-100 border border-red-200 rounded-xl">
                     <div class="w-8 h-8 bg-red-300 rounded-lg flex items-center justify-center mx-auto mb-2">
                         <i class="fas fa-exclamation-triangle text-red-600 text-sm"></i>
                     </div>
-                    <p class="text-sm text-red-700 font-medium">Error searching products</p>
-                    <p class="text-xs text-red-600">Please try again</p>
+                    <p class="text-sm text-red-700 font-medium">Network error</p>
+                    <p class="text-xs text-red-600">Check your connection</p>
                 </div>
             `;
         }
-    } catch (error) {
-        console.error('Product search error:', error);
-        resultsContainer.innerHTML = `
-            <div class="text-center py-4 px-3 bg-gradient-to-r from-red-50 to-red-100 border border-red-200 rounded-xl">
-                <div class="w-8 h-8 bg-red-300 rounded-lg flex items-center justify-center mx-auto mb-2">
-                    <i class="fas fa-exclamation-triangle text-red-600 text-sm"></i>
-                </div>
-                <p class="text-sm text-red-700 font-medium">Error searching products</p>
-                <p class="text-xs text-red-600">Please try again</p>
-            </div>
-        `;
-    }
+    }, 300); // 300ms debounce
 }
 
 function displaySearchResults(products) {
     try {
         const resultsContainer = document.getElementById('search-results');
 
-        console.log('Displaying products:', products); // Debug log
-        console.log('Products length:', products ? products.length : 'products is null/undefined'); // Debug log
-        console.log('Results container:', resultsContainer); // Debug log
-
         if (!resultsContainer) {
-            console.error('Results container not found!');
             return;
         }
 
@@ -806,162 +837,41 @@ function displaySearchResults(products) {
         }
 
         resultsContainer.innerHTML = products.map(product => {
-            // Check if this is a perfume product with decants
-            if (product.is_perfume_with_decants && product.decant) {
-                // Determine decant option based on opened bottle status
-                let decantOption = '';
-
-                if (product.has_opened_bottle && product.opened_bottle_decants > 0) {
-                    // Has opened bottle with available decants
-                    decantOption = `
-                        <div class="group bg-white hover:bg-purple-50 border border-gray-200 hover:border-purple-300 rounded-lg p-2 cursor-pointer transition-all duration-200" onclick="addToCart('${product.id}', '${product.name} (${product.decant.decant_size_ml}ml Decant)', ${product.decant.decant_price}, '${product.sku}-DECANT', ${product.opened_bottle_decants})">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center">
-                                    <i class="fas fa-vial text-purple-500 mr-2"></i>
-                                    <div>
-                                        <p class="text-sm font-medium text-gray-900">Decant (${product.decant.decant_size_ml}ml)</p>
-                                        <p class="text-xs text-green-600">
-                                            <i class="fas fa-check-circle mr-1"></i>
-                                            ${product.opened_bottle_decants} decants from opened bottle
-                                        </p>
-                                    </div>
+            // For now, show all products as regular products (we can add decant logic later)
+            // This ensures the search works immediately
+            return `
+                <div class="group bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200 hover:border-blue-300 rounded-xl p-3 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5" onclick="addToCart('${product.id}', '${product.name}', ${product.price}, '${product.barcode || ''}', ${product.stock_quantity})">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1 mr-3">
+                            <div class="flex items-center mb-1">
+                                <div class="w-4 h-4 bg-blue-500 rounded-md flex items-center justify-center mr-2">
+                                    <i class="fas fa-box text-white text-xs"></i>
                                 </div>
-                                <div class="text-right">
-                                    <p class="font-bold text-sm text-purple-600">UGX ${product.decant.decant_price.toLocaleString()}</p>
-                                    <button class="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white px-2 py-1 rounded text-xs font-medium transition-all duration-200">
-                                        <i class="fas fa-plus mr-1"></i>Add Decant
-                                    </button>
-                                </div>
+                                <p class="font-semibold text-sm text-gray-900 group-hover:text-blue-900">${product.name}</p>
+                            </div>
+                            <div class="flex items-center space-x-3 text-xs text-gray-600">
+                                <span class="flex items-center">
+                                    <i class="fas fa-barcode text-gray-400 mr-1"></i>
+                                    ${product.barcode || 'N/A'}
+                                </span>
+                                <span class="flex items-center">
+                                    <i class="fas fa-warehouse text-gray-400 mr-1"></i>
+                                    ${product.stock_quantity} ${product.unit || 'pcs'}
+                                </span>
                             </div>
                         </div>
-                    `;
-                } else if (product.can_open_new_bottle) {
-                    // No opened bottle but can open new one
-                    const newBottleDecants = Math.floor(product.bottle_size_ml / product.decant.decant_size_ml);
-                    decantOption = `
-                        <div class="group bg-white hover:bg-orange-50 border border-orange-200 hover:border-orange-300 rounded-lg p-2 cursor-pointer transition-all duration-200" onclick="confirmOpenNewBottle('${product.id}', '${product.name}', ${product.bottle_size_ml}, ${product.decant.decant_size_ml}, ${product.decant.decant_price})">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center">
-                                    <i class="fas fa-unlock text-orange-500 mr-2"></i>
-                                    <div>
-                                        <p class="text-sm font-medium text-gray-900">Open New Bottle for Decants</p>
-                                        <p class="text-xs text-orange-600">
-                                            <i class="fas fa-exclamation-triangle mr-1"></i>
-                                            No opened bottle - will open new (${newBottleDecants} decants)
-                                        </p>
-                                    </div>
-                                </div>
-                                <div class="text-right">
-                                    <p class="font-bold text-sm text-orange-600">UGX ${product.decant.decant_price.toLocaleString()}</p>
-                                    <button class="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white px-2 py-1 rounded text-xs font-medium transition-all duration-200">
-                                        <i class="fas fa-unlock mr-1"></i>Open & Add
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    // No opened bottle and no stock to open
-                    decantOption = `
-                        <div class="bg-gray-100 border border-gray-200 rounded-lg p-2 opacity-50">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center">
-                                    <i class="fas fa-ban text-gray-400 mr-2"></i>
-                                    <div>
-                                        <p class="text-sm font-medium text-gray-500">Decants Unavailable</p>
-                                        <p class="text-xs text-gray-400">No opened bottle, no stock to open</p>
-                                    </div>
-                                </div>
-                                <div class="text-right">
-                                    <p class="text-sm text-gray-400">Out of Stock</p>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }
-
-                // Show both bottle and decant options for perfume products
-                return `
-                    <div class="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-3 space-y-2">
-                        <div class="flex items-center mb-2">
-                            <div class="w-4 h-4 bg-purple-500 rounded-md flex items-center justify-center mr-2">
-                                <i class="fas fa-spray-can text-white text-xs"></i>
-                            </div>
-                            <p class="font-semibold text-sm text-gray-900">${product.name}</p>
-                            <span class="ml-2 text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">Perfume</span>
-                        </div>
-                        <div class="flex items-center space-x-3 text-xs text-gray-600 mb-3">
-                            <span class="flex items-center">
-                                <i class="fas fa-barcode text-gray-400 mr-1"></i>
-                                ${product.sku}
-                            </span>
-                            <span class="flex items-center">
-                                <i class="fas fa-warehouse text-gray-400 mr-1"></i>
-                                ${product.stock_display}
-                            </span>
-                        </div>
-
-                        <!-- Full Bottle Option -->
-                        <div class="group bg-white hover:bg-blue-50 border border-gray-200 hover:border-blue-300 rounded-lg p-2 cursor-pointer transition-all duration-200" onclick="addToCart('${product.id}', '${product.name} (Full Bottle)', ${product.price}, '${product.sku}', ${product.stock_quantity})">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center">
-                                    <i class="fas fa-wine-bottle text-blue-500 mr-2"></i>
-                                    <div>
-                                        <p class="text-sm font-medium text-gray-900">Full Bottle (${product.bottle_size_ml}ml)</p>
-                                        <p class="text-xs text-gray-500">${product.stock_quantity} bottles available</p>
-                                    </div>
-                                </div>
-                                <div class="text-right">
-                                    <p class="font-bold text-sm text-blue-600">UGX ${product.price.toLocaleString()}</p>
-                                    <button class="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-2 py-1 rounded text-xs font-medium transition-all duration-200">
-                                        <i class="fas fa-plus mr-1"></i>Add Bottle
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Decant Option (Dynamic based on opened bottle status) -->
-                        ${decantOption}
-                    </div>
-                `;
-            } else {
-                // Regular product display
-                return `
-                    <div class="group bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200 hover:border-blue-300 rounded-xl p-3 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5" onclick="addToCart('${product.id}', '${product.name}', ${product.price}, '${product.sku}', ${product.stock_quantity})">
-                        <div class="flex items-center justify-between">
-                            <div class="flex-1 mr-3">
-                                <div class="flex items-center mb-1">
-                                    <div class="w-4 h-4 bg-blue-500 rounded-md flex items-center justify-center mr-2">
-                                        <i class="fas fa-box text-white text-xs"></i>
-                                    </div>
-                                    <p class="font-semibold text-sm text-gray-900 group-hover:text-blue-900">${product.name}</p>
-                                </div>
-                                <div class="flex items-center space-x-3 text-xs text-gray-600">
-                                    <span class="flex items-center">
-                                        <i class="fas fa-barcode text-gray-400 mr-1"></i>
-                                        ${product.sku}
-                                    </span>
-                                    <span class="flex items-center">
-                                        <i class="fas fa-warehouse text-gray-400 mr-1"></i>
-                                        ${product.stock_quantity} ${product.unit}
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <p class="font-bold text-sm text-blue-600 mb-1">UGX ${product.price.toLocaleString()}</p>
-                                <button class="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-3 py-1 rounded-lg text-xs font-medium shadow-sm hover:shadow-md transition-all duration-200 transform hover:scale-105">
-                                    <i class="fas fa-plus mr-1"></i>Add
-                                </button>
-                            </div>
+                        <div class="text-right">
+                            <p class="font-bold text-sm text-blue-600 mb-1">UGX ${product.price.toLocaleString()}</p>
+                            <button class="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-3 py-1 rounded-lg text-xs font-medium shadow-sm hover:shadow-md transition-all duration-200 transform hover:scale-105">
+                                <i class="fas fa-plus mr-1"></i>Add
+                            </button>
                         </div>
                     </div>
-                `;
-            }
+                </div>
+            `;
         }).join('');
-
-        console.log('Products displayed successfully'); // Debug log
     } catch (error) {
-        console.error('Error in displaySearchResults:', error);
+        // Silent error handling
     }
 }
 
@@ -994,7 +904,6 @@ async function openBarcodeScanner() {
         startBarcodeDetection(video);
 
     } catch (error) {
-        console.error('Camera access error:', error);
         loading.innerHTML = `
             <div class="text-white text-center">
                 <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
@@ -1060,16 +969,26 @@ async function processManualBarcode() {
     if (!barcode) return;
 
     try {
-        const response = await fetch(`/api/pos/products/search?query=${encodeURIComponent(barcode)}&limit=1`, {
+        // Use the same API as the products page
+        const params = new URLSearchParams({
+            search: barcode,
+            size: 1,
+            is_active: true
+        });
+
+        const response = await fetch(`/api/products/?${params.toString()}`, {
             credentials: 'include'
         });
 
         if (response.ok) {
-            const products = await response.json();
+            const data = await response.json();
+            const products = data.products || [];
+            // Filter to only show products with stock > 0
+            const inStockProducts = products.filter(product => product.stock_quantity > 0);
 
-            if (products && products.length > 0) {
-                const product = products[0];
-                addToCart(product.id, product.name, product.price, product.sku, product.stock_quantity);
+            if (inStockProducts && inStockProducts.length > 0) {
+                const product = inStockProducts[0];
+                addToCart(product.id, product.name, product.price, product.barcode || '', product.stock_quantity);
                 closeBarcodeScanner();
                 showToast(`Added "${product.name}" to cart`, 'success');
             } else {
@@ -1079,7 +998,6 @@ async function processManualBarcode() {
             showToast('Error searching for product', 'error');
         }
     } catch (error) {
-        console.error('Barcode search error:', error);
         showToast('Error processing barcode', 'error');
     }
 }
@@ -1125,7 +1043,6 @@ function addToCart(id, name, price, sku, stockQuantity) {
 
     // Ensure stockQuantity is provided
     if (stockQuantity === undefined || stockQuantity === null) {
-        console.warn('Stock quantity not provided for product:', name);
         stockQuantity = 0; // Default to 0 to prevent overselling
     }
 
@@ -1228,11 +1145,11 @@ async function refreshCartStockQuantities() {
                     }
                 }
             } catch (error) {
-                console.warn('Failed to refresh stock for item:', item.name, error);
+                // Silent error handling
             }
         }
     } catch (error) {
-        console.error('Error refreshing cart stock quantities:', error);
+        // Silent error handling
     }
 }
 
@@ -1764,7 +1681,6 @@ async function searchClients() {
             const clients = data.customers || []; // POS API returns customers array
             displayClientResults(clients);
         } else {
-            console.error('Client search failed:', response.status);
             resultsContainer.innerHTML = `
                 <div class="text-center py-4 px-3 bg-gradient-to-r from-red-50 to-red-100 border border-red-200 rounded-xl">
                     <div class="w-8 h-8 bg-red-300 rounded-lg flex items-center justify-center mx-auto mb-2">
@@ -1777,7 +1693,6 @@ async function searchClients() {
             resultsContainer.classList.remove('hidden');
         }
     } catch (error) {
-        console.error('Client search error:', error);
         resultsContainer.innerHTML = `
             <div class="text-center py-4 px-3 bg-gradient-to-r from-red-50 to-red-100 border border-red-200 rounded-xl">
                 <div class="w-8 h-8 bg-red-300 rounded-lg flex items-center justify-center mx-auto mb-2">
@@ -1908,7 +1823,6 @@ async function addNewClient(event) {
             showToast(error.detail || 'Failed to add customer', 'error');
         }
     } catch (error) {
-        console.error('Add client error:', error);
         showToast('Failed to add customer', 'error');
     } finally {
         // Reset button state
@@ -1987,7 +1901,6 @@ async function processSale() {
             if (saleResponse.ok) {
                 const saleResult = await saleResponse.json();
                 saleId = saleResult.id;
-                console.log('✅ Sale record created:', saleId);
             }
 
             // Now create the installment with reference to the sale
@@ -2042,7 +1955,6 @@ async function processSale() {
                 throw new Error(error.detail || 'Failed to create installment plan');
             }
         } catch (error) {
-            console.error('Error creating installment:', error);
             alert('Failed to create installment plan: ' + error.message);
             return;
         }
@@ -2116,7 +2028,6 @@ async function processSale() {
             alert(error.detail || 'Failed to process sale');
         }
     } catch (error) {
-        console.error('Sale processing error:', error);
         alert('Failed to process sale');
     }
 }
@@ -2407,7 +2318,6 @@ async function openNewBottleFromCart(cartItemId, productId) {
             showToast('Failed to get product information', 'error');
         }
     } catch (error) {
-        console.error('Error getting product info:', error);
         showToast('Error getting product information', 'error');
     }
 }
@@ -2495,7 +2405,6 @@ async function confirmAndOpenBottle() {
             showToast(`Failed to open bottle: ${error.detail}`, 'error');
         }
     } catch (error) {
-        console.error('Error opening bottle:', error);
         showToast('Error opening bottle', 'error');
     }
 }

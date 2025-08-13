@@ -8,6 +8,8 @@ from ...models import User
 from ...utils.auth import (
     get_password_hash,
     get_current_user,
+    get_current_user_hybrid,
+    get_current_user_hybrid_dependency,
     verify_token,
     get_user_by_username
 )
@@ -23,73 +25,18 @@ from ...utils.user_activity import get_detailed_user_status, update_user_activit
 router = APIRouter(prefix="/api/users", tags=["User Management API"])
 
 
-async def get_current_user_hybrid(request: Request) -> User:
-    """Get current user from either JWT token or cookie"""
-
-    # Try cookie authentication first (for web interface)
-    access_token = request.cookies.get("access_token")
-    if access_token:
-        try:
-            # Handle Bearer prefix in cookie value
-            token = access_token
-            if access_token.startswith("Bearer "):
-                token = access_token[7:]  # Remove "Bearer " prefix
-
-            payload = verify_token(token)
-            if payload:
-                username = payload.get("sub")
-                if username:
-                    user = await get_user_by_username(username)
-                    if user and user.is_active:
-                        return user
-        except Exception as e:
-            print(f"Cookie auth failed: {e}")
-
-    # Try JWT token authentication (for API clients)
-    auth_header = request.headers.get("Authorization")
-    if auth_header and auth_header.startswith("Bearer "):
-        try:
-            token = auth_header.split(" ")[1]
-            payload = verify_token(token)
-            if payload:
-                username = payload.get("sub")
-                if username:
-                    user = await get_user_by_username(username)
-                    if user and user.is_active:
-                        return user
-        except Exception as e:
-            print(f"JWT auth failed: {e}")
-
-    # If both methods fail, raise authentication error
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
 
 
-def require_roles_hybrid(allowed_roles: list[str]):
-    """Dependency to check if user has required role using hybrid auth"""
-    async def role_checker(request: Request) -> User:
-        current_user = await get_current_user_hybrid(request)
-        if current_user.role not in allowed_roles:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not enough permissions"
-            )
-        return current_user
-    return role_checker
 
-
-# Create hybrid role dependencies
-require_admin_or_inventory_hybrid = require_roles_hybrid(["admin", "inventory_manager"])
+# Use centralized role dependencies that update Last Seen
+from ...utils.auth import require_admin_or_inventory
 
 
 @router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def create_user(
     request: Request,
     user_data: UserCreate,
-    current_user: User = Depends(require_admin_or_inventory_hybrid)
+    current_user: User = Depends(require_admin_or_inventory)
 ):
     """Create a new user (Admin or Manager only)"""
     db = await get_database()
@@ -145,7 +92,7 @@ async def get_users(
     search: Optional[str] = Query(None),
     role: Optional[str] = Query(None),
     is_active: Optional[bool] = Query(None),
-    current_user: User = Depends(require_admin_or_inventory_hybrid)
+    current_user: User = Depends(require_admin_or_inventory)
 ):
     """Get all users with pagination and filtering (Admin or Manager only)"""
     db = await get_database()
@@ -204,7 +151,7 @@ async def get_users(
 
 
 @router.get("/auth-test", response_model=dict)
-async def test_authentication(request: Request, current_user: User = Depends(require_admin_or_inventory_hybrid)):
+async def test_authentication(current_user: User = Depends(require_admin_or_inventory)):
     """Test endpoint to verify authentication is working"""
     return {
         "authenticated": True,
@@ -219,7 +166,7 @@ async def test_authentication(request: Request, current_user: User = Depends(req
 
 
 @router.get("/{user_id}", response_model=UserWithActivity)
-async def get_user(user_id: str, request: Request, current_user: User = Depends(require_admin_or_inventory_hybrid)):
+async def get_user(user_id: str, current_user: User = Depends(require_admin_or_inventory)):
     """Get a single user by ID"""
     try:
         db = await get_database()
@@ -272,8 +219,7 @@ async def get_user(user_id: str, request: Request, current_user: User = Depends(
 async def update_user(
     user_id: str,
     user_update: UserUpdate,
-    request: Request,
-    current_user: User = Depends(require_admin_or_inventory_hybrid)
+    current_user: User = Depends(require_admin_or_inventory)
 ):
     """Update a user"""
     try:
@@ -386,8 +332,7 @@ async def update_user(
 @router.delete("/{user_id}", response_model=dict)
 async def delete_user(
     user_id: str,
-    request: Request,
-    current_user: User = Depends(require_admin_or_inventory_hybrid)
+    current_user: User = Depends(require_admin_or_inventory)
 ):
     """Delete a user"""
     try:

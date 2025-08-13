@@ -2,7 +2,6 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from fastapi import HTTPException
 from .settings import settings
 import logging
-from fastapi import HTTPException
 
 logger = logging.getLogger(__name__)
 
@@ -27,18 +26,15 @@ async def get_database():
 async def connect_to_mongo():
     """Create database connection"""
     try:
-        # Use the same connection format as the working run.py
         db.client = AsyncIOMotorClient(settings.mongodb_url)
         db.database = db.client[settings.MONGO_DATABASE]
 
-        # Test the connection
+        # Test connection
         await db.client.admin.command('ping')
-        logger.info("Successfully connected to MongoDB")
+        logger.info(f"Successfully connected to MongoDB database '{settings.MONGO_DATABASE}' on Atlas")
 
     except Exception as e:
         logger.error(f"Error connecting to MongoDB: {e}")
-        logger.warning("Application will continue without database connection for demonstration purposes")
-        # Don't raise the exception to allow the app to start for demo purposes
         db.client = None
         db.database = None
 

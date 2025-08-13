@@ -11,7 +11,7 @@ from ...schemas.product import (
 from ...models import Product, Category, User
 from ...models.product_supplier_price import ProductSupplierPriceCreate
 from ...services.product_supplier_price_service import ProductSupplierPriceService
-from ...utils.auth import require_admin_or_inventory, get_current_user, verify_token, get_user_by_username
+from ...utils.auth import require_admin_or_inventory, get_current_user, get_current_user_hybrid, get_current_user_hybrid_dependency, verify_token, get_user_by_username
 from ...utils.expense_categories_init import create_restocking_expense
 from ...utils.timezone import now_kampala, kampala_to_utc
 from ...utils.decant_handler import calculate_decant_availability, open_new_bottle_for_decants
@@ -37,40 +37,12 @@ async def get_product_scents(db, product):
     return scents_info
 
 
-async def get_current_user_hybrid(request: Request) -> User:
-    """Get current user from either JWT token or cookie"""
 
-    # Try cookie authentication first (for web interface)
-    access_token = request.cookies.get("access_token")
-    if access_token:
-        try:
-            # Handle Bearer prefix in cookie value
-            token = access_token
-            if access_token.startswith("Bearer "):
-                token = access_token[7:]  # Remove "Bearer " prefix
-
-            payload = verify_token(token)
-            if payload:
-                username = payload.get("sub")
-                if username:
-                    user = await get_user_by_username(username)
-                    if user and user.is_active:
-                        return user
-        except Exception:
-            pass
-
-    # If no valid authentication found, raise HTTPException
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
 
 
 @router.get("/stats", response_model=dict)
 async def get_product_stats(
-    request: Request,
-    current_user: User = Depends(get_current_user_hybrid)
+    current_user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Get product statistics for dashboard cards"""
     db = await get_database()
@@ -216,7 +188,7 @@ async def update_supplier_on_restock(db, supplier_name: str, product_id: str, pr
 async def create_product_api(
     product_data: ProductCreate,
     request: Request = None,
-    current_user: User = Depends(get_current_user_hybrid)
+    current_user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Create a new product via API"""
     try:
@@ -371,7 +343,7 @@ async def upload_product_image(
     product_id: str,
     file: UploadFile = File(...),
     request: Request = None,
-    current_user: User = Depends(get_current_user_hybrid)
+    current_user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Upload an image for a product"""
     try:
@@ -434,7 +406,7 @@ async def upload_product_image(
 async def delete_product_image(
     product_id: str,
     request: Request = None,
-    current_user: User = Depends(get_current_user_hybrid)
+    current_user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Delete a product's image"""
     try:
@@ -492,7 +464,7 @@ async def delete_product_image(
 
 
 @router.get("/auth-test", response_model=dict)
-async def test_authentication(request: Request, current_user: User = Depends(get_current_user_hybrid)):
+async def test_authentication(request: Request, current_user: User = Depends(get_current_user_hybrid_dependency())):
     """Test endpoint to verify authentication is working"""
     return {
         "authenticated": True,
@@ -509,7 +481,7 @@ async def test_authentication(request: Request, current_user: User = Depends(get
 async def debug_supplier_products(
     request: Request,
     supplier: str = Query(...),
-    current_user: User = Depends(get_current_user_hybrid)
+    current_user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Debug endpoint to check supplier product matching"""
     try:
@@ -549,7 +521,7 @@ async def debug_supplier_products(
 @router.post("/fix-supplier-links", response_model=dict)
 async def fix_supplier_product_links(
     request: Request,
-    current_user: User = Depends(get_current_user_hybrid)
+    current_user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Fix products that should be linked to suppliers but aren't"""
     try:
@@ -605,7 +577,6 @@ async def fix_supplier_product_links(
 
 @router.get("/", response_model=dict)
 async def get_products(
-    request: Request,
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=1000),
     search: Optional[str] = Query(None),
@@ -614,7 +585,7 @@ async def get_products(
     is_active: Optional[bool] = Query(None),
     low_stock_only: Optional[bool] = Query(False),
     supplier: Optional[str] = Query(None),  # Filter by supplier name
-    current_user: User = Depends(get_current_user_hybrid)
+    current_user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Get all products with pagination and filtering"""
     db = await get_database()
@@ -764,7 +735,7 @@ async def restock_product(
     product_id: str,
     stock_update: StockUpdate,
     request: Request,
-    current_user: User = Depends(get_current_user_hybrid)
+    current_user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Restock a product by adding quantity"""
     try:
@@ -933,7 +904,7 @@ async def restock_product(
 async def get_product(
     product_id: str,
     request: Request,
-    current_user: User = Depends(get_current_user_hybrid)
+    current_user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Get a single product by ID with detailed information including perfume details and supplier info"""
     try:
@@ -1189,7 +1160,7 @@ async def update_product(
     product_id: str,
     product_data: ProductUpdate,
     request: Request,
-    current_user: User = Depends(get_current_user_hybrid)
+    current_user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Update a product"""
     try:
@@ -1345,7 +1316,7 @@ async def update_product(
 async def delete_product(
     product_id: str,
     request: Request,
-    current_user: User = Depends(get_current_user_hybrid)
+    current_user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Delete a product"""
     try:
@@ -1414,7 +1385,7 @@ async def delete_product(
 async def open_new_bottle(
     product_id: str,
     request: Request,
-    current_user: User = Depends(get_current_user_hybrid)
+    current_user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Open a new bottle for decant fulfillment"""
     try:
@@ -1462,7 +1433,7 @@ async def open_new_bottle(
 async def get_decant_info(
     product_id: str,
     request: Request,
-    current_user: User = Depends(get_current_user_hybrid)
+    current_user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Get decant availability information for a product"""
     try:

@@ -8,7 +8,7 @@ from ...schemas.pos import (
 )
 from ...schemas.customer import CustomerCreate, CustomerResponse
 from ...models import Sale, SaleItem, User
-from ...utils.auth import get_current_user, verify_token, get_user_by_username
+from ...utils.auth import get_current_user, get_current_user_hybrid_dependency, verify_token, get_user_by_username
 from ...utils.timezone import now_kampala, kampala_to_utc
 from ...utils.decant_handler import process_decant_sale, calculate_decant_availability
 import uuid
@@ -16,121 +16,122 @@ import uuid
 router = APIRouter(prefix="/api/pos", tags=["Point of Sale API"])
 
 
-async def get_current_user_from_cookie(request: Request):
-    """Get current user from cookie for POS routes"""
-    access_token = request.cookies.get("access_token")
-    if not access_token:
-        return None
 
-    if access_token.startswith("Bearer "):
-        token = access_token[7:]
-    else:
-        token = access_token
-
-    payload = verify_token(token)
-    if not payload:
-        return None
-
-    username = payload.get("sub")
-    if not username:
-        return None
-
-    user = await get_user_by_username(username)
-    if not user or not user.is_active:
-        return None
-
-    return user
 
 
 @router.get("/products/search")
 async def search_products(
     query: str = Query(..., min_length=1),
-    limit: int = Query(10, ge=1, le=50)
+    limit: int = Query(10, ge=1, le=50),
+    current_user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Search products for POS (by name or barcode)"""
-    db = await get_database()
+    try:
+        db = await get_database()
 
-    # Build search query
-    search_query = {
-        "$and": [
-            {"is_active": True},
-            {"stock_quantity": {"$gt": 0}},  # Only show products in stock
-            {"$or": [
-                {"name": {"$regex": query, "$options": "i"}},
-                {"barcode": {"$regex": query, "$options": "i"}}
-            ]}
-        ]
-    }
-
-    cursor = db.products.find(search_query).limit(limit)
-    products_data = await cursor.to_list(length=limit)
-
-    products = []
-    for product in products_data:
-        # Calculate decant availability
-        decant_info = calculate_decant_availability(product)
-
-        product_data = {
-            "id": str(product["_id"]),
-            "name": product["name"],
-            "barcode": product.get("barcode", ""),
-            "price": product["price"],
-            "stock_quantity": product["stock_quantity"],
-            "unit": product["unit"],
-            "bottle_size_ml": product.get("bottle_size_ml"),
-            "decant": product.get("decant"),
-            "is_perfume_with_decants": decant_info["is_decantable"],
-            "available_decants": decant_info["available_decants"],
-            "opened_bottle_decants": decant_info.get("opened_bottle_decants", 0),
-            "has_opened_bottle": decant_info.get("has_opened_bottle", False),
-            "can_open_new_bottle": decant_info.get("can_open_new_bottle", False),
-            "opened_bottle_ml_left": decant_info.get("opened_bottle_ml_left", 0),
-            "stock_display": f"{product['stock_quantity']} pcs & {decant_info['opened_bottle_ml_left']}mls" if decant_info["is_decantable"] else f"{product['stock_quantity']} {product['unit']}"
+        # Build search query
+        search_query = {
+            "$and": [
+                {"is_active": True},
+                {"stock_quantity": {"$gt": 0}},  # Only show products in stock
+                {"$or": [
+                    {"name": {"$regex": query, "$options": "i"}},
+                    {"barcode": {"$regex": query, "$options": "i"}}
+                ]}
+            ]
         }
 
-        products.append(product_data)
+        cursor = db.products.find(search_query).limit(limit)
+        products_data = await cursor.to_list(length=limit)
 
-    return products
+        products = []
+        for product in products_data:
+            try:
+                # Calculate decant availability
+                decant_info = calculate_decant_availability(product)
+
+                product_data = {
+                    "id": str(product["_id"]),
+                    "name": product["name"],
+                    "barcode": product.get("barcode", ""),
+                    "price": product["price"],
+                    "stock_quantity": product["stock_quantity"],
+                    "unit": product.get("unit", "pcs"),
+                    "bottle_size_ml": product.get("bottle_size_ml"),
+                    "decant": product.get("decant"),
+                    "is_perfume_with_decants": decant_info["is_decantable"],
+                    "available_decants": decant_info["available_decants"],
+                    "opened_bottle_decants": decant_info.get("opened_bottle_decants", 0),
+                    "has_opened_bottle": decant_info.get("has_opened_bottle", False),
+                    "can_open_new_bottle": decant_info.get("can_open_new_bottle", False),
+                    "opened_bottle_ml_left": decant_info.get("opened_bottle_ml_left", 0),
+                    "stock_display": f"{product['stock_quantity']} pcs & {decant_info['opened_bottle_ml_left']}mls" if decant_info["is_decantable"] else f"{product['stock_quantity']} {product.get('unit', 'pcs')}"
+                }
+
+                products.append(product_data)
+            except Exception as e:
+                # Skip products that cause errors but continue with others
+                continue
+
+        return products
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to search products: {str(e)}"
+        )
 
 
 @router.get("/customers/search")
 async def search_customers(
     query: str = Query(..., min_length=2),
-    limit: int = Query(5, ge=1, le=20)
+    limit: int = Query(5, ge=1, le=20),
+    current_user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Search customers for POS"""
-    db = await get_database()
+    try:
+        db = await get_database()
 
-    search_query = {
-        "$and": [
-            {"is_active": True},
-            {"$or": [
-                {"name": {"$regex": query, "$options": "i"}},
-                {"phone": {"$regex": query, "$options": "i"}}
-            ]}
-        ]
-    }
-
-    cursor = db.customers.find(search_query).limit(limit)
-    customers_data = await cursor.to_list(length=limit)
-
-    customers = [
-        {
-            "id": str(customer["_id"]),
-            "name": customer["name"],
-            "phone": customer.get("phone", ""),
-            "address": customer.get("address", ""),
-            "city": customer.get("city", ""),
-            "country": customer.get("country", "")
+        search_query = {
+            "$and": [
+                {"is_active": True},
+                {"$or": [
+                    {"name": {"$regex": query, "$options": "i"}},
+                    {"phone": {"$regex": query, "$options": "i"}}
+                ]}
+            ]
         }
-        for customer in customers_data
-    ]
 
-    return {"customers": customers}
+        cursor = db.customers.find(search_query).limit(limit)
+        customers_data = await cursor.to_list(length=limit)
+
+        customers = [
+            {
+                "id": str(customer["_id"]),
+                "name": customer["name"],
+                "phone": customer.get("phone", ""),
+                "address": customer.get("address", ""),
+                "city": customer.get("city", ""),
+                "country": customer.get("country", "")
+            }
+            for customer in customers_data
+        ]
+
+        return {"customers": customers}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to search customers: {str(e)}"
+        )
 
 
 @router.post("/customers", response_model=CustomerResponse, status_code=status.HTTP_201_CREATED)
-async def create_customer_pos(customer_data: CustomerCreate):
+async def create_customer_pos(customer_data: CustomerCreate, current_user: User = Depends(get_current_user_hybrid_dependency())):
     """Create a new customer from POS"""
     db = await get_database()
 
@@ -208,16 +209,9 @@ async def create_customer_pos(customer_data: CustomerCreate):
 
 
 @router.post("/sales", response_model=SaleResponse, status_code=status.HTTP_201_CREATED)
-async def create_sale(request: Request, sale_data: SaleCreate):
+async def create_sale(sale_data: SaleCreate, current_user: User = Depends(get_current_user_hybrid_dependency())):
     """Create a new sale from POS"""
     try:
-        # Get current user from cookie
-        current_user = await get_current_user_from_cookie(request)
-        if not current_user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         db = await get_database()
 
@@ -382,7 +376,7 @@ async def create_sale(request: Request, sale_data: SaleCreate):
 
 
 @router.post("/orders")
-async def create_order(order_data: dict):
+async def create_order(order_data: dict, current_user: User = Depends(get_current_user_hybrid_dependency())):
     """Create a new order from POS sale"""
     try:
         db = await get_database()

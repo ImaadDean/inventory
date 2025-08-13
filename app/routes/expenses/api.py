@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, Query, Request
 from typing import List, Optional
-from app.utils.auth import get_current_user, verify_token, get_user_by_username
+from app.utils.auth import get_current_user, get_current_user_hybrid, get_current_user_hybrid_dependency, verify_token, get_user_by_username
+from app.utils.timezone import now_kampala, kampala_to_utc, get_month_start
 from app.models.user import User
 from app.models.expense import Expense
 from app.models.expense_category import ExpenseCategory
@@ -15,38 +16,10 @@ import logging
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-async def get_current_user_hybrid(request: Request) -> User:
-    """Get current user from either JWT token or cookie"""
-    
-    # Try cookie authentication first (for web interface)
-    access_token = request.cookies.get("access_token")
-    if access_token:
-        try:
-            # Handle Bearer prefix in cookie value
-            token = access_token
-            if access_token.startswith("Bearer "):
-                token = access_token[7:]  # Remove "Bearer " prefix
-            
-            payload = verify_token(token)
-            if payload:
-                username = payload.get("sub")
-                if username:
-                    user = await get_user_by_username(username)
-                    if user and user.is_active:
-                        return user
-        except Exception:
-            pass
-    
-    # If no valid authentication found, raise HTTPException
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+
 
 @router.get("/api/expenses/", response_model=dict)
 async def get_expenses(
-    request: Request,
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=100),
     search: Optional[str] = Query(None),
@@ -54,7 +27,7 @@ async def get_expenses(
     status: Optional[str] = Query(None),
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
-    user: User = Depends(get_current_user_hybrid)
+    user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Get expenses with pagination and filtering"""
     try:
@@ -189,7 +162,7 @@ async def get_expenses(
         total_amount = total_result[0]["total"] if total_result else 0
         
         # This month stats
-        current_month = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        current_month = get_month_start()
         month_pipeline = [
             {"$match": {"expense_date": {"$gte": current_month}}},
             {"$group": {"_id": None, "total": {"$sum": "$amount"}}}
@@ -383,8 +356,7 @@ async def delete_expense(
 
 @router.get("/api/expense-categories/", response_model=dict)
 async def get_expense_categories(
-    request: Request,
-    user: User = Depends(get_current_user_hybrid)
+    user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Get all expense categories"""
     try:

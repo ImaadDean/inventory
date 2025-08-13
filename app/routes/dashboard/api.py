@@ -9,7 +9,7 @@ from ...schemas.dashboard import (
     SalesOverview, InventoryOverview, TopSellingProduct, LowStockProduct
 )
 from ...models import User
-from ...utils.auth import get_current_user
+from ...utils.auth import get_current_user, get_current_user_hybrid_dependency
 
 router = APIRouter(prefix="/api/dashboard", tags=["Dashboard & Reports API"])
 
@@ -64,7 +64,7 @@ def get_date_range(period: ReportPeriod, start_date: Optional[datetime] = None, 
 
 
 @router.get("/summary")
-async def get_dashboard_summary():
+async def get_dashboard_summary(current_user: User = Depends(get_current_user_hybrid_dependency())):
     """Get dashboard summary with key metrics"""
     db = await get_database()
 
@@ -136,7 +136,7 @@ async def get_dashboard_summary():
         }
 
     # Recent activity (last 24 hours)
-    twenty_four_hours_ago = datetime.utcnow() - timedelta(hours=24)
+    twenty_four_hours_ago = kampala_to_utc(now_kampala() - timedelta(hours=24))
 
     # Recent sales count
     recent_sales_count = await db.orders.count_documents({
@@ -164,7 +164,7 @@ async def get_dashboard_summary():
     recent_restocks_count = 0
 
     # Top selling products (last 30 days)
-    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    thirty_days_ago = kampala_to_utc(now_kampala() - timedelta(days=30))
     top_products_pipeline = [
         {"$match": {"created_at": {"$gte": thirty_days_ago}}},
         {"$unwind": "$items"},
@@ -207,7 +207,7 @@ async def get_dashboard_summary():
 
 
 @router.get("/sales-chart")
-async def get_sales_chart_data():
+async def get_sales_chart_data(current_user: User = Depends(get_current_user_hybrid_dependency())):
     """Get sales data for the last 7 days for chart display"""
     db = await get_database()
 
@@ -264,7 +264,7 @@ async def get_sales_chart_data():
 
 
 @router.get("/top-products-chart")
-async def get_top_products_chart_data():
+async def get_top_products_chart_data(current_user: User = Depends(get_current_user_hybrid_dependency())):
     """Get top selling products in the last 7 days for chart display"""
     db = await get_database()
 

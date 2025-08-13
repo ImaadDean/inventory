@@ -40,10 +40,9 @@ async def get_dashboard_data():
     """Get dashboard data for HTML templates"""
     db = await get_database()
 
-    # Get today's date range
-    now = datetime.utcnow()
-    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    today_end = now.replace(hour=23, minute=59, second=59, microsecond=999999)
+    # Get today's date range in EAT
+    today_start = kampala_to_utc(get_day_start())
+    today_end = kampala_to_utc(get_day_start() + timedelta(days=1) - timedelta(microseconds=1))
 
     # Sales overview for today
     sales_pipeline = [
@@ -140,7 +139,7 @@ async def get_dashboard_data():
     recent_restocks_count = 0
 
     # Top selling products (last 30 days)
-    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    thirty_days_ago = kampala_to_utc(now_kampala() - timedelta(days=30))
     top_products_pipeline = [
         {"$match": {"created_at": {"$gte": thirty_days_ago}}},
         {"$unwind": "$items"},

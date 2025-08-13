@@ -4,32 +4,12 @@ from datetime import datetime, date
 from bson import ObjectId
 from ...config.database import get_database
 from ...models import User
-from ...utils.auth import get_current_user, verify_token, get_user_by_username
+from ...utils.auth import get_current_user, get_current_user_hybrid_dependency, verify_token, get_user_by_username
 
 router = APIRouter(prefix="/api/orders", tags=["Orders API"])
 
 
-async def get_current_user_from_cookie(request: Request):
-    """Get current user from cookie for API routes"""
-    access_token = request.cookies.get("access_token")
-    if not access_token:
-        return None
 
-    if access_token.startswith("Bearer "):
-        token = access_token[7:]
-    else:
-        token = access_token
-
-    payload = verify_token(token)
-    if not payload:
-        return None
-
-    username = payload.get("sub")
-    if not username:
-        return None
-
-    user = await get_user_by_username(username)
-    return user
 
 
 @router.get("/", response_model=dict)
@@ -383,17 +363,10 @@ async def get_order(order_id: str):
 async def update_order_status(
     order_id: str,
     status_data: dict,
-    request: Request
+    current_user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Update order status"""
     try:
-        # Check authentication
-        current_user = await get_current_user_from_cookie(request)
-        if not current_user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         db = await get_database()
 

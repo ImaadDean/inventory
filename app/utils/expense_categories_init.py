@@ -1,5 +1,6 @@
 from datetime import datetime
 import logging
+from .timezone import now_kampala, kampala_to_utc, format_kampala_date
 
 logger = logging.getLogger(__name__)
 
@@ -89,13 +90,13 @@ async def create_restocking_expense(db, product_name, quantity, unit_cost, total
             "description": f"Restocking: {product_name} (Qty: {quantity})",
             "category": "Restocking",
             "amount": float(total_cost),
-            "expense_date": datetime.utcnow().strftime("%Y-%m-%d"),  # Convert to string
+            "expense_date": format_kampala_date(now_kampala()),  # Convert to string in EAT
             "payment_method": payment_method or "pending",
             "vendor": supplier_name or "Unknown Supplier",
             "notes": f"Automatic expense created for restocking {quantity} units of {product_name} at UGX {unit_cost:,.2f} per unit",
             "status": "pending" if not payment_method else "paid",
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow(),
+            "created_at": kampala_to_utc(now_kampala()),
+            "updated_at": kampala_to_utc(now_kampala()),
             "created_by": user_username or "system",
             "is_auto_generated": True  # Flag to identify auto-generated expenses
         }
@@ -124,13 +125,13 @@ async def create_stocking_expense(db, product_name, quantity, unit_cost, total_c
             "description": f"Initial Stocking: {product_name} (Qty: {quantity})",
             "category": "Stocking",
             "amount": float(total_cost),
-            "expense_date": datetime.utcnow().strftime("%Y-%m-%d"),  # Convert to string
+            "expense_date": format_kampala_date(now_kampala()),  # Convert to string in EAT
             "payment_method": payment_method or "pending",
             "vendor": supplier_name or "Unknown Supplier",
             "notes": f"Automatic expense created for initial stocking of {quantity} units of {product_name} at UGX {unit_cost:,.2f} per unit",
             "status": "pending" if not payment_method else "paid",
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow(),
+            "created_at": kampala_to_utc(now_kampala()),
+            "updated_at": kampala_to_utc(now_kampala()),
             "created_by": user_username or "system",
             "is_auto_generated": True  # Flag to identify auto-generated expenses
         }

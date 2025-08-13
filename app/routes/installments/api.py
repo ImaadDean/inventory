@@ -11,68 +11,14 @@ from ...schemas.installment import (
     InstallmentPaymentResponse
 )
 from ...models import User, Installment, InstallmentPayment, InstallmentPaymentRecord, InstallmentStatus, PaymentStatus
-from ...utils.auth import get_current_user, require_admin_or_manager, verify_token, get_user_by_username
+from ...utils.auth import get_current_user, get_current_user_hybrid_dependency, require_admin_or_manager, verify_token, get_user_by_username
 from ...utils.timezone import now_kampala, kampala_to_utc
 import uuid
 
 router = APIRouter(prefix="/api/installments", tags=["Installments API"])
 
 
-async def get_current_user_from_cookie(request: Request):
-    """Get current user from cookie for POS routes"""
-    access_token = request.cookies.get("access_token")
-    if not access_token:
-        return None
 
-    if access_token.startswith("Bearer "):
-        token = access_token[7:]
-    else:
-        token = access_token
-
-    payload = verify_token(token)
-    if not payload:
-        return None
-
-    username = payload.get("sub")
-    if not username:
-        return None
-
-    user = await get_user_by_username(username)
-    if not user or not user.is_active:
-        return None
-
-    return user
-
-
-def calculate_payment_schedule(
-    remaining_amount: float,
-    number_of_payments: int,
-    payment_frequency: str,
-    first_payment_date: datetime
-) -> List[InstallmentPayment]:
-    """Calculate payment schedule based on parameters"""
-    payments = []
-    payment_amount = remaining_amount / number_of_payments
-    
-    # Calculate frequency in days
-    frequency_days = {
-        "weekly": 7,
-        "bi-weekly": 14,
-        "monthly": 30
-    }
-    
-    days_between = frequency_days.get(payment_frequency, 30)
-    
-    for i in range(number_of_payments):
-        due_date = first_payment_date + timedelta(days=i * days_between)
-        payment = InstallmentPayment(
-            payment_number=i + 1,
-            due_date=due_date,
-            amount_due=payment_amount
-        )
-        payments.append(payment)
-    
-    return payments
 
 
 @router.post("/", response_model=InstallmentResponse)
@@ -155,23 +101,15 @@ async def create_installment(
 
 @router.get("/", response_model=InstallmentListResponse)
 async def get_installments(
-    request: Request,
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     status: Optional[InstallmentStatus] = None,
     customer_name: Optional[str] = None,
-    overdue_only: bool = False
+    overdue_only: bool = False,
+    current_user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Get installments with pagination and filtering (Admin/Manager only)"""
     try:
-        # Get current user from cookie
-        current_user = await get_current_user_from_cookie(request)
-        if not current_user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Not authenticated"
-            )
-
         # Check if user has admin or manager role
         if current_user.role not in ['admin', 'inventory_manager']:
             raise HTTPException(
@@ -232,17 +170,9 @@ async def get_installments(
 
 
 @router.get("/summary", response_model=InstallmentSummary)
-async def get_installments_summary(request: Request):
+async def get_installments_summary(current_user: User = Depends(get_current_user_hybrid_dependency())):
     """Get installments summary statistics (Admin/Manager only)"""
     try:
-        # Get current user from cookie
-        current_user = await get_current_user_from_cookie(request)
-        if not current_user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Not authenticated"
-            )
-
         # Check if user has admin or manager role
         if current_user.role not in ['admin', 'inventory_manager']:
             raise HTTPException(
@@ -381,18 +311,10 @@ async def format_installment_response(installment_doc: dict, db) -> InstallmentR
 @router.get("/{installment_id}", response_model=InstallmentResponse)
 async def get_installment(
     installment_id: str,
-    request: Request
+    current_user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Get a specific installment by ID (Admin/Manager only)"""
     try:
-        # Get current user from cookie
-        current_user = await get_current_user_from_cookie(request)
-        if not current_user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Not authenticated"
-            )
-
         # Check if user has admin or manager role
         if current_user.role not in ['admin', 'inventory_manager']:
             raise HTTPException(
@@ -491,18 +413,10 @@ async def update_installment(
 async def record_payment(
     installment_id: str,
     payment_data: InstallmentPaymentRecordCreate,
-    request: Request
+    current_user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Record a payment for an installment (Admin/Manager only)"""
     try:
-        # Get current user from cookie
-        current_user = await get_current_user_from_cookie(request)
-        if not current_user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Not authenticated"
-            )
-
         # Check if user has admin or manager role
         if current_user.role not in ['admin', 'inventory_manager']:
             raise HTTPException(
@@ -679,19 +593,11 @@ async def record_payment(
 
 @router.post("/pos", response_model=InstallmentResponse)
 async def create_installment_from_pos(
-    request: Request,
-    installment_data: POSInstallmentCreate
+    installment_data: POSInstallmentCreate,
+    current_user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Create installment from POS system (Admin/Manager only)"""
     try:
-        # Get current user from cookie
-        current_user = await get_current_user_from_cookie(request)
-        if not current_user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Not authenticated"
-            )
-
         # Check if user has admin or manager role
         if current_user.role not in ['admin', 'inventory_manager']:
             raise HTTPException(
@@ -842,18 +748,10 @@ async def cancel_installment(
 @router.get("/{installment_id}/discount-details")
 async def get_installment_discount_details(
     installment_id: str,
-    request: Request
+    current_user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Get detailed discount information for an installment including POS sale data"""
     try:
-        # Get current user from cookie
-        current_user = await get_current_user_from_cookie(request)
-        if not current_user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Not authenticated"
-            )
-
         # Check if user has admin or manager role
         if current_user.role not in ['admin', 'inventory_manager']:
             raise HTTPException(
