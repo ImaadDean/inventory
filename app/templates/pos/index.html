@@ -1661,49 +1661,69 @@ function updateProcessSaleButton() {
     processSaleButton.classList.add('bg-gradient-to-r', 'from-green-500', 'to-emerald-600', 'hover:from-green-600', 'hover:to-emerald-700');
 }
 
-// Client functionality
+// Client functionality with debounce
+let clientSearchTimeout;
 async function searchClients() {
     const query = document.getElementById('client-search').value.trim();
     const resultsContainer = document.getElementById('client-results');
+
+    // Clear previous timeout
+    if (clientSearchTimeout) {
+        clearTimeout(clientSearchTimeout);
+    }
 
     if (query.length < 2) {
         resultsContainer.classList.add('hidden');
         return;
     }
 
-    try {
-        const response = await fetch(`/api/pos/customers/search?query=${encodeURIComponent(query)}&limit=10`, {
-            credentials: 'include'
-        });
+    // Show loading state
+    resultsContainer.innerHTML = `
+        <div class="text-center py-4 px-3 bg-gradient-to-r from-teal-50 to-cyan-50 border border-teal-200 rounded-xl">
+            <div class="w-8 h-8 bg-teal-300 rounded-lg flex items-center justify-center mx-auto mb-2">
+                <i class="fas fa-spinner fa-spin text-teal-600 text-sm"></i>
+            </div>
+            <p class="text-sm text-teal-700 font-medium">Searching clients...</p>
+        </div>
+    `;
+    resultsContainer.classList.remove('hidden');
 
-        if (response.ok) {
-            const data = await response.json();
-            const clients = data.customers || []; // POS API returns customers array
-            displayClientResults(clients);
-        } else {
+    // Debounce the search
+    clientSearchTimeout = setTimeout(async () => {
+        try {
+            const response = await fetch(`/api/pos/customers/search?query=${encodeURIComponent(query)}&limit=10`, {
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const clients = data.customers || []; // POS API returns customers array
+                displayClientResults(clients);
+            } else {
+                resultsContainer.innerHTML = `
+                    <div class="text-center py-4 px-3 bg-gradient-to-r from-red-50 to-red-100 border border-red-200 rounded-xl">
+                        <div class="w-8 h-8 bg-red-300 rounded-lg flex items-center justify-center mx-auto mb-2">
+                            <i class="fas fa-exclamation-triangle text-red-600 text-sm"></i>
+                        </div>
+                        <p class="text-sm text-red-700 font-medium">Error searching clients</p>
+                        <p class="text-xs text-red-600">Please try again</p>
+                    </div>
+                `;
+                resultsContainer.classList.remove('hidden');
+            }
+        } catch (error) {
             resultsContainer.innerHTML = `
                 <div class="text-center py-4 px-3 bg-gradient-to-r from-red-50 to-red-100 border border-red-200 rounded-xl">
                     <div class="w-8 h-8 bg-red-300 rounded-lg flex items-center justify-center mx-auto mb-2">
                         <i class="fas fa-exclamation-triangle text-red-600 text-sm"></i>
                     </div>
-                    <p class="text-sm text-red-700 font-medium">Error searching clients</p>
-                    <p class="text-xs text-red-600">Please try again</p>
+                    <p class="text-sm text-red-700 font-medium">Network error</p>
+                    <p class="text-xs text-red-600">Check your connection</p>
                 </div>
             `;
             resultsContainer.classList.remove('hidden');
         }
-    } catch (error) {
-        resultsContainer.innerHTML = `
-            <div class="text-center py-4 px-3 bg-gradient-to-r from-red-50 to-red-100 border border-red-200 rounded-xl">
-                <div class="w-8 h-8 bg-red-300 rounded-lg flex items-center justify-center mx-auto mb-2">
-                    <i class="fas fa-exclamation-triangle text-red-600 text-sm"></i>
-                </div>
-                <p class="text-sm text-red-700 font-medium">Error searching clients</p>
-                <p class="text-xs text-red-600">Please try again</p>
-            </div>
-        `;
-        resultsContainer.classList.remove('hidden');
-    }
+    }, 300); // 300ms debounce
 }
 
 function displayClientResults(clients) {
