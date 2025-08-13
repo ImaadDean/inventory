@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from app.utils.auth import get_current_user, verify_token, get_user_by_username
+from app.utils.auth import get_current_user, verify_token, get_user_by_username, get_current_user_hybrid
 from app.models.user import User
 
 # Initialize router and templates

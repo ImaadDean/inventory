@@ -170,10 +170,10 @@ async def get_dashboard_summary(current_user: User = Depends(get_current_user_hy
         {"$unwind": "$items"},
         {"$group": {
             "_id": "$items.product_id",
-            "product_name": {"$first": "$items.name"},
+            "product_name": {"$first": "$items.product_name"},
             "sku": {"$first": "$items.sku"},
             "quantity_sold": {"$sum": "$items.quantity"},
-            "total_revenue": {"$sum": "$items.total"}
+            "total_revenue": {"$sum": "$items.total_price"}
         }},
         {"$sort": {"quantity_sold": -1}},
         {"$limit": 4}
@@ -280,10 +280,10 @@ async def get_top_products_chart_data(current_user: User = Depends(get_current_u
         {"$unwind": "$items"},
         {"$group": {
             "_id": "$items.product_id",
-            "product_name": {"$first": "$items.name"},
+            "product_name": {"$first": "$items.product_name"},
             "sku": {"$first": "$items.sku"},
             "quantity_sold": {"$sum": "$items.quantity"},
-            "total_sales": {"$sum": "$items.total"}
+            "total_sales": {"$sum": "$items.total_price"}
         }},
         {"$sort": {"total_sales": -1}},
         {"$limit": 8}  # Top 8 products for better chart display
