@@ -543,31 +543,85 @@ async def record_payment(
                 detail=f"Payment number {payment_data.payment_number} not found"
             )
 
-        # Update payment
-        new_amount_paid = payment_to_update.get("amount_paid", 0) + payment_data.amount
-        payment_to_update["amount_paid"] = new_amount_paid
-        payment_to_update["payment_date"] = kampala_to_utc(now_kampala())
+        # Handle payment allocation with overpayment logic
+        remaining_payment_amount = payment_data.amount
+        payments_to_update = []
 
-        # Update payment status
-        if new_amount_paid >= payment_to_update["amount_due"]:
-            payment_to_update["status"] = PaymentStatus.PAID
-        elif new_amount_paid > 0:
-            payment_to_update["status"] = PaymentStatus.PARTIAL
+        # Work with a copy of the payments to avoid reference issues
+        payments_list = installment["payments"].copy()
 
-        # Update installment
+        # Start with the current payment
+        current_payment_index = payment_index
+
+        while remaining_payment_amount > 0 and current_payment_index < len(payments_list):
+            current_payment = payments_list[current_payment_index]
+
+            # Calculate how much this payment still needs
+            current_amount_paid = current_payment.get("amount_paid", 0)
+            current_amount_due = current_payment["amount_due"]
+            current_remaining = max(0, current_amount_due - current_amount_paid)
+
+            if current_remaining > 0:
+                # Apply payment to this installment
+                amount_to_apply = min(remaining_payment_amount, current_remaining)
+                new_amount_paid = current_amount_paid + amount_to_apply
+
+                # Create updated payment object
+                updated_payment = current_payment.copy()
+                updated_payment["amount_paid"] = new_amount_paid
+                updated_payment["payment_date"] = kampala_to_utc(now_kampala())
+
+                # Update payment status
+                if new_amount_paid >= current_amount_due:
+                    updated_payment["status"] = PaymentStatus.PAID
+                elif new_amount_paid > 0:
+                    updated_payment["status"] = PaymentStatus.PARTIAL
+
+                # Track this payment for database update
+                payments_to_update.append({
+                    "index": current_payment_index,
+                    "payment": updated_payment,
+                    "amount_applied": amount_to_apply
+                })
+
+                # Reduce remaining payment amount
+                remaining_payment_amount -= amount_to_apply
+
+            # Move to next payment
+            current_payment_index += 1
+
+        # Update all affected payments in the database
+        update_operations = {}
+        for payment_update in payments_to_update:
+            update_operations[f"payments.{payment_update['index']}"] = payment_update["payment"]
+
+        update_operations["updated_at"] = kampala_to_utc(now_kampala())
+
+        # Update installment with all payment changes
         await db.installments.update_one(
             {"_id": ObjectId(installment_id)},
-            {
-                "$set": {
-                    f"payments.{payment_index}": payment_to_update,
-                    "updated_at": kampala_to_utc(now_kampala())
-                }
-            }
+            {"$set": update_operations}
         )
 
         # Generate receipt number
         receipt_count = await db.installment_payments.count_documents({})
         receipt_number = f"INST-PAY-{receipt_count + 1:06d}"
+
+        # Create detailed notes about payment allocation
+        allocation_notes = []
+        if len(payments_to_update) > 1:
+            allocation_notes.append(f"Payment of UGX {payment_data.amount:,.0f} allocated across {len(payments_to_update)} installments:")
+            for payment_update in payments_to_update:
+                payment_num = payment_update["payment"]["payment_number"]
+                amount_applied = payment_update["amount_applied"]
+                allocation_notes.append(f"- Payment #{payment_num}: UGX {amount_applied:,.0f}")
+
+        # Combine original notes with allocation details
+        combined_notes = payment_data.notes or ""
+        if allocation_notes:
+            if combined_notes:
+                combined_notes += "\n\n"
+            combined_notes += "\n".join(allocation_notes)
 
         # Create payment record
         payment_record = {
@@ -578,7 +632,7 @@ async def record_payment(
             "payment_date": kampala_to_utc(now_kampala()),
             "received_by": current_user.id,
             "receipt_number": receipt_number,
-            "notes": payment_data.notes
+            "notes": combined_notes
         }
 
         result = await db.installment_payments.insert_one(payment_record)
@@ -679,6 +733,7 @@ async def create_installment_from_pos(
                 "product_name": item.get("name", ""),
                 "quantity": item.get("quantity", 1),
                 "unit_price": item.get("price", 0),
+                "discount_amount": item.get("discount_amount", 0),
                 "total_price": item.get("total", item.get("price", 0) * item.get("quantity", 1))
             })
 
@@ -688,6 +743,7 @@ async def create_installment_from_pos(
             "customer_id": ObjectId(installment_data.customer_id) if installment_data.customer_id else None,
             "customer_name": installment_data.customer_name,
             "customer_phone": installment_data.customer_phone,
+            "order_id": ObjectId(installment_data.order_id) if getattr(installment_data, 'order_id', None) else None,
             "items": items,
             "total_amount": installment_data.total_amount,
             "down_payment": installment_data.down_payment,
@@ -780,4 +836,136 @@ async def cancel_installment(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to cancel installment: {str(e)}"
+        )
+
+
+@router.get("/{installment_id}/discount-details")
+async def get_installment_discount_details(
+    installment_id: str,
+    request: Request
+):
+    """Get detailed discount information for an installment including POS sale data"""
+    try:
+        # Get current user from cookie
+        current_user = await get_current_user_from_cookie(request)
+        if not current_user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Not authenticated"
+            )
+
+        # Check if user has admin or manager role
+        if current_user.role not in ['admin', 'inventory_manager']:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Insufficient permissions. Admin or Manager role required."
+            )
+
+        db = await get_database()
+
+        if not ObjectId.is_valid(installment_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid installment ID"
+            )
+
+        # Get installment
+        installment = await db.installments.find_one({"_id": ObjectId(installment_id)})
+        if not installment:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Installment not found"
+            )
+
+        discount_details = {
+            "installment_id": installment_id,
+            "installment_items": installment.get("items", []),
+            "pos_sale_data": None,
+            "total_discounts": 0,
+            "item_discounts": 0,
+            "order_discount": 0
+        }
+
+        # Calculate discounts from installment items
+        item_discounts = 0
+        items_subtotal = 0
+
+        for item in installment.get("items", []):
+            item_discount = item.get("discount_amount", 0)
+            item_discounts += item_discount
+
+            # Calculate item subtotal
+            unit_price = item.get("unit_price", item.get("price", 0))
+            quantity = item.get("quantity", 1)
+            items_subtotal += unit_price * quantity
+
+        # If no explicit item discounts but there's a difference between subtotal and total,
+        # treat it as an implied discount
+        if item_discounts == 0 and items_subtotal > installment.get("total_amount", 0):
+            implied_discount = items_subtotal - installment.get("total_amount", 0)
+            item_discounts = implied_discount
+
+            # Update items with proportional discounts
+            updated_items = []
+            for item in installment.get("items", []):
+                updated_item = item.copy()
+                if items_subtotal > 0:
+                    unit_price = item.get("unit_price", item.get("price", 0))
+                    quantity = item.get("quantity", 1)
+                    item_subtotal = unit_price * quantity
+                    proportional_discount = (item_subtotal / items_subtotal) * implied_discount
+                    updated_item["discount_amount"] = proportional_discount
+                updated_items.append(updated_item)
+            discount_details["installment_items"] = updated_items
+
+        discount_details["item_discounts"] = item_discounts
+
+        # If installment is linked to a POS order, get the original sale data
+        if installment.get("order_id"):
+            try:
+                # Try to find the original POS sale/order
+                pos_sale = await db.sales.find_one({"_id": ObjectId(installment["order_id"])})
+                if pos_sale:
+                    discount_details["pos_sale_data"] = {
+                        "sale_number": pos_sale.get("sale_number"),
+                        "subtotal": pos_sale.get("subtotal", 0),
+                        "discount_amount": pos_sale.get("discount_amount", 0),
+                        "total_amount": pos_sale.get("total_amount", 0),
+                        "items": pos_sale.get("items", [])
+                    }
+
+                    # Calculate POS-level discounts
+                    pos_item_discounts = sum(item.get("discount_amount", 0) for item in pos_sale.get("items", []))
+                    pos_order_discount = pos_sale.get("discount_amount", 0) - pos_item_discounts
+
+                    discount_details["order_discount"] = max(0, pos_order_discount)
+
+                    # Use POS item discounts if installment doesn't have them
+                    if item_discounts == 0 and pos_item_discounts > 0:
+                        discount_details["item_discounts"] = pos_item_discounts
+
+                        # Update installment items with POS discount information
+                        updated_items = []
+                        for i, installment_item in enumerate(installment.get("items", [])):
+                            updated_item = installment_item.copy()
+                            if i < len(pos_sale.get("items", [])):
+                                pos_item = pos_sale["items"][i]
+                                updated_item["discount_amount"] = pos_item.get("discount_amount", 0)
+                            updated_items.append(updated_item)
+                        discount_details["installment_items"] = updated_items
+
+            except Exception as e:
+                print(f"Error fetching POS sale data: {e}")
+                # Continue without POS data if there's an error
+
+        discount_details["total_discounts"] = discount_details["item_discounts"] + discount_details["order_discount"]
+
+        return discount_details
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get discount details: {str(e)}"
         )

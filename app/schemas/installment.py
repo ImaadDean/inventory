@@ -9,6 +9,7 @@ class InstallmentItemCreate(BaseModel):
     product_name: str
     quantity: int = Field(..., gt=0)
     unit_price: float = Field(..., gt=0)
+    discount_amount: float = Field(default=0.0, ge=0)
     total_price: float = Field(..., gt=0)
 
 
@@ -184,6 +185,7 @@ class POSInstallmentCreate(BaseModel):
     customer_id: Optional[str] = None
     customer_name: str = Field(..., min_length=2, max_length=100)
     customer_phone: Optional[str] = Field(None, max_length=20)
+    order_id: Optional[str] = None  # Link to original POS sale/order
     items: List[dict]  # Cart items from POS
     total_amount: float = Field(..., gt=0)
     down_payment: float = Field(default=0.0, ge=0)

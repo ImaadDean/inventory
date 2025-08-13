@@ -1058,10 +1058,18 @@
             const result = await response.json();
             console.log('✅ Payment recorded successfully:', result);
 
-            // Show success message
-            alert(`Payment Recorded Successfully! 🎉\n\nReceipt: ${result.receipt_number}\nAmount: UGX ${formatMoneyWithoutCurrency(paymentAmount, true)}\nMethod: ${paymentMethod}\n\nAllocation:\n${allocationSummary}`);
+            // Show payment receipt instead of alert
+            await showPaymentReceipt({
+                receiptNumber: result.receipt_number,
+                paymentAmount: paymentAmount,
+                paymentMethod: paymentMethod,
+                allocationSummary: allocationSummary,
+                allocation: allocation,
+                installmentData: window.currentInstallmentData,
+                paymentDate: new Date().toLocaleString()
+            });
 
-            // Close modal and refresh installment details
+            // Close payment modal and refresh installment details
             closePaymentModal();
             if (window.currentInstallmentId) {
                 // Refresh the installment details to show updated payment status
@@ -1106,6 +1114,17 @@
             }
         });
 
+        // Payment receipt modal event listeners
+        document.getElementById('close-payment-receipt-modal').addEventListener('click', closePaymentReceiptModal);
+        document.getElementById('close-payment-receipt').addEventListener('click', closePaymentReceiptModal);
+        document.getElementById('print-payment-receipt').addEventListener('click', printPaymentReceipt);
+
+        document.getElementById('payment-receipt-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closePaymentReceiptModal();
+            }
+        });
+
         // Update payment allocation when payment amount changes
         document.getElementById('payment-amount').addEventListener('input', function() {
             if (window.currentPaymentDetails) {
@@ -1128,6 +1147,389 @@
         // TODO: Implement proper error notification
         console.error('Error:', message);
         alert(message);
+    }
+
+    // Payment Receipt Functions
+    async function showPaymentReceipt(receiptData) {
+        console.log('🧾 Showing payment receipt:', receiptData);
+
+        const receiptContent = document.getElementById('payment-receipt-content');
+        if (!receiptContent) {
+            console.error('❌ Receipt content element not found');
+            alert('Error: Receipt modal not found. Please refresh the page.');
+            return;
+        }
+
+        const paymentDate = new Date(receiptData.paymentDate);
+        const receiptDate = paymentDate.toLocaleDateString('en-UG', {
+            timeZone: 'Africa/Kampala'
+        });
+        const receiptTime = paymentDate.toLocaleTimeString('en-UG', {
+            timeZone: 'Africa/Kampala',
+            hour12: false
+        });
+
+        const installment = receiptData.installmentData;
+        const customer = installment ? {
+            name: installment.customer_name,
+            phone: installment.customer_phone
+        } : null;
+
+        // Fetch detailed discount information from API
+        let discountDetails = null;
+        try {
+            if (installment && installment.id) {
+                console.log('🔍 Fetching discount details for installment:', installment.id);
+                const response = await fetch(`/api/installments/${installment.id}/discount-details`, {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                console.log('📡 API Response status:', response.status);
+
+                if (response.ok) {
+                    discountDetails = await response.json();
+                    console.log('📊 Discount details loaded:', discountDetails);
+                } else {
+                    const errorText = await response.text();
+                    console.error('❌ API Error:', response.status, errorText);
+                }
+            } else {
+                console.warn('⚠️ No installment ID available for discount lookup');
+            }
+        } catch (error) {
+            console.error('❌ Error loading discount details:', error);
+        }
+
+        // Also log the installment data for debugging
+        console.log('📋 Installment data:', installment);
+
+        receiptContent.innerHTML = `
+            <div class="receipt-print" id="payment-receipt-print">
+                <div class="receipt-header text-center mb-4">
+                    <h2 class="text-xl font-bold">PERFUMES AND MORE</h2>
+                    <p class="text-sm text-gray-600 italic">by Tuta</p>
+                    <p class="text-xs text-gray-500 mt-1">Installment Payment Receipt</p>
+                    <div class="border-b border-gray-300 my-2"></div>
+                </div>
+
+                <div class="receipt-info text-sm mb-4">
+                    <div class="flex justify-between">
+                        <span>Date:</span>
+                        <span>${receiptDate}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Time:</span>
+                        <span>${receiptTime}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Receipt #:</span>
+                        <span>${receiptData.receiptNumber}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Installment #:</span>
+                        <span>${installment ? installment.installment_number : 'N/A'}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Processed by:</span>
+                        <span>{{ user.full_name }}</span>
+                    </div>
+                    ${customer && customer.name ? `
+                    <div class="flex justify-between">
+                        <span>Customer:</span>
+                        <span>${customer.name}</span>
+                    </div>
+                    ` : ''}
+                    ${customer && customer.phone ? `
+                    <div class="flex justify-between">
+                        <span>Phone:</span>
+                        <span>${customer.phone}</span>
+                    </div>
+                    ` : ''}
+                    <div class="border-b border-gray-300 my-2"></div>
+                </div>
+
+                ${(() => {
+                    // Use discount details from API if available, otherwise fallback to installment data
+                    const itemsToDisplay = discountDetails ? discountDetails.installment_items : (installment ? installment.items : []);
+
+                    console.log('🛍️ Items to display:', itemsToDisplay);
+
+                    if (!itemsToDisplay || itemsToDisplay.length === 0) {
+                        console.warn('⚠️ No items to display');
+                        return '';
+                    }
+
+                    return `
+                    <div class="receipt-items mb-4">
+                        <div class="text-sm font-semibold mb-2">ITEMS:</div>
+                        ${itemsToDisplay.map(item => {
+                            const itemName = item.product_name || item.name || 'Product';
+                            const quantity = item.quantity || 1;
+                            const unitPrice = item.unit_price || item.price || 0;
+                            const discountAmount = item.discount_amount || 0;
+                            const itemSubtotal = unitPrice * quantity;
+                            const totalPrice = item.total_price || item.total || (itemSubtotal - discountAmount);
+
+                            return `
+                            <div class="text-xs mb-2">
+                                <div class="flex justify-between">
+                                    <span class="font-medium">${itemName}</span>
+                                    <span>x${quantity}</span>
+                                </div>
+                                <div class="flex justify-between text-gray-600">
+                                    <span>@ UGX ${formatMoneyWithoutCurrency(unitPrice, true)}</span>
+                                    <span>UGX ${formatMoneyWithoutCurrency(itemSubtotal, true)}</span>
+                                </div>
+                                ${discountAmount > 0 ? `
+                                <div class="flex justify-between text-green-600 text-xs">
+                                    <span>Item Discount:</span>
+                                    <span>-UGX ${formatMoneyWithoutCurrency(discountAmount, true)}</span>
+                                </div>
+                                <div class="flex justify-between text-gray-800 font-medium">
+                                    <span>Item Total:</span>
+                                    <span>UGX ${formatMoneyWithoutCurrency(totalPrice, true)}</span>
+                                </div>
+                                ` : ''}
+                            </div>`;
+                        }).join('')}
+
+                        ${(() => {
+                            // Use discount details from API if available
+                            let itemsSubtotal = 0;
+                            let totalItemDiscounts = 0;
+                            let orderDiscount = 0;
+
+                            console.log('🧮 Calculating discounts...');
+                            console.log('📊 Discount details available:', !!discountDetails);
+
+                            if (discountDetails) {
+                                totalItemDiscounts = discountDetails.item_discounts || 0;
+                                orderDiscount = discountDetails.order_discount || 0;
+
+                                console.log('📊 API Item discounts:', totalItemDiscounts);
+                                console.log('📊 API Order discount:', orderDiscount);
+
+                                // Calculate subtotal from items
+                                itemsSubtotal = discountDetails.installment_items.reduce((sum, item) => {
+                                    const unitPrice = item.unit_price || item.price || 0;
+                                    const quantity = item.quantity || 1;
+                                    return sum + (unitPrice * quantity);
+                                }, 0);
+                            } else if (installment && installment.items) {
+                                // Fallback to installment data
+                                itemsSubtotal = installment.items.reduce((sum, item) => {
+                                    const unitPrice = item.unit_price || item.price || 0;
+                                    const quantity = item.quantity || 1;
+                                    return sum + (unitPrice * quantity);
+                                }, 0);
+
+                                totalItemDiscounts = installment.items.reduce((sum, item) => {
+                                    return sum + (item.discount_amount || 0);
+                                }, 0);
+
+                                // Calculate implied discount from total difference
+                                const impliedDiscount = itemsSubtotal - (installment.total_amount || 0);
+                                if (impliedDiscount > 0 && totalItemDiscounts === 0) {
+                                    totalItemDiscounts = impliedDiscount;
+                                    console.log('💡 Detected implied discount:', impliedDiscount);
+                                }
+
+                                console.log('📋 Fallback - Items subtotal:', itemsSubtotal);
+                                console.log('📋 Fallback - Item discounts:', totalItemDiscounts);
+                                console.log('📋 Fallback - Total amount:', installment.total_amount);
+                            }
+
+                            const totalDiscounts = totalItemDiscounts + orderDiscount;
+                            let discountHtml = '';
+
+                            // Show discount breakdown if there are any discounts
+                            if (totalDiscounts > 0) {
+                                discountHtml += `
+                                <div class="flex justify-between text-sm border-t border-gray-300 pt-2 mt-2">
+                                    <span>Subtotal:</span>
+                                    <span>UGX ${formatMoneyWithoutCurrency(itemsSubtotal, true)}</span>
+                                </div>`;
+
+                                if (totalItemDiscounts > 0) {
+                                    discountHtml += `
+                                    <div class="flex justify-between text-green-600 text-sm">
+                                        <span>Item Discounts:</span>
+                                        <span>-UGX ${formatMoneyWithoutCurrency(totalItemDiscounts, true)}</span>
+                                    </div>`;
+                                }
+
+                                if (orderDiscount > 0) {
+                                    discountHtml += `
+                                    <div class="flex justify-between text-green-600 text-sm">
+                                        <span>Order Discount:</span>
+                                        <span>-UGX ${formatMoneyWithoutCurrency(orderDiscount, true)}</span>
+                                    </div>`;
+                                }
+
+                                discountHtml += `
+                                <div class="flex justify-between text-green-600 font-medium text-sm border-t border-green-200 pt-1 mt-1">
+                                    <span>Total Savings:</span>
+                                    <span>-UGX ${formatMoneyWithoutCurrency(totalDiscounts, true)}</span>
+                                </div>`;
+                            }
+
+                            discountHtml += `
+                            <div class="flex justify-between text-sm font-bold border-t border-gray-300 pt-2 mt-2">
+                                <span>TOTAL:</span>
+                                <span>UGX ${formatMoneyWithoutCurrency(installment ? installment.total_amount : 0, true)}</span>
+                            </div>`;
+
+                            return discountHtml;
+                        })()}
+                        <div class="border-b border-gray-300 my-2"></div>
+                    </div>`;
+                })()}
+
+                <div class="receipt-payment-details mb-4">
+                    <div class="text-sm font-semibold mb-2">PAYMENT DETAILS:</div>
+                    <div class="flex justify-between text-sm">
+                        <span>Payment Method:</span>
+                        <span class="capitalize">${receiptData.paymentMethod.replace('_', ' ')}</span>
+                    </div>
+                    <div class="flex justify-between text-sm font-bold text-lg border-t border-gray-300 pt-2 mt-2">
+                        <span>AMOUNT PAID:</span>
+                        <span>UGX ${formatMoneyWithoutCurrency(receiptData.paymentAmount, true)}</span>
+                    </div>
+                </div>
+
+                ${receiptData.allocation && receiptData.allocation.length > 1 ? `
+                <div class="receipt-allocation mb-4">
+                    <div class="text-sm font-semibold mb-2">PAYMENT ALLOCATION:</div>
+                    ${receiptData.allocation.map(item => `
+                        <div class="flex justify-between text-xs">
+                            <span>Payment #${item.paymentNumber}:</span>
+                            <span>UGX ${formatMoneyWithoutCurrency(item.allocatedAmount, true)} ${item.willBeFullyPaid ? '(Paid)' : '(Partial)'}</span>
+                        </div>
+                    `).join('')}
+                    <div class="border-b border-gray-300 my-2"></div>
+                </div>
+                ` : ''}
+
+                ${installment ? `
+                <div class="receipt-installment-summary mb-4">
+                    <div class="text-sm font-semibold mb-2">INSTALLMENT SUMMARY:</div>
+                    <div class="flex justify-between text-xs">
+                        <span>Total Amount:</span>
+                        <span>UGX ${formatMoneyWithoutCurrency(installment.total_amount, true)}</span>
+                    </div>
+                    <div class="flex justify-between text-xs">
+                        <span>Total Paid:</span>
+                        <span>UGX ${formatMoneyWithoutCurrency(installment.total_paid + receiptData.paymentAmount, true)}</span>
+                    </div>
+                    <div class="flex justify-between text-xs">
+                        <span>Remaining:</span>
+                        <span>UGX ${formatMoneyWithoutCurrency(Math.max(0, installment.total_amount - (installment.total_paid + receiptData.paymentAmount)), true)}</span>
+                    </div>
+                    <div class="border-b border-gray-300 my-2"></div>
+                </div>
+                ` : ''}
+
+                <div class="receipt-footer text-center text-xs text-gray-500 mt-4">
+                    <div class="border-b border-gray-300 my-2"></div>
+                    <p>Thank you for your payment!</p>
+                    <p>Please keep this receipt for your records</p>
+                    <p class="mt-2">Next payment due: ${getNextPaymentDue(installment)}</p>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('payment-receipt-modal').classList.remove('hidden');
+    }
+
+    function getNextPaymentDue(installment) {
+        if (!installment || !installment.payments) return 'N/A';
+
+        const nextPayment = installment.payments.find(p =>
+            p.status === 'pending' || p.status === 'partial'
+        );
+
+        if (nextPayment) {
+            const dueDate = new Date(nextPayment.due_date);
+            return dueDate.toLocaleDateString('en-UG', {
+                timeZone: 'Africa/Kampala',
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+
+        return 'All payments completed';
+    }
+
+    function closePaymentReceiptModal() {
+        document.getElementById('payment-receipt-modal').classList.add('hidden');
+    }
+
+    function printPaymentReceipt() {
+        const receiptContent = document.getElementById('payment-receipt-print').innerHTML;
+        const printWindow = window.open('', '_blank');
+
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Payment Receipt</title>
+                <style>
+                    body {
+                        font-family: 'Courier New', monospace;
+                        font-size: 12px;
+                        line-height: 1.4;
+                        margin: 0;
+                        padding: 20px;
+                        max-width: 300px;
+                    }
+                    .text-center { text-align: center; }
+                    .text-xl { font-size: 16px; }
+                    .text-lg { font-size: 14px; }
+                    .text-sm { font-size: 11px; }
+                    .text-xs { font-size: 10px; }
+                    .font-bold { font-weight: bold; }
+                    .font-semibold { font-weight: 600; }
+                    .font-medium { font-weight: 500; }
+                    .italic { font-style: italic; }
+                    .mb-1 { margin-bottom: 2px; }
+                    .mb-2 { margin-bottom: 5px; }
+                    .mb-4 { margin-bottom: 10px; }
+                    .mt-1 { margin-top: 2px; }
+                    .mt-2 { margin-top: 5px; }
+                    .mt-4 { margin-top: 10px; }
+                    .pt-2 { padding-top: 5px; }
+                    .my-2 { margin: 5px 0; }
+                    .flex { display: flex; }
+                    .justify-between { justify-content: space-between; }
+                    .border-b { border-bottom: 1px solid #ccc; }
+                    .border-t { border-top: 1px solid #ccc; }
+                    .border-gray-300 { border-color: #ccc; }
+                    .text-gray-500 { color: #666; }
+                    .text-gray-600 { color: #555; }
+                    .text-gray-800 { color: #333; }
+                    .text-green-600 { color: #059669; }
+                    .border-green-200 { border-color: #bbf7d0; }
+                    .capitalize { text-transform: capitalize; }
+                    @media print {
+                        body { margin: 0; padding: 10px; }
+                    }
+                </style>
+            </head>
+            <body>
+                ${receiptContent}
+            </body>
+            </html>
+        `);
+
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+        printWindow.close();
     }
 </script>
 
@@ -1410,6 +1812,40 @@
                     </div>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Receipt Modal -->
+<div id="payment-receipt-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300">
+            <div class="px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-t-xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                            <i class="fas fa-receipt text-white text-xs"></i>
+                        </div>
+                        <h3 class="text-base font-semibold text-white">Payment Receipt</h3>
+                    </div>
+                    <button type="button" id="close-payment-receipt-modal" class="text-white hover:text-gray-200 transition-colors duration-200">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-4">
+                <div id="payment-receipt-content" class="border-2 border-gray-200 rounded-xl p-4 bg-white font-mono text-sm shadow-inner mb-4">
+                    <!-- Receipt content will be generated here -->
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t border-gray-200">
+                    <button id="close-payment-receipt" class="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200">
+                        <i class="fas fa-times mr-1"></i>Close
+                    </button>
+                    <button id="print-payment-receipt" class="px-3 py-2 text-xs font-medium text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
+                        <i class="fas fa-print mr-1"></i>Print Receipt
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
