@@ -7,7 +7,7 @@ from ...schemas.pos import (
     SaleCreate, SaleResponse, SaleList, SaleItemResponse, ProductSearch
 )
 from ...schemas.customer import CustomerCreate, CustomerResponse
-from ...models import Sale, SaleItem, User
+from ...models import Sale, SaleItem, User, OrderPaymentStatus
 from ...utils.auth import get_current_user, get_current_user_hybrid_dependency, verify_token, get_user_by_username
 from ...utils.timezone import now_kampala, kampala_to_utc
 from ...utils.decant_handler import process_decant_sale, calculate_decant_availability
@@ -16,7 +16,114 @@ import uuid
 router = APIRouter(prefix="/api/pos", tags=["Point of Sale API"])
 
 
+# Debug endpoints for troubleshooting
+@router.get("/debug/test-connection")
+async def test_pos_connection():
+    """Test POS API connection and database access"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    try:
+        db = await get_database()
+        
+        # Test basic database operations
+        products_count = await db.products.count_documents({"is_active": True})
+        customers_count = await db.customers.count_documents({"is_active": True})
+        
+        # Test product search
+        sample_products = await db.products.find({"is_active": True, "stock_quantity": {"$gt": 0}}).limit(3).to_list(3)
+        
+        return {
+            "status": "success",
+            "database_connected": True,
+            "active_products_count": products_count,
+            "active_customers_count": customers_count,
+            "sample_products": [
+                {
+                    "id": str(p["_id"]),
+                    "name": p["name"],
+                    "stock": p["stock_quantity"],
+                    "price": p["price"]
+                } for p in sample_products
+            ],
+            "message": "POS API is working correctly"
+        }
+    except Exception as e:
+        logger.error(f"POS debug test failed: {str(e)}")
+        return {
+            "status": "error",
+            "database_connected": False,
+            "error": str(e),
+            "error_type": type(e).__name__
+        }
 
+
+@router.get("/debug/search-test")
+async def test_search_endpoints(
+    query: str = Query("test", min_length=1)
+):
+    """Test search functionality without authentication"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    try:
+        db = await get_database()
+        
+        # Test product search
+        product_search_query = {
+            "$and": [
+                {"is_active": True},
+                {"stock_quantity": {"$gt": 0}},
+                {"$or": [
+                    {"name": {"$regex": query, "$options": "i"}},
+                    {"barcode": {"$regex": query, "$options": "i"}}
+                ]}
+            ]
+        }
+        
+        products = await db.products.find(product_search_query).limit(5).to_list(5)
+        
+        # Test customer search
+        customer_search_query = {
+            "$and": [
+                {"is_active": True},
+                {"$or": [
+                    {"name": {"$regex": query, "$options": "i"}},
+                    {"phone": {"$regex": query, "$options": "i"}}
+                ]}
+            ]
+        }
+        
+        customers = await db.customers.find(customer_search_query).limit(5).to_list(5)
+        
+        return {
+            "status": "success",
+            "query": query,
+            "products_found": len(products),
+            "customers_found": len(customers),
+            "products": [
+                {
+                    "id": str(p["_id"]),
+                    "name": p["name"],
+                    "stock": p["stock_quantity"],
+                    "price": p["price"]
+                } for p in products
+            ],
+            "customers": [
+                {
+                    "id": str(c["_id"]),
+                    "name": c["name"],
+                    "phone": c.get("phone", "")
+                } for c in customers
+            ]
+        }
+    except Exception as e:
+        logger.error(f"POS search test failed: {str(e)}")
+        return {
+            "status": "error",
+            "error": str(e),
+            "error_type": type(e).__name__
+        }
 
 
 @router.get("/products/search")
@@ -26,7 +133,11 @@ async def search_products(
     current_user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Search products for POS (by name or barcode)"""
+    import logging
+    logger = logging.getLogger(__name__)
+
     try:
+        logger.info(f"POS product search: query='{query}', limit={limit}, user={current_user.username if current_user else 'anonymous'}")
         db = await get_database()
 
         # Build search query
@@ -41,8 +152,10 @@ async def search_products(
             ]
         }
 
+        logger.debug(f"MongoDB query: {search_query}")
         cursor = db.products.find(search_query).limit(limit)
         products_data = await cursor.to_list(length=limit)
+        logger.info(f"Found {len(products_data)} products matching query")
 
         products = []
         for product in products_data:
@@ -70,14 +183,39 @@ async def search_products(
 
                 products.append(product_data)
             except Exception as e:
-                # Skip products that cause errors but continue with others
+                # Log the error but continue with other products
+                logger.warning(f"Error processing product {product.get('name', 'unknown')}: {str(e)}")
+                # Still add basic product info even if decant calculation fails
+                try:
+                    product_data = {
+                        "id": str(product["_id"]),
+                        "name": product["name"],
+                        "barcode": product.get("barcode", ""),
+                        "price": product["price"],
+                        "stock_quantity": product["stock_quantity"],
+                        "unit": product.get("unit", "pcs"),
+                        "bottle_size_ml": product.get("bottle_size_ml"),
+                        "decant": product.get("decant"),
+                        "is_perfume_with_decants": False,
+                        "available_decants": 0,
+                        "opened_bottle_decants": 0,
+                        "has_opened_bottle": False,
+                        "can_open_new_bottle": False,
+                        "opened_bottle_ml_left": 0,
+                        "stock_display": f"{product['stock_quantity']} {product.get('unit', 'pcs')}"
+                    }
+                    products.append(product_data)
+                except Exception as e2:
+                    logger.error(f"Failed to create fallback product data: {str(e2)}")
                 continue
 
+        logger.info(f"Returning {len(products)} processed products")
         return products
 
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"Failed to search products: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to search products: {str(e)}"
@@ -91,7 +229,11 @@ async def search_customers(
     current_user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Search customers for POS"""
+    import logging
+    logger = logging.getLogger(__name__)
+
     try:
+        logger.info(f"POS customer search: query='{query}', limit={limit}, user={current_user.username}")
         db = await get_database()
 
         search_query = {
@@ -104,8 +246,10 @@ async def search_customers(
             ]
         }
 
+        logger.debug(f"MongoDB query: {search_query}")
         cursor = db.customers.find(search_query).limit(limit)
         customers_data = await cursor.to_list(length=limit)
+        logger.info(f"Found {len(customers_data)} customers matching query")
 
         customers = [
             {
@@ -119,11 +263,13 @@ async def search_customers(
             for customer in customers_data
         ]
 
+        logger.info(f"Returning {len(customers)} customers")
         return {"customers": customers}
 
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"Failed to search customers: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to search customers: {str(e)}"
@@ -283,6 +429,47 @@ async def create_sale(sale_data: SaleCreate, current_user: User = Depends(get_cu
 
         # Insert sale
         result = await db.sales.insert_one(sale_doc)
+
+        # Also create an order record for unified order management
+        order_count = await db.orders.count_documents({})
+        order_number = f"ORD-{order_count + 1:06d}"
+
+        # Prepare order items
+        order_items = []
+        for item in sale_items:
+            order_items.append({
+                "product_id": str(item["product_id"]),
+                "product_name": item["product_name"],
+                "quantity": item["quantity"],
+                "unit_price": item["unit_price"],
+                "total_price": item["total_price"],
+                "discount_amount": item["discount_amount"]
+            })
+
+        # Create order document for regular sale
+        order_doc = {
+            "order_number": order_number,
+            "client_id": ObjectId(sale_data.customer_id) if sale_data.customer_id else None,
+            "client_name": sale_data.customer_name or "Walk-in Client",
+            "client_email": "",
+            "client_phone": "",
+            "items": order_items,
+            "subtotal": subtotal,
+            "tax": tax_amount,
+            "discount": sale_data.discount_amount,
+            "total": total_amount,
+            "status": "completed",  # Regular sales are completed immediately
+            "payment_method": sale_data.payment_method,
+            "payment_status": OrderPaymentStatus.PAID if sale_data.payment_method != "not_paid" else OrderPaymentStatus.PENDING,
+            "notes": sale_data.notes or "",
+            "sale_id": result.inserted_id,  # Link to the sale record
+            "created_by": current_user.id,
+            "created_at": kampala_to_utc(now_kampala()),
+            "updated_at": kampala_to_utc(now_kampala())
+        }
+
+        # Insert order
+        await db.orders.insert_one(order_doc)
 
         # Update product stock quantities
         for item in sale_items:

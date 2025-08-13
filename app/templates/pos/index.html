@@ -3,6 +3,15 @@
 {% block title %}Point of Sale - Inventory Management System{% endblock %}
 
 {% block content %}
+<!-- Page Loading Overlay -->
+<div id="page-loading" class="fixed inset-0 bg-white bg-opacity-90 backdrop-blur-sm z-50 flex items-center justify-center">
+    <div class="text-center">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-green-500 mx-auto mb-4"></div>
+        <h3 class="text-lg font-semibold text-gray-800 mb-2">Loading POS System</h3>
+        <p class="text-sm text-gray-600">Initializing point of sale interface...</p>
+    </div>
+</div>
+
 <div class="space-y-4 animate-fade-in">
     <!-- Header -->
     <div class="bg-gradient-to-r from-green-500 to-emerald-600 shadow-lg rounded-xl p-4 text-white">
@@ -273,11 +282,11 @@
                                     <div>
                                         <label class="block text-xs font-semibold text-gray-700 mb-1">Number of Payments</label>
                                         <select id="installment-payments" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200">
-                                            <option value="2">2 Payments</option>
-                                            <option value="3">3 Payments</option>
-                                            <option value="4" selected>4 Payments</option>
-                                            <option value="6">6 Payments</option>
-                                            <option value="12">12 Payments</option>
+                                            <option value="2">2 payments</option>
+                                            <option value="3">3 payments</option>
+                                            <option value="4" selected>4 payments</option>
+                                            <option value="6">6 payments</option>
+                                            <option value="12">12 payments</option>
                                         </select>
                                     </div>
                                 </div>
@@ -291,8 +300,8 @@
                                     </select>
                                 </div>
 
-                                <div class="bg-white border border-purple-200 rounded-lg p-3">
-                                    <div class="text-xs text-gray-600 space-y-1">
+                                <div class="bg-purple-100 border border-purple-300 rounded-lg p-3">
+                                    <div class="text-xs text-purple-800 space-y-1">
                                         <div class="flex justify-between">
                                             <span>Total Amount:</span>
                                             <span class="font-medium" id="installment-total">UGX 0</span>
@@ -305,9 +314,9 @@
                                             <span>Remaining Amount:</span>
                                             <span class="font-medium" id="installment-remaining">UGX 0</span>
                                         </div>
-                                        <div class="flex justify-between border-t border-gray-200 pt-1">
-                                            <span>Payment per Installment:</span>
-                                            <span class="font-bold text-purple-600" id="installment-per-payment">UGX 0</span>
+                                        <div class="flex justify-between border-t border-purple-300 pt-1">
+                                            <span>Per Payment:</span>
+                                            <span class="font-bold" id="installment-per-payment">UGX 0</span>
                                         </div>
                                     </div>
                                 </div>
@@ -691,13 +700,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function initializePOS() {
     // Event listeners
-    const productSearchInput = document.getElementById('product-search');
-
-    if (productSearchInput) {
-        productSearchInput.addEventListener('input', function(e) {
-            searchProducts();
-        });
-    }
+    document.getElementById('product-search').addEventListener('input', searchProducts);
     document.getElementById('barcode-camera-btn').addEventListener('click', openBarcodeScanner);
     document.getElementById('discount-toggle').addEventListener('change', toggleDiscount);
     document.getElementById('discount-type').addEventListener('change', updateTotals);
@@ -712,6 +715,7 @@ function initializePOS() {
     });
     document.getElementById('installment-payments').addEventListener('change', updateInstallmentCalculation);
     document.getElementById('payment-frequency').addEventListener('change', updateInstallmentCalculation);
+
     document.getElementById('process-sale').addEventListener('click', processSale);
     document.getElementById('client-search').addEventListener('input', searchClients);
     document.getElementById('add-client-btn').addEventListener('click', openAddClientModal);
@@ -736,90 +740,104 @@ function initializePOS() {
 
     // Refresh stock quantities for any existing cart items
     refreshCartStockQuantities();
+
+    // Hide page loading overlay
+    setTimeout(() => {
+        const pageLoading = document.getElementById('page-loading');
+        if (pageLoading) {
+            pageLoading.style.opacity = '0';
+            pageLoading.style.transition = 'opacity 0.3s ease-out';
+            setTimeout(() => {
+                pageLoading.style.display = 'none';
+            }, 300);
+        }
+    }, 500); // Small delay to ensure everything is loaded
 }
 
-// Product search functionality with debounce
-let searchTimeout;
+// Product search functionality
 async function searchProducts() {
-    const productSearchInput = document.getElementById('product-search');
+    const query = document.getElementById('product-search').value.trim();
     const resultsContainer = document.getElementById('search-results');
-
-    if (!productSearchInput || !resultsContainer) {
-        return;
-    }
-
-    const query = productSearchInput.value.trim();
-
-    // Clear previous timeout
-    if (searchTimeout) {
-        clearTimeout(searchTimeout);
-    }
 
     if (query.length < 2) {
         resultsContainer.innerHTML = '';
         return;
     }
 
-    // Show loading state
+    // Show loading indicator with skeleton effect
     resultsContainer.innerHTML = `
-        <div class="text-center py-4 px-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
-            <div class="w-8 h-8 bg-blue-300 rounded-lg flex items-center justify-center mx-auto mb-2">
-                <i class="fas fa-spinner fa-spin text-blue-600 text-sm"></i>
+        <div class="space-y-2">
+            <div class="flex items-center justify-center py-4 px-3">
+                <div class="flex items-center space-x-3">
+                    <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+                    <span class="text-sm text-gray-600 font-medium">Searching products...</span>
+                </div>
             </div>
-            <p class="text-sm text-blue-700 font-medium">Searching products...</p>
+            <!-- Skeleton loading items -->
+            ${Array(3).fill(0).map(() => `
+                <div class="bg-white border border-gray-200 rounded-lg p-3 animate-pulse">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3 flex-1">
+                            <div class="w-8 h-8 bg-gray-200 rounded-md"></div>
+                            <div class="flex-1">
+                                <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                                <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+                            </div>
+                        </div>
+                        <div class="w-16 h-6 bg-gray-200 rounded"></div>
+                    </div>
+                </div>
+            `).join('')}
         </div>
     `;
 
-    // Debounce the search
-    searchTimeout = setTimeout(async () => {
-        try {
-            // Use the same API as the products page
-            const params = new URLSearchParams({
-                search: query,
-                size: 10,
-                is_active: true
-            });
+    try {
+        const response = await fetch(`/api/pos/products/search?query=${encodeURIComponent(query)}&limit=10`, {
+            credentials: 'include'
+        });
 
-            const response = await fetch(`/api/products/?${params.toString()}`, {
-                credentials: 'include'
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                const products = data.products || []; // Products page API returns {products: [...]}
-                // Filter to only show products with stock > 0
-                const inStockProducts = products.filter(product => product.stock_quantity > 0);
-                displaySearchResults(inStockProducts);
-            } else {
-                resultsContainer.innerHTML = `
-                    <div class="text-center py-4 px-3 bg-gradient-to-r from-red-50 to-red-100 border border-red-200 rounded-xl">
-                        <div class="w-8 h-8 bg-red-300 rounded-lg flex items-center justify-center mx-auto mb-2">
-                            <i class="fas fa-exclamation-triangle text-red-600 text-sm"></i>
-                        </div>
-                        <p class="text-sm text-red-700 font-medium">Error searching products</p>
-                        <p class="text-xs text-red-600">Please try again</p>
-                    </div>
-                `;
-            }
-        } catch (error) {
+        if (response.ok) {
+            const products = await response.json(); // POS API returns direct array of products
+            console.log('Products received:', products); // Debug log
+            console.log('Response status:', response.status); // Debug log
+            displaySearchResults(products);
+        } else {
+            console.error('Response not OK:', response.status, response.statusText); // Debug log
+            console.error('Product search failed:', response.status);
             resultsContainer.innerHTML = `
                 <div class="text-center py-4 px-3 bg-gradient-to-r from-red-50 to-red-100 border border-red-200 rounded-xl">
                     <div class="w-8 h-8 bg-red-300 rounded-lg flex items-center justify-center mx-auto mb-2">
                         <i class="fas fa-exclamation-triangle text-red-600 text-sm"></i>
                     </div>
-                    <p class="text-sm text-red-700 font-medium">Network error</p>
-                    <p class="text-xs text-red-600">Check your connection</p>
+                    <p class="text-sm text-red-700 font-medium">Error searching products</p>
+                    <p class="text-xs text-red-600">Please try again</p>
                 </div>
             `;
         }
-    }, 300); // 300ms debounce
+    } catch (error) {
+        console.error('Product search error:', error);
+        resultsContainer.innerHTML = `
+            <div class="text-center py-4 px-3 bg-gradient-to-r from-red-50 to-red-100 border border-red-200 rounded-xl">
+                <div class="w-8 h-8 bg-red-300 rounded-lg flex items-center justify-center mx-auto mb-2">
+                    <i class="fas fa-exclamation-triangle text-red-600 text-sm"></i>
+                </div>
+                <p class="text-sm text-red-700 font-medium">Error searching products</p>
+                <p class="text-xs text-red-600">Please try again</p>
+            </div>
+        `;
+    }
 }
 
 function displaySearchResults(products) {
     try {
         const resultsContainer = document.getElementById('search-results');
 
+        console.log('Displaying products:', products); // Debug log
+        console.log('Products length:', products ? products.length : 'products is null/undefined'); // Debug log
+        console.log('Results container:', resultsContainer); // Debug log
+
         if (!resultsContainer) {
+            console.error('Results container not found!');
             return;
         }
 
@@ -837,41 +855,162 @@ function displaySearchResults(products) {
         }
 
         resultsContainer.innerHTML = products.map(product => {
-            // For now, show all products as regular products (we can add decant logic later)
-            // This ensures the search works immediately
-            return `
-                <div class="group bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200 hover:border-blue-300 rounded-xl p-3 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5" onclick="addToCart('${product.id}', '${product.name}', ${product.price}, '${product.barcode || ''}', ${product.stock_quantity})">
-                    <div class="flex items-center justify-between">
-                        <div class="flex-1 mr-3">
-                            <div class="flex items-center mb-1">
-                                <div class="w-4 h-4 bg-blue-500 rounded-md flex items-center justify-center mr-2">
-                                    <i class="fas fa-box text-white text-xs"></i>
+            // Check if this is a perfume product with decants
+            if (product.is_perfume_with_decants && product.decant) {
+                // Determine decant option based on opened bottle status
+                let decantOption = '';
+
+                if (product.has_opened_bottle && product.opened_bottle_decants > 0) {
+                    // Has opened bottle with available decants
+                    decantOption = `
+                        <div class="group bg-white hover:bg-purple-50 border border-gray-200 hover:border-purple-300 rounded-lg p-2 cursor-pointer transition-all duration-200" onclick="addToCart('${product.id}', '${product.name} (${product.decant.decant_size_ml}ml Decant)', ${product.decant.decant_price}, '${product.sku}-DECANT', ${product.opened_bottle_decants})">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <i class="fas fa-vial text-purple-500 mr-2"></i>
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900">Decant (${product.decant.decant_size_ml}ml)</p>
+                                        <p class="text-xs text-green-600">
+                                            <i class="fas fa-check-circle mr-1"></i>
+                                            ${product.opened_bottle_decants} decants from opened bottle
+                                        </p>
+                                    </div>
                                 </div>
-                                <p class="font-semibold text-sm text-gray-900 group-hover:text-blue-900">${product.name}</p>
-                            </div>
-                            <div class="flex items-center space-x-3 text-xs text-gray-600">
-                                <span class="flex items-center">
-                                    <i class="fas fa-barcode text-gray-400 mr-1"></i>
-                                    ${product.barcode || 'N/A'}
-                                </span>
-                                <span class="flex items-center">
-                                    <i class="fas fa-warehouse text-gray-400 mr-1"></i>
-                                    ${product.stock_quantity} ${product.unit || 'pcs'}
-                                </span>
+                                <div class="text-right">
+                                    <p class="font-bold text-sm text-purple-600">UGX ${product.decant.decant_price.toLocaleString()}</p>
+                                    <button class="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white px-2 py-1 rounded text-xs font-medium transition-all duration-200">
+                                        <i class="fas fa-plus mr-1"></i>Add Decant
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                        <div class="text-right">
-                            <p class="font-bold text-sm text-blue-600 mb-1">UGX ${product.price.toLocaleString()}</p>
-                            <button class="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-3 py-1 rounded-lg text-xs font-medium shadow-sm hover:shadow-md transition-all duration-200 transform hover:scale-105">
-                                <i class="fas fa-plus mr-1"></i>Add
-                            </button>
+                    `;
+                } else if (product.can_open_new_bottle) {
+                    // No opened bottle but can open new one
+                    const newBottleDecants = Math.floor(product.bottle_size_ml / product.decant.decant_size_ml);
+                    decantOption = `
+                        <div class="group bg-white hover:bg-orange-50 border border-orange-200 hover:border-orange-300 rounded-lg p-2 cursor-pointer transition-all duration-200" onclick="confirmOpenNewBottle('${product.id}', '${product.name}', ${product.bottle_size_ml}, ${product.decant.decant_size_ml}, ${product.decant.decant_price})">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <i class="fas fa-unlock text-orange-500 mr-2"></i>
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900">Open New Bottle for Decants</p>
+                                        <p class="text-xs text-orange-600">
+                                            <i class="fas fa-exclamation-triangle mr-1"></i>
+                                            No opened bottle - will open new (${newBottleDecants} decants)
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-bold text-sm text-orange-600">UGX ${product.decant.decant_price.toLocaleString()}</p>
+                                    <button class="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white px-2 py-1 rounded text-xs font-medium transition-all duration-200">
+                                        <i class="fas fa-unlock mr-1"></i>Open & Add
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // No opened bottle and no stock to open
+                    decantOption = `
+                        <div class="bg-gray-100 border border-gray-200 rounded-lg p-2 opacity-50">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <i class="fas fa-ban text-gray-400 mr-2"></i>
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-500">Decants Unavailable</p>
+                                        <p class="text-xs text-gray-400">No opened bottle, no stock to open</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-sm text-gray-400">Out of Stock</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Show both bottle and decant options for perfume products
+                return `
+                    <div class="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-3 space-y-2">
+                        <div class="flex items-center mb-2">
+                            <div class="w-4 h-4 bg-purple-500 rounded-md flex items-center justify-center mr-2">
+                                <i class="fas fa-spray-can text-white text-xs"></i>
+                            </div>
+                            <p class="font-semibold text-sm text-gray-900">${product.name}</p>
+                            <span class="ml-2 text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">Perfume</span>
+                        </div>
+                        <div class="flex items-center space-x-3 text-xs text-gray-600 mb-3">
+                            <span class="flex items-center">
+                                <i class="fas fa-barcode text-gray-400 mr-1"></i>
+                                ${product.sku}
+                            </span>
+                            <span class="flex items-center">
+                                <i class="fas fa-warehouse text-gray-400 mr-1"></i>
+                                ${product.stock_display}
+                            </span>
+                        </div>
+
+                        <!-- Full Bottle Option -->
+                        <div class="group bg-white hover:bg-blue-50 border border-gray-200 hover:border-blue-300 rounded-lg p-2 cursor-pointer transition-all duration-200" onclick="addToCart('${product.id}', '${product.name} (Full Bottle)', ${product.price}, '${product.sku}', ${product.stock_quantity})">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <i class="fas fa-wine-bottle text-blue-500 mr-2"></i>
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900">Full Bottle (${product.bottle_size_ml}ml)</p>
+                                        <p class="text-xs text-gray-500">${product.stock_quantity} bottles available</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-bold text-sm text-blue-600">UGX ${product.price.toLocaleString()}</p>
+                                    <button class="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-2 py-1 rounded text-xs font-medium transition-all duration-200">
+                                        <i class="fas fa-plus mr-1"></i>Add Bottle
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Decant Option (Dynamic based on opened bottle status) -->
+                        ${decantOption}
+                    </div>
+                `;
+            } else {
+                // Regular product display
+                return `
+                    <div class="group bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200 hover:border-blue-300 rounded-xl p-3 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5" onclick="addToCart('${product.id}', '${product.name}', ${product.price}, '${product.sku}', ${product.stock_quantity})">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1 mr-3">
+                                <div class="flex items-center mb-1">
+                                    <div class="w-4 h-4 bg-blue-500 rounded-md flex items-center justify-center mr-2">
+                                        <i class="fas fa-box text-white text-xs"></i>
+                                    </div>
+                                    <p class="font-semibold text-sm text-gray-900 group-hover:text-blue-900">${product.name}</p>
+                                </div>
+                                <div class="flex items-center space-x-3 text-xs text-gray-600">
+                                    <span class="flex items-center">
+                                        <i class="fas fa-barcode text-gray-400 mr-1"></i>
+                                        ${product.sku}
+                                    </span>
+                                    <span class="flex items-center">
+                                        <i class="fas fa-warehouse text-gray-400 mr-1"></i>
+                                        ${product.stock_quantity} ${product.unit}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-bold text-sm text-blue-600 mb-1">UGX ${product.price.toLocaleString()}</p>
+                                <button class="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-3 py-1 rounded-lg text-xs font-medium shadow-sm hover:shadow-md transition-all duration-200 transform hover:scale-105">
+                                    <i class="fas fa-plus mr-1"></i>Add
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            `;
+                `;
+            }
         }).join('');
+
+        console.log('Products displayed successfully'); // Debug log
     } catch (error) {
-        // Silent error handling
+        console.error('Error in displaySearchResults:', error);
     }
 }
 
@@ -904,6 +1043,7 @@ async function openBarcodeScanner() {
         startBarcodeDetection(video);
 
     } catch (error) {
+        console.error('Camera access error:', error);
         loading.innerHTML = `
             <div class="text-white text-center">
                 <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
@@ -969,26 +1109,16 @@ async function processManualBarcode() {
     if (!barcode) return;
 
     try {
-        // Use the same API as the products page
-        const params = new URLSearchParams({
-            search: barcode,
-            size: 1,
-            is_active: true
-        });
-
-        const response = await fetch(`/api/products/?${params.toString()}`, {
+        const response = await fetch(`/api/pos/products/search?query=${encodeURIComponent(barcode)}&limit=1`, {
             credentials: 'include'
         });
 
         if (response.ok) {
-            const data = await response.json();
-            const products = data.products || [];
-            // Filter to only show products with stock > 0
-            const inStockProducts = products.filter(product => product.stock_quantity > 0);
+            const products = await response.json();
 
-            if (inStockProducts && inStockProducts.length > 0) {
-                const product = inStockProducts[0];
-                addToCart(product.id, product.name, product.price, product.barcode || '', product.stock_quantity);
+            if (products && products.length > 0) {
+                const product = products[0];
+                addToCart(product.id, product.name, product.price, product.sku, product.stock_quantity);
                 closeBarcodeScanner();
                 showToast(`Added "${product.name}" to cart`, 'success');
             } else {
@@ -998,6 +1128,7 @@ async function processManualBarcode() {
             showToast('Error searching for product', 'error');
         }
     } catch (error) {
+        console.error('Barcode search error:', error);
         showToast('Error processing barcode', 'error');
     }
 }
@@ -1043,6 +1174,7 @@ function addToCart(id, name, price, sku, stockQuantity) {
 
     // Ensure stockQuantity is provided
     if (stockQuantity === undefined || stockQuantity === null) {
+        console.warn('Stock quantity not provided for product:', name);
         stockQuantity = 0; // Default to 0 to prevent overselling
     }
 
@@ -1145,11 +1277,11 @@ async function refreshCartStockQuantities() {
                     }
                 }
             } catch (error) {
-                // Silent error handling
+                console.warn('Failed to refresh stock for item:', item.name, error);
             }
         }
     } catch (error) {
-        // Silent error handling
+        console.error('Error refreshing cart stock quantities:', error);
     }
 }
 
@@ -1323,6 +1455,10 @@ function toggleDiscount() {
 
 // Calculate totals
 function updateTotals() {
+    // Show subtle loading indicator for complex calculations
+    const totalElement = document.getElementById('total');
+    const originalTotal = totalElement.textContent;
+
     // Calculate subtotal (before any discounts)
     subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
@@ -1519,11 +1655,6 @@ function closeItemDiscountModal() {
 function handlePaymentMethodChange() {
     const paymentMethod = document.getElementById('payment-method').value;
     const cashFields = document.getElementById('cash-payment-fields');
-    const installmentFields = document.getElementById('installment-payment-fields');
-
-    // Hide all payment-specific fields first
-    cashFields.style.display = 'none';
-    installmentFields.style.display = 'none';
 
     if (paymentMethod === 'cash') {
         cashFields.style.display = 'block';
@@ -1531,37 +1662,14 @@ function handlePaymentMethodChange() {
         setTimeout(() => {
             document.getElementById('amount-received').focus();
         }, 100);
-    } else if (paymentMethod === 'installment') {
-        installmentFields.style.display = 'block';
-        updateInstallmentCalculation();
-        // Focus on down payment field
-        setTimeout(() => {
-            document.getElementById('down-payment').focus();
-        }, 100);
     } else {
-        // Clear values for other payment methods
+        cashFields.style.display = 'none';
         document.getElementById('amount-received').value = '';
         updateChange();
     }
 
     // Update button state immediately when payment method changes
     updateProcessSaleButton();
-}
-
-// Installment calculation
-function updateInstallmentCalculation() {
-    const downPayment = parseFloat(document.getElementById('down-payment').value) || 0;
-    const numberOfPayments = parseInt(document.getElementById('installment-payments').value) || 4;
-
-    const totalAmount = total;
-    const remainingAmount = Math.max(0, totalAmount - downPayment);
-    const paymentPerInstallment = remainingAmount / numberOfPayments;
-
-    // Update display
-    document.getElementById('installment-total').textContent = `UGX ${Math.round(totalAmount).toLocaleString()}`;
-    document.getElementById('installment-down').textContent = `UGX ${Math.round(downPayment).toLocaleString()}`;
-    document.getElementById('installment-remaining').textContent = `UGX ${Math.round(remainingAmount).toLocaleString()}`;
-    document.getElementById('installment-per-payment').textContent = `UGX ${Math.round(paymentPerInstallment).toLocaleString()}`;
 }
 
 function updateChange() {
@@ -1637,19 +1745,19 @@ function updateProcessSaleButton() {
         const downPayment = parseFloat(document.getElementById('down-payment').value) || 0;
         const remainingAmount = total - downPayment;
 
+        if (!selectedClient) {
+            processSaleButton.disabled = true;
+            processSaleButton.innerHTML = `<i class="fas fa-user mr-2"></i>Select Customer for Installment`;
+            processSaleButton.classList.remove('bg-gradient-to-r', 'from-green-500', 'to-emerald-600', 'hover:from-green-600', 'hover:to-emerald-700');
+            processSaleButton.classList.add('bg-orange-400', 'cursor-not-allowed');
+            return;
+        }
+
         if (remainingAmount <= 0) {
             processSaleButton.disabled = true;
             processSaleButton.innerHTML = `<i class="fas fa-exclamation-triangle mr-2"></i>Down Payment Too High`;
             processSaleButton.classList.remove('bg-gradient-to-r', 'from-green-500', 'to-emerald-600', 'hover:from-green-600', 'hover:to-emerald-700');
             processSaleButton.classList.add('bg-red-400', 'cursor-not-allowed');
-            return;
-        }
-
-        if (!selectedClient) {
-            processSaleButton.disabled = true;
-            processSaleButton.innerHTML = `<i class="fas fa-user-plus mr-2"></i>Select Customer for Installment`;
-            processSaleButton.classList.remove('bg-gradient-to-r', 'from-green-500', 'to-emerald-600', 'hover:from-green-600', 'hover:to-emerald-700');
-            processSaleButton.classList.add('bg-yellow-400', 'cursor-not-allowed');
             return;
         }
     }
@@ -1661,69 +1769,76 @@ function updateProcessSaleButton() {
     processSaleButton.classList.add('bg-gradient-to-r', 'from-green-500', 'to-emerald-600', 'hover:from-green-600', 'hover:to-emerald-700');
 }
 
-// Client functionality with debounce
-let clientSearchTimeout;
+// Client functionality
 async function searchClients() {
     const query = document.getElementById('client-search').value.trim();
     const resultsContainer = document.getElementById('client-results');
-
-    // Clear previous timeout
-    if (clientSearchTimeout) {
-        clearTimeout(clientSearchTimeout);
-    }
 
     if (query.length < 2) {
         resultsContainer.classList.add('hidden');
         return;
     }
 
-    // Show loading state
+    // Show loading indicator with skeleton effect
     resultsContainer.innerHTML = `
-        <div class="text-center py-4 px-3 bg-gradient-to-r from-teal-50 to-cyan-50 border border-teal-200 rounded-xl">
-            <div class="w-8 h-8 bg-teal-300 rounded-lg flex items-center justify-center mx-auto mb-2">
-                <i class="fas fa-spinner fa-spin text-teal-600 text-sm"></i>
+        <div class="space-y-2">
+            <div class="flex items-center justify-center py-3 px-3">
+                <div class="flex items-center space-x-3">
+                    <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-teal-500"></div>
+                    <span class="text-sm text-gray-600 font-medium">Searching clients...</span>
+                </div>
             </div>
-            <p class="text-sm text-teal-700 font-medium">Searching clients...</p>
+            <!-- Skeleton loading items -->
+            ${Array(2).fill(0).map(() => `
+                <div class="bg-white border border-gray-200 rounded-lg p-3 animate-pulse cursor-pointer hover:bg-gray-50">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-gray-200 rounded-full"></div>
+                        <div class="flex-1">
+                            <div class="h-4 bg-gray-200 rounded w-3/4 mb-1"></div>
+                            <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+                        </div>
+                    </div>
+                </div>
+            `).join('')}
         </div>
     `;
     resultsContainer.classList.remove('hidden');
 
-    // Debounce the search
-    clientSearchTimeout = setTimeout(async () => {
-        try {
-            const response = await fetch(`/api/pos/customers/search?query=${encodeURIComponent(query)}&limit=10`, {
-                credentials: 'include'
-            });
+    try {
+        const response = await fetch(`/api/pos/customers/search?query=${encodeURIComponent(query)}&limit=10`, {
+            credentials: 'include'
+        });
 
-            if (response.ok) {
-                const data = await response.json();
-                const clients = data.customers || []; // POS API returns customers array
-                displayClientResults(clients);
-            } else {
-                resultsContainer.innerHTML = `
-                    <div class="text-center py-4 px-3 bg-gradient-to-r from-red-50 to-red-100 border border-red-200 rounded-xl">
-                        <div class="w-8 h-8 bg-red-300 rounded-lg flex items-center justify-center mx-auto mb-2">
-                            <i class="fas fa-exclamation-triangle text-red-600 text-sm"></i>
-                        </div>
-                        <p class="text-sm text-red-700 font-medium">Error searching clients</p>
-                        <p class="text-xs text-red-600">Please try again</p>
-                    </div>
-                `;
-                resultsContainer.classList.remove('hidden');
-            }
-        } catch (error) {
+        if (response.ok) {
+            const data = await response.json();
+            const clients = data.customers || []; // POS API returns customers array
+            displayClientResults(clients);
+        } else {
+            console.error('Client search failed:', response.status);
             resultsContainer.innerHTML = `
                 <div class="text-center py-4 px-3 bg-gradient-to-r from-red-50 to-red-100 border border-red-200 rounded-xl">
                     <div class="w-8 h-8 bg-red-300 rounded-lg flex items-center justify-center mx-auto mb-2">
                         <i class="fas fa-exclamation-triangle text-red-600 text-sm"></i>
                     </div>
-                    <p class="text-sm text-red-700 font-medium">Network error</p>
-                    <p class="text-xs text-red-600">Check your connection</p>
+                    <p class="text-sm text-red-700 font-medium">Error searching clients</p>
+                    <p class="text-xs text-red-600">Please try again</p>
                 </div>
             `;
             resultsContainer.classList.remove('hidden');
         }
-    }, 300); // 300ms debounce
+    } catch (error) {
+        console.error('Client search error:', error);
+        resultsContainer.innerHTML = `
+            <div class="text-center py-4 px-3 bg-gradient-to-r from-red-50 to-red-100 border border-red-200 rounded-xl">
+                <div class="w-8 h-8 bg-red-300 rounded-lg flex items-center justify-center mx-auto mb-2">
+                    <i class="fas fa-exclamation-triangle text-red-600 text-sm"></i>
+                </div>
+                <p class="text-sm text-red-700 font-medium">Error searching clients</p>
+                <p class="text-xs text-red-600">Please try again</p>
+            </div>
+        `;
+        resultsContainer.classList.remove('hidden');
+    }
 }
 
 function displayClientResults(clients) {
@@ -1843,6 +1958,7 @@ async function addNewClient(event) {
             showToast(error.detail || 'Failed to add customer', 'error');
         }
     } catch (error) {
+        console.error('Add client error:', error);
         showToast('Failed to add customer', 'error');
     } finally {
         // Reset button state
@@ -1857,6 +1973,54 @@ function showToast(message, type = 'info') {
     alert(message);
 }
 
+// Payment method handling
+function handlePaymentMethodChange() {
+    const paymentMethod = document.getElementById('payment-method').value;
+    const cashFields = document.getElementById('cash-payment-fields');
+    const installmentFields = document.getElementById('installment-payment-fields');
+
+    // Hide all payment-specific fields first
+    cashFields.style.display = 'none';
+    installmentFields.style.display = 'none';
+
+    if (paymentMethod === 'cash') {
+        cashFields.style.display = 'block';
+        // Focus on amount received field for better UX
+        setTimeout(() => {
+            document.getElementById('amount-received').focus();
+        }, 100);
+    } else if (paymentMethod === 'installment') {
+        installmentFields.style.display = 'block';
+        updateInstallmentCalculation();
+        // Focus on down payment field
+        setTimeout(() => {
+            document.getElementById('down-payment').focus();
+        }, 100);
+    } else {
+        // Clear values for other payment methods
+        document.getElementById('amount-received').value = '';
+        updateChange();
+    }
+
+    updateProcessSaleButton();
+}
+
+// Installment calculation
+function updateInstallmentCalculation() {
+    const downPayment = parseFloat(document.getElementById('down-payment').value) || 0;
+    const numberOfPayments = parseInt(document.getElementById('installment-payments').value) || 4;
+
+    const totalAmount = total;
+    const remainingAmount = Math.max(0, totalAmount - downPayment);
+    const paymentPerInstallment = remainingAmount / numberOfPayments;
+
+    // Update display
+    document.getElementById('installment-total').textContent = `UGX ${Math.round(totalAmount).toLocaleString()}`;
+    document.getElementById('installment-down').textContent = `UGX ${Math.round(downPayment).toLocaleString()}`;
+    document.getElementById('installment-remaining').textContent = `UGX ${Math.round(remainingAmount).toLocaleString()}`;
+    document.getElementById('installment-per-payment').textContent = `UGX ${Math.round(paymentPerInstallment).toLocaleString()}`;
+}
+
 // Process sale
 async function processSale() {
     if (cart.length === 0) {
@@ -1865,15 +2029,15 @@ async function processSale() {
     }
 
     const paymentMethod = document.getElementById('payment-method').value;
-    let amountReceived = total;
+    let amountReceived = paymentMethod === 'cash' ? (parseFloat(document.getElementById('amount-received').value) || 0) : total;
 
-    if (paymentMethod === 'cash') {
-        amountReceived = parseFloat(document.getElementById('amount-received').value) || 0;
-        if (amountReceived < total) {
-            alert('Insufficient payment amount');
-            return;
-        }
-    } else if (paymentMethod === 'installment') {
+    if (paymentMethod === 'cash' && amountReceived < total) {
+        alert('Insufficient payment amount');
+        return;
+    }
+
+    // Handle installment payment validation
+    if (paymentMethod === 'installment') {
         if (!selectedClient) {
             alert('Please select a customer for installment payment');
             return;
@@ -1887,6 +2051,12 @@ async function processSale() {
 
         amountReceived = downPayment;
     }
+
+    // Show loading state on process sale button
+    const processSaleButton = document.getElementById('process-sale');
+    const originalButtonText = processSaleButton.innerHTML;
+    processSaleButton.disabled = true;
+    processSaleButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
 
     // Handle installment payment differently
     if (paymentMethod === 'installment') {
@@ -1967,6 +2137,14 @@ async function processSale() {
                 document.getElementById('down-payment').value = '';
                 document.getElementById('payment-method').value = 'cash';
                 handlePaymentMethodChange();
+
+                // Reset discount settings
+                document.getElementById('discount-toggle').checked = false;
+                document.getElementById('discount-type').value = 'fixed';
+                document.getElementById('discount-value').value = '';
+                document.getElementById('discount-controls').style.display = 'none';
+                document.getElementById('discount-toggle-status').textContent = 'Off';
+
                 updateTotals();
 
                 return;
@@ -1976,9 +2154,11 @@ async function processSale() {
             }
         } catch (error) {
             alert('Failed to create installment plan: ' + error.message);
+            // Restore button state
+            processSaleButton.disabled = false;
+            processSaleButton.innerHTML = originalButtonText;
             return;
         }
-    }
     }
 
     // Regular sale processing
@@ -2046,9 +2226,16 @@ async function processSale() {
         } else {
             const error = await response.json();
             alert(error.detail || 'Failed to process sale');
+            // Restore button state
+            processSaleButton.disabled = false;
+            processSaleButton.innerHTML = originalButtonText;
         }
     } catch (error) {
+        console.error('Sale processing error:', error);
         alert('Failed to process sale');
+        // Restore button state
+        processSaleButton.disabled = false;
+        processSaleButton.innerHTML = originalButtonText;
     }
 }
 
@@ -2338,6 +2525,7 @@ async function openNewBottleFromCart(cartItemId, productId) {
             showToast('Failed to get product information', 'error');
         }
     } catch (error) {
+        console.error('Error getting product info:', error);
         showToast('Error getting product information', 'error');
     }
 }
@@ -2425,6 +2613,7 @@ async function confirmAndOpenBottle() {
             showToast(`Failed to open bottle: ${error.detail}`, 'error');
         }
     } catch (error) {
+        console.error('Error opening bottle:', error);
         showToast('Error opening bottle', 'error');
     }
 }

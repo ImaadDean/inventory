@@ -18,6 +18,7 @@ async def get_orders(
     size: int = Query(10, ge=1, le=100),
     search: Optional[str] = Query(None),
     status: Optional[str] = Query(None),
+    order_type: Optional[str] = Query(None),
     client_id: Optional[str] = Query(None),
     date_from: Optional[date] = Query(None),
     date_to: Optional[date] = Query(None)
@@ -38,7 +39,13 @@ async def get_orders(
         
         if status:
             filter_query["status"] = status
-            
+
+        if order_type:
+            if order_type == "installment":
+                filter_query["payment_method"] = "installment"
+            elif order_type == "regular":
+                filter_query["payment_method"] = {"$ne": "installment"}
+
         if client_id:
             filter_query["client_id"] = ObjectId(client_id)
             
@@ -386,7 +393,7 @@ async def update_order_status(
             )
 
         # Validate status
-        valid_statuses = ["pending", "completed", "cancelled"]
+        valid_statuses = ["pending", "active", "completed", "cancelled"]
         if new_status not in valid_statuses:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

@@ -10,12 +10,52 @@ from ...schemas.installment import (
     InstallmentListResponse, InstallmentSummary, POSInstallmentCreate,
     InstallmentPaymentResponse
 )
-from ...models import User, Installment, InstallmentPayment, InstallmentPaymentRecord, InstallmentStatus, PaymentStatus
+from ...models import User, Installment, InstallmentPayment, InstallmentPaymentRecord, InstallmentStatus, PaymentStatus, OrderPaymentStatus
 from ...utils.auth import get_current_user, get_current_user_hybrid_dependency, require_admin_or_manager, verify_token, get_user_by_username
 from ...utils.timezone import now_kampala, kampala_to_utc
 import uuid
 
 router = APIRouter(prefix="/api/installments", tags=["Installments API"])
+
+
+def calculate_payment_schedule(remaining_amount: float, number_of_payments: int, payment_frequency: str, first_payment_date: datetime) -> List[InstallmentPayment]:
+    """Calculate payment schedule for installment plan"""
+    payments = []
+    payment_amount = remaining_amount / number_of_payments
+
+    # Calculate frequency in days
+    frequency_days = {
+        "weekly": 7,
+        "bi-weekly": 14,
+        "monthly": 30
+    }
+
+    days_between_payments = frequency_days.get(payment_frequency, 30)
+
+    for i in range(number_of_payments):
+        payment_number = i + 1
+        due_date = first_payment_date + timedelta(days=i * days_between_payments)
+
+        # For the last payment, adjust amount to handle rounding differences
+        if payment_number == number_of_payments:
+            # Calculate what's been allocated so far
+            allocated_so_far = payment_amount * (number_of_payments - 1)
+            final_payment_amount = remaining_amount - allocated_so_far
+        else:
+            final_payment_amount = payment_amount
+
+        payment = InstallmentPayment(
+            payment_number=payment_number,
+            due_date=due_date,
+            amount_due=final_payment_amount,
+            amount_paid=0.0,
+            payment_date=None,
+            status=PaymentStatus.PENDING,
+            notes=None
+        )
+        payments.append(payment)
+
+    return payments
 
 
 
@@ -569,6 +609,34 @@ async def record_payment(
                 }
             )
 
+            # Update corresponding order status to fully paid
+            await db.orders.update_one(
+                {"installment_id": ObjectId(installment_id)},
+                {
+                    "$set": {
+                        "payment_status": OrderPaymentStatus.PAID,
+                        "status": "completed",
+                        "updated_at": kampala_to_utc(now_kampala())
+                    }
+                }
+            )
+
+            # Update customer total purchases with remaining amount
+            if updated_installment.get("customer_id"):
+                remaining_paid = sum(p.get("amount_paid", 0) for p in updated_installment.get("payments", []))
+                await db.customers.update_one(
+                    {"_id": updated_installment["customer_id"]},
+                    {
+                        "$inc": {
+                            "total_purchases": remaining_paid
+                        },
+                        "$set": {
+                            "last_purchase_date": kampala_to_utc(now_kampala()),
+                            "updated_at": kampala_to_utc(now_kampala())
+                        }
+                    }
+                )
+
         # Return payment record
         return InstallmentPaymentRecordResponse(
             id=str(result.inserted_id),
@@ -677,6 +745,70 @@ async def create_installment_from_pos(
 
         # Insert installment
         result = await db.installments.insert_one(installment_doc)
+
+        # Create corresponding order record
+        order_count = await db.orders.count_documents({})
+        order_number = f"ORD-{order_count + 1:06d}"
+
+        # Prepare order items
+        order_items = []
+        for item in items:
+            order_items.append({
+                "product_id": item.get("product_id", ""),
+                "product_name": item.get("product_name", ""),
+                "quantity": item.get("quantity", 1),
+                "unit_price": item.get("unit_price", 0),
+                "total_price": item.get("total_price", 0),
+                "discount_amount": item.get("discount_amount", 0)
+            })
+
+        # Create order document for installment
+        order_doc = {
+            "order_number": order_number,
+            "client_id": ObjectId(installment_data.customer_id) if installment_data.customer_id else None,
+            "client_name": installment_data.customer_name,
+            "client_email": "",
+            "client_phone": installment_data.customer_phone or "",
+            "items": order_items,
+            "subtotal": installment_data.total_amount,
+            "tax": 0,
+            "discount": sum(item.get("discount_amount", 0) for item in items),
+            "total": installment_data.total_amount,
+            "status": "active",  # Order is active since it's an installment
+            "payment_method": "installment",
+            "payment_status": OrderPaymentStatus.PARTIALLY_PAID,  # Down payment received, remaining in installments
+            "notes": f"Installment order - Down payment: UGX {installment_data.down_payment:,.0f}, Remaining: UGX {remaining_amount:,.0f}",
+            "installment_id": result.inserted_id,  # Link to installment plan
+            "installment_number": installment_number,
+            "created_by": current_user.id,
+            "created_at": kampala_to_utc(now_kampala()),
+            "updated_at": kampala_to_utc(now_kampala())
+        }
+
+        # Insert order
+        await db.orders.insert_one(order_doc)
+
+        # Update installment with order reference
+        await db.installments.update_one(
+            {"_id": result.inserted_id},
+            {"$set": {"order_number": order_number}}
+        )
+
+        # Update customer statistics if customer is provided
+        if installment_data.customer_id:
+            await db.customers.update_one(
+                {"_id": ObjectId(installment_data.customer_id)},
+                {
+                    "$inc": {
+                        "total_purchases": installment_data.down_payment,  # Only count down payment for now
+                        "total_orders": 1
+                    },
+                    "$set": {
+                        "last_purchase_date": kampala_to_utc(now_kampala()),
+                        "updated_at": kampala_to_utc(now_kampala())
+                    }
+                }
+            )
 
         # Get created installment
         created_installment = await db.installments.find_one({"_id": result.inserted_id})
