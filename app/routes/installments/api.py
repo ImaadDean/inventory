@@ -320,6 +320,7 @@ async def format_installment_response(installment_doc: dict, db) -> InstallmentR
     return InstallmentResponse(
         id=str(installment_doc["_id"]),
         installment_number=installment_doc["installment_number"],
+        order_number=installment_doc.get("order_number"),  # Include order_number from linked POS sale
         customer_id=str(installment_doc["customer_id"]) if installment_doc.get("customer_id") else None,
         customer_name=installment_doc["customer_name"],
         customer_phone=installment_doc.get("customer_phone"),

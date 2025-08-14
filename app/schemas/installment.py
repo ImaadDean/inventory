@@ -93,6 +93,7 @@ class InstallmentPaymentResponse(BaseModel):
 class InstallmentResponse(BaseModel):
     id: str
     installment_number: str
+    order_number: Optional[str]  # Order number from linked POS sale
     customer_id: Optional[str]
     customer_name: str
     customer_phone: Optional[str]

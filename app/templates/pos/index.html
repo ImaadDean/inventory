@@ -1518,6 +1518,9 @@ function updateTotals() {
     if (paymentMethod === 'installment') {
         updateInstallmentCalculation();
     }
+
+    // Update payment method state
+    updatePaymentMethodState();
 }
 
 // Item discount functionality
@@ -1721,10 +1724,22 @@ function updateProcessSaleButton() {
     const paymentMethod = document.getElementById('payment-method').value;
     const amountReceived = parseFloat(document.getElementById('amount-received').value) || 0;
 
-    // Check basic conditions
+    // Update payment method dropdown state
+    updatePaymentMethodState();
+
+    // Check basic conditions first - cart items
     if (cart.length === 0) {
         processSaleButton.disabled = true;
         processSaleButton.innerHTML = '<i class="fas fa-shopping-cart mr-2"></i>Add Items to Cart';
+        processSaleButton.classList.remove('bg-gradient-to-r', 'from-green-500', 'to-emerald-600', 'hover:from-green-600', 'hover:to-emerald-700');
+        processSaleButton.classList.add('bg-gray-400', 'cursor-not-allowed');
+        return;
+    }
+
+    // Check if no client is selected (only after cart has items)
+    if (!selectedClient) {
+        processSaleButton.disabled = true;
+        processSaleButton.innerHTML = '<i class="fas fa-user mr-2"></i>Select Client';
         processSaleButton.classList.remove('bg-gradient-to-r', 'from-green-500', 'to-emerald-600', 'hover:from-green-600', 'hover:to-emerald-700');
         processSaleButton.classList.add('bg-gray-400', 'cursor-not-allowed');
         return;
@@ -1767,6 +1782,20 @@ function updateProcessSaleButton() {
     processSaleButton.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Process Sale';
     processSaleButton.classList.remove('bg-gray-400', 'bg-red-400', 'cursor-not-allowed');
     processSaleButton.classList.add('bg-gradient-to-r', 'from-green-500', 'to-emerald-600', 'hover:from-green-600', 'hover:to-emerald-700');
+}
+
+// Function to enable/disable payment method dropdown
+function updatePaymentMethodState() {
+    const paymentMethodDropdown = document.getElementById('payment-method');
+
+    // Disable entire dropdown if no client is selected
+    if (!selectedClient) {
+        paymentMethodDropdown.disabled = true;
+        paymentMethodDropdown.classList.add('bg-gray-100', 'cursor-not-allowed');
+    } else {
+        paymentMethodDropdown.disabled = false;
+        paymentMethodDropdown.classList.remove('bg-gray-100', 'cursor-not-allowed');
+    }
 }
 
 // Client functionality
@@ -1893,12 +1922,14 @@ function selectClient(id, name, phone) {
     document.getElementById('selected-client').classList.remove('hidden');
     document.getElementById('client-results').classList.add('hidden');
     document.getElementById('client-search').value = '';
+    updatePaymentMethodState();
 }
 
 function clearSelectedClient() {
     selectedClient = null;
     document.getElementById('selected-client').classList.add('hidden');
     document.getElementById('client-search').value = '';
+    updatePaymentMethodState();
 }
 
 function openAddClientModal() {
@@ -2129,7 +2160,7 @@ async function processSale() {
 
                 // Prepare installment receipt data
                 const installmentReceiptData = {
-                    orderNumber: result.order_number || result.installment_number,
+                    orderNumber: result.order_number, // Use correct order number from linked POS sale
                     installmentNumber: result.installment_number,
                     cart: [...cart], // Create a copy of the cart
                     subtotal: subtotal,
