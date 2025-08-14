@@ -38,7 +38,7 @@ jobs:
             # Build new image
             docker build -t inventory .
             # Start new container
-            docker run -d --name inventory -p 8001:8001 \
+            docker run -d --name inventory -p 8000:8000 \
               --restart unless-stopped \
               -e MONGODB_CONNECTION_STRING=${{ secrets.MONGODB_CONNECTION_STRING }} \
               inventory
