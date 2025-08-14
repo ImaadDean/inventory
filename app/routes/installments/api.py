@@ -825,6 +825,105 @@ async def create_installment_from_pos(
         )
 
 
+@router.get("/{installment_id}/receipt")
+async def get_installment_receipt(
+    installment_id: str,
+    current_user: User = Depends(get_current_user_hybrid_dependency())
+):
+    """Get installment receipt data for printing"""
+    try:
+        # Check if user has admin or manager role
+        if current_user.role not in ['admin', 'inventory_manager']:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Insufficient permissions. Admin or Manager role required."
+            )
+
+        db = await get_database()
+
+        if not ObjectId.is_valid(installment_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid installment ID"
+            )
+
+        # Get installment
+        installment = await db.installments.find_one({"_id": ObjectId(installment_id)})
+        if not installment:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Installment not found"
+            )
+
+        # Get user who created the installment
+        created_by_name = "System"
+        if installment.get("created_by"):
+            try:
+                user = await db.users.find_one({"_id": installment["created_by"]})
+                if user:
+                    created_by_name = user.get("full_name", "Staff Member")
+            except:
+                created_by_name = "Staff Member"
+
+        # Calculate totals and discounts
+        items_subtotal = 0
+        total_item_discounts = 0
+        
+        for item in installment.get("items", []):
+            unit_price = item.get("unit_price", item.get("price", 0))
+            quantity = item.get("quantity", 1)
+            item_discount = item.get("discount_amount", 0)
+            
+            items_subtotal += unit_price * quantity
+            total_item_discounts += item_discount
+
+        # Calculate payment schedule summary
+        next_payment = None
+        total_paid = installment.get("down_payment", 0)
+        
+        for payment in installment.get("payments", []):
+            total_paid += payment.get("amount_paid", 0)
+            if not next_payment and payment.get("status") in ["pending", "partial"]:
+                next_payment = {
+                    "payment_number": payment.get("payment_number"),
+                    "due_date": payment.get("due_date"),
+                    "amount_due": payment.get("amount_due", 0)
+                }
+
+        # Prepare receipt data
+        receipt_data = {
+            "installment_number": installment.get("installment_number", ""),
+            "order_number": installment.get("order_number", ""),
+            "customer_name": installment.get("customer_name", "Walk-in Client"),
+            "customer_phone": installment.get("customer_phone", ""),
+            "items": installment.get("items", []),
+            "subtotal": items_subtotal,
+            "total_discounts": total_item_discounts,
+            "total_amount": installment.get("total_amount", 0),
+            "down_payment": installment.get("down_payment", 0),
+            "remaining_amount": installment.get("remaining_amount", 0),
+            "number_of_payments": installment.get("number_of_payments", 0),
+            "payment_frequency": installment.get("payment_frequency", "monthly"),
+            "per_payment_amount": installment.get("remaining_amount", 0) / max(installment.get("number_of_payments", 1), 1),
+            "next_payment": next_payment,
+            "total_paid": total_paid,
+            "status": installment.get("status", ""),
+            "created_at": installment.get("created_at"),
+            "created_by_name": created_by_name,
+            "notes": installment.get("notes", "")
+        }
+
+        return receipt_data
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate installment receipt: {str(e)}"
+        )
+
+
 @router.delete("/{installment_id}")
 async def cancel_installment(
     installment_id: str,

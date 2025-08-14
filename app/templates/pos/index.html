@@ -2127,8 +2127,24 @@ async function processSale() {
             if (installmentResponse.ok) {
                 const result = await installmentResponse.json();
 
-                // Show success message
-                alert(`Installment plan created successfully!\nInstallment #: ${result.installment_number}\nDown payment: UGX ${Math.round(amountReceived).toLocaleString()}\n${saleId ? 'Sale ID: ' + saleId : ''}`);
+                // Prepare installment receipt data
+                const installmentReceiptData = {
+                    orderNumber: result.order_number || result.installment_number,
+                    installmentNumber: result.installment_number,
+                    cart: [...cart], // Create a copy of the cart
+                    subtotal: subtotal,
+                    discount: discount,
+                    total: total,
+                    paymentMethod: 'installment',
+                    downPayment: amountReceived,
+                    remainingAmount: total - amountReceived,
+                    numberOfPayments: parseInt(document.getElementById('installment-payments').value),
+                    paymentFrequency: document.getElementById('payment-frequency').value,
+                    perPaymentAmount: (total - amountReceived) / parseInt(document.getElementById('installment-payments').value),
+                    client: selectedClient,
+                    date: new Date().toLocaleString(),
+                    isInstallment: true
+                };
 
                 // Reset form
                 cart = [];
@@ -2146,6 +2162,9 @@ async function processSale() {
                 document.getElementById('discount-toggle-status').textContent = 'Off';
 
                 updateTotals();
+
+                // Show installment receipt modal
+                showInstallmentReceipt(installmentReceiptData);
 
                 return;
             } else {
@@ -2407,6 +2426,165 @@ function showReceipt(receiptData) {
 
 function closeReceiptModal() {
     document.getElementById('receipt-modal').classList.add('hidden');
+}
+
+// Installment receipt function
+function showInstallmentReceipt(receiptData) {
+    const receiptContent = document.getElementById('receipt-content');
+
+    const orderDate = new Date();
+    const receiptDate = orderDate.toLocaleDateString('en-UG', {
+        timeZone: 'Africa/Kampala'
+    });
+    const receiptTime = orderDate.toLocaleTimeString('en-UG', {
+        timeZone: 'Africa/Kampala',
+        hour12: false
+    });
+
+    receiptContent.innerHTML = `
+        <div class="receipt-print" id="receipt-print">
+            <div class="receipt-header text-center mb-4">
+                <h2 class="text-xl font-bold">PERFUMES AND MORE</h2>
+                <p class="text-sm text-gray-600 italic">by Tuta</p>
+                <p class=\"text-xs font-bold mt-1\">INSTALLMENT PLAN RECEIPT</p>
+                <div class="border-b border-gray-300 my-2"></div>
+            </div>
+
+            <div class="receipt-info text-sm mb-4">
+                <div class="flex justify-between">
+                    <span>Date:</span>
+                    <span>${receiptDate}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Time:</span>
+                    <span>${receiptTime}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Order #:</span>
+                    <span>${receiptData.orderNumber}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Installment #:</span>
+                    <span class=\"font-bold\">${receiptData.installmentNumber}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Status:</span>
+                    <span class=\"font-medium\">Installment Plan</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Processed by:</span>
+                    <span>{{ user.full_name }}</span>
+                </div>
+                ${receiptData.client && receiptData.client.name !== 'Walk-in Client' ? `
+                <div class="flex justify-between">
+                    <span>Client:</span>
+                    <span class="font-medium">${receiptData.client.name}</span>
+                </div>
+                ` : ''}
+                ${receiptData.client && receiptData.client.phone ? `
+                <div class="flex justify-between">
+                    <span>Phone:</span>
+                    <span>${receiptData.client.phone}</span>
+                </div>
+                ` : ''}
+                <div class="border-b border-gray-300 my-2"></div>
+            </div>
+
+            <div class="receipt-items mb-4">
+                <div class="text-sm font-semibold mb-2">ITEMS:</div>
+                ${receiptData.cart.map(item => {
+                    const itemSubtotal = item.price * item.quantity;
+                    const itemDiscount = item.discount_amount || 0;
+                    const itemTotal = itemSubtotal - itemDiscount;
+
+                    return `
+                    <div class="text-sm mb-2">
+                        <div class="flex justify-between">
+                            <div class="flex-1">
+                                <div class="font-medium">${item.name}</div>
+                                <div class="text-xs text-gray-500">${item.sku}</div>
+                            </div>
+                        </div>
+                        <div class="flex justify-between mt-1">
+                            <div>${item.quantity} x UGX ${Math.round(item.price).toLocaleString('en-UG')}</div>
+                            <div class="font-medium">UGX ${Math.round(itemSubtotal).toLocaleString('en-UG')}</div>
+                        </div>
+                        ${itemDiscount > 0 ? `
+                        <div class="flex justify-between mt-1 text-green-600">
+                            <div class="text-xs">Item Discount:</div>
+                            <div class="text-xs">-UGX ${Math.round(itemDiscount).toLocaleString('en-UG')}</div>
+                        </div>
+                        <div class="flex justify-between mt-1 font-medium">
+                            <div class="text-xs">Item Total:</div>
+                            <div class="text-xs">UGX ${Math.round(itemTotal).toLocaleString('en-UG')}</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                    `;
+                }).join('')}
+                <div class="border-b border-gray-300 my-2"></div>
+            </div>
+
+            <div class="receipt-totals text-sm mb-4">
+                <div class="flex justify-between">
+                    <span>Subtotal:</span>
+                    <span>UGX ${Math.round(receiptData.subtotal || 0).toLocaleString('en-UG')}</span>
+                </div>
+                ${receiptData.discount > 0 ? `
+                <div class="flex justify-between text-green-600">
+                    <span>Discount:</span>
+                    <span>-UGX ${Math.round(receiptData.discount).toLocaleString('en-UG')}</span>
+                </div>
+                ` : ''}
+                <div class="flex justify-between font-bold text-lg border-t border-gray-300 pt-2">
+                    <span>TOTAL AMOUNT:</span>
+                    <span>UGX ${Math.round(receiptData.total || 0).toLocaleString('en-UG')}</span>
+                </div>
+            </div>
+
+            <div class=\"receipt-installment text-sm mb-4 bg-gray-50 p-3 rounded-lg border\">
+                <div class=\"text-sm font-semibold mb-2\">INSTALLMENT PLAN DETAILS:</div>
+                <div class="flex justify-between">
+                    <span>Down Payment (Received):</span>
+                    <span class=\"font-bold\">UGX ${Math.round(receiptData.downPayment).toLocaleString('en-UG')}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Remaining Balance:</span>
+                    <span class=\"font-bold\">UGX ${Math.round(receiptData.remainingAmount).toLocaleString('en-UG')}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Number of Payments:</span>
+                    <span>${receiptData.numberOfPayments} ${receiptData.paymentFrequency}</span>
+                </div>
+                <div class="flex justify-between border-t border-purple-200 pt-1 mt-1">
+                    <span>Amount per Payment:</span>
+                    <span class=\"font-bold\">UGX ${Math.round(receiptData.perPaymentAmount).toLocaleString('en-UG')}</span>
+                </div>
+            </div>
+
+            <div class="receipt-payment text-sm mb-4">
+                <div class="border-b border-gray-300 my-2"></div>
+                <div class="flex justify-between">
+                    <span>Payment Method:</span>
+                    <span class=\"capitalize font-medium\">Installment Plan</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Down Payment Received:</span>
+                    <span class="font-bold">UGX ${Math.round(receiptData.downPayment).toLocaleString('en-UG')}</span>
+                </div>
+            </div>
+
+            <div class="receipt-footer text-center text-xs text-gray-500 mt-4">
+                <div class="border-b border-gray-300 my-2"></div>
+                <p class=\"font-bold\">INSTALLMENT PLAN</p>
+                <p>Next payment due as per schedule</p>
+                <p>Thank you for choosing our installment plan!</p>
+                <p>Please keep this receipt for your records</p>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('receipt-modal').classList.remove('hidden');
 }
 
 function printReceipt() {
