@@ -37,9 +37,16 @@ jobs:
             docker rm inventory || true
             # Build new image
             docker build -t inventory .
-            # Start new container (map host 8001 -> container 8000)
-            docker run -d --name inventory -p 8001:8000 \
-              --restart unless-stopped \
+            # Create network if it doesn't exist
+            docker network create inventory-network || true
+            # Start new container
+            docker run -d --name inventory -p 8001:8001 \
+              --network inventory-network \
+              -e MONGODB_HOST=mongodb \
+              -e MONGODB_PORT=27017 \
+              -e MONGODB_DATABASE=inventory \
+              -e MONGODB_USERNAME=imaad \
+              -e MONGODB_PASSWORD=Ertdfgxc \
               inventory
             # Show running containers
             docker ps
