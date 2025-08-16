@@ -8,11 +8,8 @@ services:
       dockerfile: Dockerfile
     command: python start.py
     ports:
-      - "8001:8000"  # Host:Container
+      - "8001:8000"
     restart: unless-stopped
     environment:
-      # Add your environment variables here
       APP_ENV: production
-
-    volumes:
-      # - .:/app  # Optional: only for local dev, remove in production
+      MONGO_URI: "your-mongodb-uri"
