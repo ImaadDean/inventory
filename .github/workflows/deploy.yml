@@ -1,4 +1,4 @@
-name: Deploy to Remote Server with Docker Compose
+name: Deploy to Remote Server without Git
 
 on:
   push:
@@ -9,26 +9,40 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Deploy on remote server
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Compress project
+        run: tar -czf inventory.tar.gz .
+
+      - name: Copy project to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "inventory.tar.gz"
+          target: "~/"
+
+      - name: Deploy on server
         uses: appleboy/ssh-action@v0.1.8
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            # Stop & remove any existing inventory container
+            # Stop and remove old container & volumes
             docker rm -f inventory || true
+            docker volume prune -f || true
 
-            # Remove old project folder completely
+            # Remove old folder & recreate
             rm -rf ~/inventory
             mkdir -p ~/inventory
+
+            # Extract new code
+            tar -xzf ~/inventory.tar.gz -C ~/inventory
+            rm ~/inventory.tar.gz
+
+            # Build & start fresh containers
             cd ~/inventory
-
-            # Initialize repo if missing
-            git init
-            git remote add origin git@github.com:${{ github.repository }}
-            git fetch origin
-            git checkout -b main origin/main
-
-            # Build & run
             docker compose up -d --build
