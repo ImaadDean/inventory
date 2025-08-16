@@ -16,20 +16,21 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            # Ensure Docker & Compose are installed
-            sudo apt update -y
-            sudo apt install -y docker.io docker-compose-plugin
+            # Create folder if it doesn't exist
+            mkdir -p ~/inventory
+            cd ~/inventory
 
-            # Enable Docker to start on boot
-            sudo systemctl enable --now docker
+            # If not a git repo, initialize and add origin
+            if [ ! -d ".git" ]; then
+              git init
+              git remote add origin git@github.com:${{ github.repository }}
+              git fetch origin
+              git checkout -b main origin/main
+            else
+              git reset --hard
+              git pull origin main
+            fi
 
-            # Go to the project folder where docker-compose.yml is already present
-            cd ~/inventory-app
-
-            # Pull latest changes
-            git reset --hard
-            git pull origin main
-
-            # Rebuild and restart
-            docker compose down
+            # Build & restart the container
+            docker compose down || true
             docker compose up -d --build
