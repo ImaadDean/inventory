@@ -6,18 +6,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    command: python start.py
     ports:
-      - "8001:8001"
+      - "8001:8000"  # Host:Container
     restart: unless-stopped
     environment:
+      # Add your environment variables here
       APP_ENV: production
-      APP_PORT: 8001
-    volumes:
-      # Persist logs in /var/lib/inventory-logs on the host
-      - inventory_logs:/app/logs
-      # Optional: mount current code for dev hot-reload
-      # - .:/app
 
-volumes:
-  inventory_logs:
-    driver: local
+    volumes:
+      # - .:/app  # Optional: only for local dev, remove in production
