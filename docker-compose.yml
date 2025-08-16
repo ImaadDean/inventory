@@ -1,40 +1,23 @@
-version: '3.8'
+version: "3.9"
 
 services:
   inventory:
-    build: .
     container_name: inventory
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "8001:8001"
-    depends_on:
-      - mongodb
+    restart: unless-stopped
     environment:
-      - MONGODB_HOST=mongodb
-      - MONGODB_PORT=27017
-      - MONGODB_DATABASE=inventory
-      - MONGODB_USERNAME=imaad
-    restart: always
-    networks:
-      - inventory-network
-
-  mongodb:
-    image: mongo
-    container_name: mongodb
-    ports:
-      - "27017:27017"
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=imaad
-      - MONGO_INITDB_ROOT_PASSWORD=Ertdfgxc
-      - MONGO_INITDB_DATABASE=inventory
+      APP_ENV: production
+      APP_PORT: 8001
     volumes:
-      - mongodb_data:/data/db
-    restart: always
-    networks:
-      - inventory-network
-
-networks:
-  inventory-network:
-    driver: bridge
+      # Persist logs in /var/lib/inventory-logs on the host
+      - inventory_logs:/app/logs
+      # Optional: mount current code for dev hot-reload
+      # - .:/app
 
 volumes:
-  mongodb_data:
+  inventory_logs:
+    driver: local

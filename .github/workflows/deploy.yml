@@ -1,52 +1,37 @@
-name: Deploy to Oracle Cloud
+name: Deploy to Remote Server with Docker Compose
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
   deploy:
-    name: Deploy via SSH and Docker
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout the repo
-        uses: actions/checkout@v3
-
-      - name: Copy project to remote server
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "./"
-          target: "/home/${{ secrets.SSH_USER }}/inventory"
-          strip_components: 0  # keep directory structure
-
-      - name: SSH into remote server and run Docker commands
-        uses: appleboy/ssh-action@master
+      - name: Deploy on remote server via SSH
+        uses: appleboy/ssh-action@v0.1.8
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /home/${{ secrets.SSH_USER }}/inventory
-            # Stop and remove existing inventory container
-            docker stop inventory || true
-            docker rm inventory || true
-            # Build new image
-            docker build -t inventory .
-            # Create network if it doesn't exist
-            docker network create inventory-network || true
-            # Start new container
-            docker run -d --name inventory -p 8001:8001 \
-              --network inventory-network \
-              -e MONGODB_HOST=mongodb \
-              -e MONGODB_PORT=27017 \
-              -e MONGODB_DATABASE=inventory \
-              -e MONGODB_USERNAME=imaad \
-              -e MONGODB_PASSWORD=Ertdfgxc \
-              inventory
-            # Show running containers
-            docker ps
+            # Install Docker & Compose if missing
+            if ! command -v docker &> /dev/null; then
+              sudo apt update
+              sudo apt install -y docker.io docker-compose-plugin
+              sudo systemctl enable --now docker
+            fi
+
+            # Pull or clone repo
+            if [ ! -d ~/inventory-app ]; then
+              git clone git@github.com:${{ github.repository }} ~/inventory-app
+            fi
+
+            cd ~/inventory-app
+            git reset --hard
+            git pull origin main
+
+            # Restart container with latest code
+            docker compose down
+            docker compose up -d --build
