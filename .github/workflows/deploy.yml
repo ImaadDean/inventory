@@ -9,29 +9,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Deploy on remote server via SSH
+      - name: Deploy on remote server
         uses: appleboy/ssh-action@v0.1.8
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            # Install Docker & Compose if missing
-            if ! command -v docker &> /dev/null; then
-              sudo apt update
-              sudo apt install -y docker.io docker-compose-plugin
-              sudo systemctl enable --now docker
-            fi
+            # Ensure Docker & Compose are installed
+            sudo apt update -y
+            sudo apt install -y docker.io docker-compose-plugin
 
-            # Pull or clone repo
-            if [ ! -d ~/inventory-app ]; then
-              git clone git@github.com:${{ github.repository }} ~/inventory-app
-            fi
+            # Enable Docker to start on boot
+            sudo systemctl enable --now docker
 
+            # Go to the project folder where docker-compose.yml is already present
             cd ~/inventory-app
+
+            # Pull latest changes
             git reset --hard
             git pull origin main
 
-            # Restart container with latest code
+            # Rebuild and restart
             docker compose down
             docker compose up -d --build
