@@ -13,7 +13,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Compress project
-        run: tar -czf inventory.tar.gz .
+        run: tar --warning=no-file-changed -czf inventory.tar.gz . || true
 
       - name: Copy project to server
         uses: appleboy/scp-action@v0.1.7
