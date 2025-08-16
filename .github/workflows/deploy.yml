@@ -37,10 +37,9 @@ jobs:
             docker rm inventory || true
             # Build new image
             docker build -t inventory .
-            # Start new container
-            docker run -d --name inventory -p 8001:8001 \
+            # Start new container (map host 8001 -> container 8000)
+            docker run -d --name inventory -p 8001:8000 \
               --restart unless-stopped \
-              -e MONGODB_CONNECTION_STRING=${{ secrets.MONGODB_CONNECTION_STRING }} \
               inventory
             # Show running containers
             docker ps
