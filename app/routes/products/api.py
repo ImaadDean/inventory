@@ -121,7 +121,7 @@ async def get_suppliers_dropdown():
         )
 
 
-async def update_supplier_on_restock(db, supplier_name: str, product_id: str, product_name: str, product_sku: str):
+async def update_supplier_on_restock(db, supplier_name: str, product_id: str, product_name: str):
     """Update supplier information when a product is restocked and return supplier ID"""
     try:
         suppliers_collection = db.suppliers
@@ -276,12 +276,11 @@ async def create_product_api(
         if product_data.supplier and product_data.cost_price and product_data.cost_price > 0:
             # Update supplier information
             supplier_id = await update_supplier_on_restock(
-                db=db,
-                supplier_name=product_data.supplier,
-                product_id=product_id,
-                product_name=product_data.name,
-                product_sku=""  # No SKU field anymore
-            )
+        db=db,
+        supplier_name=product_data.supplier,
+        product_id=product_id,
+        product_name=product_data.name
+    )
 
             # Create expense record for initial stock
             if product_data.stock_quantity > 0:
@@ -797,7 +796,6 @@ async def restock_product(
         restock_log = {
             "product_id": ObjectId(product_id),
             "product_name": product["name"],
-            "product_sku": product["sku"],
             "quantity_added": stock_update.quantity,
             "previous_stock": current_stock,
             "new_stock": new_stock,
@@ -817,8 +815,7 @@ async def restock_product(
                 db=db,
                 supplier_name=stock_update.supplier_name,
                 product_id=product_id,
-                product_name=product["name"],
-                product_sku=product["sku"]
+                product_name=product["name"]
             )
 
         # Create automatic expense if cost information is provided

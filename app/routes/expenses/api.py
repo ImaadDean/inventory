@@ -224,11 +224,10 @@ async def create_expense(
             "status": expense_data.status,
             "created_at": kampala_to_utc(now_kampala()),
             "updated_at": kampala_to_utc(now_kampala()),
-            "created_by": user.username
+            "created_by": user.username,
+            "expense_date": expense_data.expense_date.isoformat() if expense_data.expense_date else None
         }
-        
         result = await expenses_collection.insert_one(expense_doc)
-        
         if result.inserted_id:
             return {
                 "message": "Expense created successfully",
@@ -305,8 +304,9 @@ async def update_expense(
         
         # Add fields that are being updated
         update_data = expense_data.dict(exclude_unset=True)
+        if "expense_date" in update_data:
+            update_data["expense_date"] = expense_data.expense_date.isoformat() if expense_data.expense_date else None
         update_doc.update(update_data)
-        
         result = await expenses_collection.update_one(
             {"_id": ObjectId(expense_id)},
             {"$set": update_doc}
