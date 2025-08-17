@@ -1738,6 +1738,8 @@ function displayProducts(products) {
     const tableBody = document.querySelector('#products-table-body');
     if (!tableBody) return;
 
+    tableBody.innerHTML = ''; // Clear the table body before adding new rows
+
     if (products.length === 0) {
         tableBody.innerHTML = `
             <tr>
@@ -1753,7 +1755,7 @@ function displayProducts(products) {
         return;
     }
 
-    tableBody.innerHTML = generateProductRows(products);
+    tableBody.insertAdjacentHTML('beforeend', generateProductRows(products));
 }
 
 // Function to append products for infinite scroll
@@ -1888,29 +1890,46 @@ function showLoadingIndicator() {
     const tableBody = document.querySelector('#products-table-body');
     if (!tableBody) return;
 
-    // Add loading row at the bottom
-    const loadingRow = document.createElement('tr');
-    loadingRow.id = 'loading-indicator';
-    loadingRow.innerHTML = `
-        <td colspan="6" class="px-3 py-6 text-center">
-            <div class="flex items-center justify-center space-x-3 text-gray-600">
-                <div class="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent"></div>
-                <span class="text-sm font-medium">Loading products...</span>
-                <div class="flex space-x-1">
-                    <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0ms"></div>
-                    <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 150ms"></div>
-                    <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 300ms"></div>
+    const skeletonRow = `
+        <tr class="animate-pulse">
+            <td class="px-3 py-3 whitespace-nowrap">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-gray-300 rounded-lg mr-3 flex-shrink-0"></div>
+                    <div class="min-w-0 flex-1">
+                        <div class="h-4 bg-gray-300 rounded w-3/4"></div>
+                    </div>
                 </div>
-            </div>
-        </td>
+            </td>
+            <td class="px-3 py-3 whitespace-nowrap">
+                <div class="h-4 bg-gray-300 rounded w-20"></div>
+            </td>
+            <td class="px-3 py-3 whitespace-nowrap">
+                <div class="h-4 bg-gray-300 rounded w-24"></div>
+            </td>
+            <td class="px-3 py-3 whitespace-nowrap">
+                <div class="h-4 bg-gray-300 rounded w-16"></div>
+            </td>
+            <td class="px-3 py-3 whitespace-nowrap">
+                <div class="h-6 bg-gray-300 rounded-full w-24"></div>
+            </td>
+            <td class="px-3 py-3 whitespace-nowrap text-right text-sm font-medium">
+                <div class="flex items-center justify-end space-x-1">
+                    <div class="h-6 w-6 bg-gray-300 rounded"></div>
+                    <div class="h-6 w-6 bg-gray-300 rounded"></div>
+                    <div class="h-6 w-6 bg-gray-300 rounded"></div>
+                </div>
+            </td>
+        </tr>
     `;
-    tableBody.appendChild(loadingRow);
+
+    tableBody.innerHTML = skeletonRow.repeat(5);
 }
 
 function hideLoadingIndicator() {
-    const loadingIndicator = document.getElementById('loading-indicator');
-    if (loadingIndicator) {
-        loadingIndicator.remove();
+    const tableBody = document.querySelector('#products-table-body');
+    if (tableBody) {
+        const skeletonRows = tableBody.querySelectorAll('.animate-pulse');
+        skeletonRows.forEach(row => row.remove());
     }
 }
 
@@ -3932,17 +3951,17 @@ document.addEventListener('DOMContentLoaded', function() {
     searchInput.addEventListener('input', function() {
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => {
-            loadProducts(1, false); // Reset pagination when searching
+            loadProducts(1, true); // Reset pagination when searching
         }, 500); // Wait 500ms after user stops typing
     });
 
     // Filter on dropdown changes
     categoryFilter.addEventListener('change', function() {
-        loadProducts(1, false); // Reset pagination when filtering
+        loadProducts(1, true); // Reset pagination when filtering
     });
 
     stockFilter.addEventListener('change', function() {
-        loadProducts(1, false); // Reset pagination when filtering
+        loadProducts(1, true); // Reset pagination when filtering
     });
 
     // Check for success/error messages in URL parameters
