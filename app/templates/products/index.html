@@ -1643,6 +1643,7 @@ function loadProductStats() {
     });
 }
 
+
 // Pagination state variables
 let currentPage = 1;
 let totalProducts = 0;
@@ -1651,32 +1652,15 @@ let isLoading = false;
 let hasMoreProducts = true;
 
 // Load products with filtering
-function loadProducts(resetPagination = true) {
-    console.log('loadProducts called with resetPagination:', resetPagination);
-    console.log('Before update - currentPage:', currentPage, 'hasMoreProducts:', hasMoreProducts, 'isLoading:', isLoading);
-
-    if (resetPagination) {
-        currentPage = 1;
-        hasMoreProducts = true;
-        loadedProductsCount = 0;
-        console.log('Reset pagination - currentPage:', currentPage);
-    }
-
-    if (isLoading || !hasMoreProducts) {
-        console.log('Exiting early - isLoading:', isLoading, 'hasMoreProducts:', hasMoreProducts);
-        return;
-    }
-
+function loadProducts(page = 1, append = false) {
+    if (isLoading) return;
     isLoading = true;
 
-    // Show appropriate loading indicator
-    if (resetPagination) {
-        showLoadingIndicator();
-    } else {
+    if (append) {
         showAutoLoadingProductsState();
+    } else {
+        showLoadingIndicator();
     }
-
-    console.log('Starting to load page:', currentPage);
 
     const searchQuery = document.getElementById('search-products').value.trim();
     const categoryFilter = document.getElementById('category-filter').value;
@@ -1684,11 +1668,9 @@ function loadProducts(resetPagination = true) {
 
     // Build query parameters
     const params = new URLSearchParams({
-        page: currentPage,
+        page: page,
         size: 10
     });
-
-
 
     if (searchQuery) {
         params.append('search', searchQuery);
@@ -1714,55 +1696,33 @@ function loadProducts(resetPagination = true) {
         return response.json();
     })
     .then(data => {
-        console.log('Products loaded:', data);
-        console.log('Response details:', {
-            total: data.total,
-            productsCount: data.products?.length,
-            currentPage,
-            resetPagination
-        });
-
         totalProducts = data.total || 0;
         const products = data.products || [];
+        hasMoreProducts = data.has_next || false;
+        currentPage = data.page;
 
-        if (resetPagination) {
-            displayProducts(products);
-            loadedProductsCount = products.length;
-        } else {
+        if (append) {
             appendProducts(products);
             loadedProductsCount += products.length;
+        } else {
+            displayProducts(products);
+            loadedProductsCount = products.length;
         }
 
-        // Check if there are more products to load
-        hasMoreProducts = data.has_next || false;
-        console.log('After loading - hasMoreProducts:', hasMoreProducts, 'from API response:', {
-            has_next: data.has_next,
-            productsLength: products.length,
-            currentPage,
-            totalProducts,
-            loadedProductsCount
-        });
-
-        // Update status display
         updateProductsScrollStatus();
 
-        // Show appropriate message only on first load
-        if (resetPagination) {
+        if (!append) {
             if (totalProducts === 0) {
                 showToast('No products found matching your criteria', 'info');
             } else {
                 showToast(`Found ${totalProducts} product${totalProducts !== 1 ? 's' : ''}`, 'success');
             }
         }
-
-        currentPage++;
-        console.log('Incremented currentPage to:', currentPage);
     })
     .catch(error => {
         console.error('Error loading products:', error);
-        if (resetPagination) {
-            showToast('Failed to load products. Please check your connection.', 'error');
-            // Show empty state
+        showToast('Failed to load products. Please check your connection.', 'error');
+        if (!append) {
             displayProducts([]);
         }
     })
@@ -1772,6 +1732,7 @@ function loadProducts(resetPagination = true) {
         hideAutoLoadingProductsState();
     });
 }
+
 
 function displayProducts(products) {
     const tableBody = document.querySelector('#products-table-body');
@@ -1927,11 +1888,6 @@ function showLoadingIndicator() {
     const tableBody = document.querySelector('#products-table-body');
     if (!tableBody) return;
 
-    // Only show loading indicator if table is empty or we're loading more
-    if (currentPage === 1 || tableBody.children.length === 0) {
-        return; // Don't show loading for initial load
-    }
-
     // Add loading row at the bottom
     const loadingRow = document.createElement('tr');
     loadingRow.id = 'loading-indicator';
@@ -1939,7 +1895,7 @@ function showLoadingIndicator() {
         <td colspan="6" class="px-3 py-6 text-center">
             <div class="flex items-center justify-center space-x-3 text-gray-600">
                 <div class="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent"></div>
-                <span class="text-sm font-medium">Loading more products...</span>
+                <span class="text-sm font-medium">Loading products...</span>
                 <div class="flex space-x-1">
                     <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0ms"></div>
                     <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 150ms"></div>
@@ -2014,39 +1970,27 @@ function updateProductsScrollStatus() {
 
 // Infinite scroll functionality
 function setupInfiniteScroll() {
-    let scrollTimeout;
+    const sentinel = document.createElement('div');
+    sentinel.id = 'scroll-sentinel';
+    sentinel.style.height = '1px';
+    const endMessage = document.querySelector('#end-of-products');
+    if (endMessage && endMessage.parentNode) {
+        endMessage.parentNode.insertBefore(sentinel, endMessage);
+    }
 
-    window.addEventListener('scroll', function() {
-        // Debounce scroll events
-        clearTimeout(scrollTimeout);
-        scrollTimeout = setTimeout(() => {
-            // Check if user has scrolled near the bottom
-            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-            const windowHeight = window.innerHeight;
-            const documentHeight = document.documentElement.scrollHeight;
-
-            // Debug logging
-            console.log('Scroll debug:', {
-                scrollTop,
-                windowHeight,
-                documentHeight,
-                distanceFromBottom: documentHeight - (scrollTop + windowHeight),
-                isLoading,
-                hasMoreProducts,
-                currentPage,
-                totalProducts
-            });
-
-            // Trigger when user is within 300px of the bottom (increased for better UX)
-            if (scrollTop + windowHeight >= documentHeight - 300) {
-                console.log('Near bottom detected!');
-                if (!isLoading && hasMoreProducts) {
-                    console.log('Loading more products...');
-                    loadProducts(false); // false = don't reset pagination
-                }
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting && !isLoading && hasMoreProducts) {
+                loadProducts(currentPage + 1, true);
             }
-        }, 50); // Reduced debounce time for more responsive scrolling
+        });
+    }, {
+        root: null,
+        rootMargin: '100px',
+        threshold: 0
     });
+
+    observer.observe(sentinel);
 }
 
 // Load categories for dropdown
@@ -3988,17 +3932,17 @@ document.addEventListener('DOMContentLoaded', function() {
     searchInput.addEventListener('input', function() {
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => {
-            loadProducts(true); // Reset pagination when searching
+            loadProducts(1, false); // Reset pagination when searching
         }, 500); // Wait 500ms after user stops typing
     });
 
     // Filter on dropdown changes
     categoryFilter.addEventListener('change', function() {
-        loadProducts(true); // Reset pagination when filtering
+        loadProducts(1, false); // Reset pagination when filtering
     });
 
     stockFilter.addEventListener('change', function() {
-        loadProducts(true); // Reset pagination when filtering
+        loadProducts(1, false); // Reset pagination when filtering
     });
 
     // Check for success/error messages in URL parameters
