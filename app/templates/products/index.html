@@ -3957,17 +3957,17 @@ document.addEventListener('DOMContentLoaded', function() {
     searchInput.addEventListener('input', function() {
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => {
-            loadProducts(1, true); // Reset pagination when searching
+            loadProducts(1, false); // Reset pagination and replace results when searching
         }, 500); // Wait 500ms after user stops typing
     });
 
     // Filter on dropdown changes
     categoryFilter.addEventListener('change', function() {
-        loadProducts(1, true); // Reset pagination when filtering
+        loadProducts(1, false); // Reset pagination and replace results when filtering
     });
 
     stockFilter.addEventListener('change', function() {
-        loadProducts(1, true); // Reset pagination when filtering
+        loadProducts(1, false); // Reset pagination and replace results when filtering
     });
 
     // Check for success/error messages in URL parameters
