@@ -8,6 +8,7 @@ class SaleItemCreate(BaseModel):
     product_id: str
     quantity: int = Field(..., gt=0)
     discount_amount: float = Field(default=0.0, ge=0)
+    is_decant: bool = False
 
     class Config:
         schema_extra = {

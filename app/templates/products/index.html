@@ -1669,7 +1669,7 @@ function loadProducts(page = 1, append = false) {
     // Build query parameters
     const params = new URLSearchParams({
         page: page,
-        size: 10
+        size: 10 // Fetch 10 products per page
     });
 
     if (searchQuery) {
@@ -1696,6 +1696,8 @@ function loadProducts(page = 1, append = false) {
         return response.json();
     })
     .then(data => {
+        hideLoadingIndicator(); // Hide skeleton before adding new content
+
         totalProducts = data.total || 0;
         const products = data.products || [];
         hasMoreProducts = data.has_next || false;
@@ -1711,24 +1713,25 @@ function loadProducts(page = 1, append = false) {
 
         updateProductsScrollStatus();
 
-        if (!append) {
+        if (!append && !searchQuery && !categoryFilter && !stockFilter) {
+            // Only show initial toast if no filters are active
             if (totalProducts === 0) {
-                showToast('No products found matching your criteria', 'info');
+                showToast('No products found. Add your first product!', 'info');
             } else {
-                showToast(`Found ${totalProducts} product${totalProducts !== 1 ? 's' : ''}`, 'success');
+                showToast(`Showing ${products.length} of ${totalProducts} products`, 'success');
             }
         }
     })
     .catch(error => {
         console.error('Error loading products:', error);
         showToast('Failed to load products. Please check your connection.', 'error');
+        hideLoadingIndicator(); // Also hide on error
         if (!append) {
             displayProducts([]);
         }
     })
     .finally(() => {
         isLoading = false;
-        hideLoadingIndicator();
         hideAutoLoadingProductsState();
     });
 }
@@ -1886,7 +1889,7 @@ function getStockStatusText(status) {
 }
 
 // Loading indicator functions
-function showLoadingIndicator() {
+function showLoadingIndicator(rows = 5, append = false) {
     const tableBody = document.querySelector('#products-table-body');
     if (!tableBody) return;
 
@@ -1922,7 +1925,16 @@ function showLoadingIndicator() {
         </tr>
     `;
 
-    tableBody.innerHTML = skeletonRow.repeat(5);
+    if (rows > 0) {
+        const skeletonHTML = skeletonRow.repeat(rows);
+        if (append) {
+            tableBody.insertAdjacentHTML('beforeend', skeletonHTML);
+        } else {
+            tableBody.innerHTML = skeletonHTML;
+        }
+    } else if (!append) {
+        tableBody.innerHTML = '';
+    }
 }
 
 function hideLoadingIndicator() {
@@ -1935,29 +1947,22 @@ function hideLoadingIndicator() {
 
 // Status update functions
 function showAutoLoadingProductsState() {
-    const indicator = document.getElementById('auto-loading-products-indicator');
-    indicator.classList.remove('hidden');
-    // Add smooth fade-in animation
-    setTimeout(() => {
-        indicator.style.opacity = '0';
-        indicator.style.transform = 'translateY(10px)';
-        indicator.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-        setTimeout(() => {
-            indicator.style.opacity = '1';
-            indicator.style.transform = 'translateY(0)';
-        }, 10);
-    }, 10);
+    const remainingProducts = totalProducts - loadedProductsCount;
+    const rowsToShow = Math.max(0, remainingProducts);
+    if (rowsToShow > 0) {
+        showLoadingIndicator(rowsToShow, true);
+    }
 }
 
 function hideAutoLoadingProductsState() {
+    // The original function controlled a text-based indicator. 
+    // Since we are now using skeleton rows which are cleared by hideLoadingIndicator, 
+    // this function can be simplified or made empty.
+    // For safety, we'll keep it to hide the old indicator if it exists.
     const indicator = document.getElementById('auto-loading-products-indicator');
-    indicator.style.opacity = '0';
-    indicator.style.transform = 'translateY(-10px)';
-    setTimeout(() => {
+    if (indicator && !indicator.classList.contains('hidden')) {
         indicator.classList.add('hidden');
-        indicator.style.opacity = '';
-        indicator.style.transform = '';
-    }, 300);
+    }
 }
 
 function updateProductsScrollStatus() {
@@ -1998,6 +2003,7 @@ function setupInfiniteScroll() {
     }
 
     const observer = new IntersectionObserver((entries) => {
+
         entries.forEach(entry => {
             if (entry.isIntersecting && !isLoading && hasMoreProducts) {
                 loadProducts(currentPage + 1, true);

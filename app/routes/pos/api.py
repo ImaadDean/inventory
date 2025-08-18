@@ -144,7 +144,10 @@ async def search_products(
         search_query = {
             "$and": [
                 {"is_active": True},
-                {"stock_quantity": {"$gt": 0}},  # Only show products in stock
+                {"$or": [
+                    {"stock_quantity": {"$gt": 0}},
+                    {"decant.is_decantable": True}
+                ]},
                 {"$or": [
                     {"name": {"$regex": query, "$options": "i"}},
                     {"barcode": {"$regex": query, "$options": "i"}}
@@ -357,6 +360,9 @@ async def create_customer_pos(customer_data: CustomerCreate, current_user: User 
 @router.post("/sales", response_model=SaleResponse, status_code=status.HTTP_201_CREATED)
 async def create_sale(sale_data: SaleCreate, current_user: User = Depends(get_current_user_hybrid_dependency())):
     """Create a new sale from POS"""
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"Received sale data: {sale_data.dict()}")
     try:
 
         db = await get_database()
@@ -379,24 +385,63 @@ async def create_sale(sale_data: SaleCreate, current_user: User = Depends(get_cu
                 )
 
             # Check stock availability
-            if product["stock_quantity"] < item_data.quantity:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Insufficient stock for product {product['name']}. Available: {product['stock_quantity']}, Requested: {item_data.quantity}"
-                )
+            if item_data.is_decant:
+                decant_info = product.get("decant", {})
+                if not decant_info.get("is_decantable"):
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Product {product['name']} is not set up for decanting."
+                    )
+                
+                decant_size_ml = decant_info.get("decant_size_ml")
+                if not decant_size_ml:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Decant size not configured for product {product['name']}"
+                    )
+
+                total_ml_needed = item_data.quantity * decant_size_ml
+                
+                opened_bottle_ml_left = decant_info.get("opened_bottle_ml_left", 0)
+                stock_quantity = product.get("stock_quantity", 0)
+                bottle_size_ml = product.get("bottle_size_ml")
+
+                if not bottle_size_ml:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Bottle size not configured for product {product['name']}"
+                    )
+
+                total_available_ml = (stock_quantity * bottle_size_ml) + opened_bottle_ml_left
+
+                if total_available_ml < total_ml_needed:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Insufficient stock for decant {product['name']}. Need {total_ml_needed}ml, have {total_available_ml}ml available"
+                    )
+            else:
+                if product["stock_quantity"] < item_data.quantity:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Insufficient stock for product {product['name']}. Available: {product['stock_quantity']}, Requested: {item_data.quantity}"
+                    )
 
             # Calculate item totals
-            unit_price = product["price"]
+            if item_data.is_decant:
+                unit_price = product["decant"]["decant_price"]
+            else:
+                unit_price = product["price"]
             total_price = unit_price * item_data.quantity
             subtotal += total_price
 
             sale_items.append({
                 "product_id": ObjectId(item_data.product_id),
-                "product_name": product["name"],
+                "product_name": f"{product['name']} ({'Decant' if item_data.is_decant else 'Full Bottle'})",
                 "quantity": item_data.quantity,
                 "unit_price": unit_price,
                 "total_price": total_price,
-                "discount_amount": item_data.discount_amount
+                "discount_amount": item_data.discount_amount,
+                "is_decant": item_data.is_decant
             })
 
         # Calculate tax and total
@@ -443,7 +488,8 @@ async def create_sale(sale_data: SaleCreate, current_user: User = Depends(get_cu
                 "quantity": item["quantity"],
                 "unit_price": item["unit_price"],
                 "total_price": item["total_price"],
-                "discount_amount": item["discount_amount"]
+                "discount_amount": item["discount_amount"],
+                "is_decant": item.get("is_decant", False)
             })
 
         # Create order document for regular sale
@@ -476,14 +522,7 @@ async def create_sale(sale_data: SaleCreate, current_user: User = Depends(get_cu
             # Check if this is a decant sale by looking at the product
             product = await db.products.find_one({"_id": item["product_id"]})
 
-            # Check if this is a decant sale (price matches decant price)
-            is_decant_sale = False
-            if product and product.get("decant") and product["decant"].get("is_decantable"):
-                decant_price = product["decant"].get("decant_price")
-                if decant_price and abs(item["unit_price"] - decant_price) < 0.01:  # Allow for small floating point differences
-                    is_decant_sale = True
-
-            if is_decant_sale:
+            if item.get("is_decant"):
                 # Handle decant sale - reduce ml instead of stock count
                 success, message, updated_product = await process_decant_sale(
                     db, item["product_id"], item["quantity"]
@@ -494,11 +533,16 @@ async def create_sale(sale_data: SaleCreate, current_user: User = Depends(get_cu
                         detail=f"Failed to process decant sale for {item['product_name']}: {message}"
                     )
             else:
-                # Handle regular product sale - reduce stock count
-                await db.products.update_one(
-                    {"_id": item["product_id"]},
+                # Handle regular product sale - reduce stock count atomically
+                update_result = await db.products.update_one(
+                    {"_id": item["product_id"], "stock_quantity": {"$gte": item["quantity"]}},
                     {"$inc": {"stock_quantity": -item["quantity"]}}
                 )
+                if update_result.modified_count == 0:
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail=f"Insufficient stock for product {item['product_name']}. Sale could not be completed."
+                    )
 
         # Update customer statistics if customer exists
         if sale_data.customer_id:
@@ -602,15 +646,7 @@ async def create_order(order_data: dict, current_user: User = Depends(get_curren
                 # Check if this is a decant sale by looking at the product
                 product = await db.products.find_one({"_id": ObjectId(item["product_id"])})
 
-                # Check if this is a decant sale (price matches decant price)
-                is_decant_sale = False
-                if product and product.get("decant") and product["decant"].get("is_decantable"):
-                    decant_price = product["decant"].get("decant_price")
-                    item_unit_price = item.get("unit_price", item.get("price", 0))
-                    if decant_price and abs(item_unit_price - decant_price) < 0.01:
-                        is_decant_sale = True
-
-                if is_decant_sale:
+                if item.get("is_decant"):
                     # Handle decant sale - reduce ml instead of stock count
                     success, message, updated_product = await process_decant_sale(
                         db, ObjectId(item["product_id"]), item["quantity"]
@@ -621,11 +657,16 @@ async def create_order(order_data: dict, current_user: User = Depends(get_curren
                             detail=f"Failed to process decant sale for {item.get('product_name', 'product')}: {message}"
                         )
                 else:
-                    # Handle regular product sale - reduce stock count
-                    await db.products.update_one(
-                        {"_id": ObjectId(item["product_id"])},
+                    # Handle regular product sale - reduce stock count atomically
+                    update_result = await db.products.update_one(
+                        {"_id": ObjectId(item["product_id"]), "stock_quantity": {"$gte": item["quantity"]}},
                         {"$inc": {"stock_quantity": -item["quantity"]}}
                     )
+                    if update_result.modified_count == 0:
+                        raise HTTPException(
+                            status_code=status.HTTP_409_CONFLICT,
+                            detail=f"Insufficient stock for product {item.get('product_name', 'product')}. Order could not be completed."
+                        )
 
         # Update customer statistics if not a guest and payment is made
         if (order_data.get("client_id") and

@@ -213,6 +213,188 @@
 </div>
 
 <script>
+// Client Management for Edit Order Modal
+let selectedClient = null;
+
+function openAddClientModal() {
+    document.getElementById('add-client-modal').classList.remove('hidden');
+    // Clear form
+    document.getElementById('add-client-form').reset();
+}
+
+function closeAddClientModal() {
+    document.getElementById('add-client-modal').classList.add('hidden');
+    // Clear form
+    document.getElementById('add-client-form').reset();
+}
+
+function setupClientSearchAndAdd() {
+    const clientSearchInput = document.getElementById('client-search');
+    const addClientBtn = document.getElementById('add-client-btn');
+    const closeClientModalBtn = document.getElementById('close-client-modal');
+    const cancelClientBtn = document.getElementById('cancel-client');
+    const addClientForm = document.getElementById('add-client-form');
+    const clearClientBtn = document.getElementById('clear-client');
+
+
+    if (clientSearchInput) {
+        clientSearchInput.addEventListener('input', debounce(searchClients, 300));
+    }
+    if (addClientBtn) {
+        addClientBtn.addEventListener('click', openAddClientModal);
+    }
+    if (closeClientModalBtn) {
+        closeClientModalBtn.addEventListener('click', closeAddClientModal);
+    }
+    if (cancelClientBtn) {
+        cancelClientBtn.addEventListener('click', closeAddClientModal);
+    }
+    if (addClientForm) {
+        addClientForm.addEventListener('submit', handleAddClientSubmit);
+    }
+    if (clearClientBtn) {
+        clearClientBtn.addEventListener('click', clearSelectedClient);
+    }
+}
+
+async function searchClients() {
+    const query = document.getElementById('client-search').value.trim();
+    const resultsContainer = document.getElementById('client-results');
+
+    if (query.length < 2) {
+        resultsContainer.innerHTML = '';
+        resultsContainer.classList.add('hidden');
+        return;
+    }
+
+    resultsContainer.innerHTML = `
+        <div class="text-center py-2">
+            <i class="fas fa-spinner fa-spin text-teal-500"></i> Searching...
+        </div>
+    `;
+    resultsContainer.classList.remove('hidden');
+
+    try {
+        const response = await fetch(`/api/customers/?search=${encodeURIComponent(query)}`, {
+            credentials: 'include'
+        });
+        if (response.ok) {
+            const data = await response.json();
+            displayClientSearchResults(data.customers);
+        } else {
+            resultsContainer.innerHTML = `<p class="text-red-500 text-center text-xs py-2">Error searching clients.</p>`;
+        }
+    } catch (error) {
+        console.error('Error searching clients:', error);
+        resultsContainer.innerHTML = `<p class="text-red-500 text-center text-xs py-2">Network error searching clients.</p>`;
+    }
+}
+
+function displayClientSearchResults(clients) {
+    const resultsContainer = document.getElementById('client-results');
+    if (clients.length === 0) {
+        resultsContainer.innerHTML = `
+            <div class="text-center py-4 px-3 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-xl">
+                <div class="w-8 h-8 bg-gray-300 rounded-lg flex items-center justify-center mx-auto mb-2">
+                    <i class="fas fa-user-slash text-gray-500 text-sm"></i>
+                </div>
+                <p class="text-sm text-gray-600 font-medium">No clients found</p>
+                <p class="text-xs text-gray-500">Try searching with different keywords</p>
+            </div>
+        `;
+        resultsContainer.classList.remove('hidden');
+        return;
+    }
+
+    resultsContainer.innerHTML = clients.map(client => `
+        <div class="group bg-gradient-to-r from-teal-50 to-cyan-50 hover:from-teal-100 hover:to-cyan-100 border border-teal-200 hover:border-teal-300 rounded-xl p-3 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5" onclick="selectClient('${client.id}', '${client.name}', '${client.phone || ''}', '${client.address || ''}', '${client.city || ''}', '${client.country || ''}', '${client.notes || ''}')">
+            <div class="flex items-center">
+                <div class="w-8 h-8 bg-gradient-to-r from-teal-500 to-cyan-600 rounded-lg flex items-center justify-center mr-3 shadow-sm">
+                    <i class="fas fa-user text-white text-sm"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="font-semibold text-sm text-gray-900 group-hover:text-teal-900 mb-1">${client.name}</p>
+                    <div class="flex items-center text-xs text-gray-600">
+                        ${client.phone ? `
+                        <span class="flex items-center mr-3">
+                            <i class="fas fa-phone text-gray-400 mr-1"></i>
+                            ${client.phone}
+                        </span>
+                        ` : ''}
+                    </div>
+                </div>
+                <div class="text-teal-600 group-hover:text-teal-700">
+                    <i class="fas fa-chevron-right text-xs"></i>
+                </div>
+            </div>
+        </div>
+    `).join('');
+
+    resultsContainer.classList.remove('hidden');
+}
+
+function selectClient(id, name, phone, address, city, country, notes) {
+    selectedClient = { id, name, phone, address, city, country, notes };
+    document.getElementById('selected-client-name').textContent = name;
+    document.getElementById('selected-client-details').textContent = phone;
+    document.getElementById('selected-client').classList.remove('hidden');
+    document.getElementById('client-search').value = name; // Pre-fill search with selected name
+    document.getElementById('client-results').classList.add('hidden'); // Hide results
+
+    // Highlight selected client in results (optional, if results are still visible)
+    document.querySelectorAll('#client-results > div').forEach(div => {
+        div.classList.remove('bg-teal-100');
+        div.querySelector('.selected-icon').classList.add('hidden');
+    });
+    // Find the selected one and add highlight
+    // This part might need refinement if client search results are dynamic
+}
+
+function clearSelectedClient() {
+    selectedClient = null;
+    document.getElementById('selected-client').classList.add('hidden');
+    document.getElementById('client-search').value = '';
+    document.getElementById('client-results').innerHTML = '';
+    document.getElementById('client-results').classList.add('hidden');
+}
+
+async function handleAddClientSubmit(event) {
+    event.preventDefault();
+    const form = event.target;
+    const newClient = {
+        full_name: form['client-name-input'].value,
+        phone_number: form['client-phone-input'].value,
+        address: form['client-address-input'].value,
+        city: form['client-city-input'].value,
+        country: form['client-country-input'].value,
+        notes: form['client-notes-input'].value
+    };
+
+    try {
+        const response = await fetch('/api/customers/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(newClient)
+        });
+
+        if (response.ok) {
+            const addedClient = await response.json();
+            showToast('Client added successfully!', 'success');
+            document.getElementById('add-client-modal').classList.add('hidden');
+            form.reset();
+            selectClient(addedClient.id, addedClient.full_name, addedClient.phone_number, addedClient.address, addedClient.city, addedClient.country, addedClient.notes);
+        } else {
+            const errorData = await response.json();
+            showToast(`Failed to add client: ${errorData.detail || response.statusText}`, 'error');
+        }
+    } catch (error) {
+        console.error('Error adding client:', error);
+        showToast('Network error: Could not add client.', 'error');
+    }
+}
+
 // Orders management functionality
 let currentPage = 1;
 let totalPages = 1;
@@ -363,7 +545,14 @@ function displayOrders(orders, total = 0, page = 1, totalPages = 1) {
             <td class="px-6 py-4 whitespace-nowrap">
                 <div>
                     <div class="text-sm font-semibold text-gray-900">${order.client_name}</div>
-                    <div class="text-xs text-gray-500">${order.client_phone || 'No phone number'}</div>
+                    <div class="text-xs text-gray-500">
+                        ${order.client_phone ? `
+                            <a href="tel:${order.client_phone}" class="flex items-center text-blue-600 hover:text-blue-800">
+                                <i class="fas fa-phone-alt mr-1"></i>
+                                ${order.client_phone}
+                            </a>
+                        ` : 'No phone number'}
+                    </div>
                 </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
@@ -413,6 +602,9 @@ function displayOrders(orders, total = 0, page = 1, totalPages = 1) {
                 <div class="flex items-center justify-end space-x-2">
                     <button onclick="viewOrder('${order.id}')" class="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-all duration-200" title="View Order">
                         <i class="fas fa-eye text-sm"></i>
+                    </button>
+                    <button onclick="editOrder('${order.id}')" class="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-all duration-200" title="Edit Order">
+                        <i class="fas fa-edit text-sm"></i>
                     </button>
                     <button onclick="printOrder('${order.id}')" class="p-2 text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded-lg transition-all duration-200" title="Print Order">
                         <i class="fas fa-print text-sm"></i>
@@ -530,6 +722,856 @@ function viewOrder(orderId) {
         showToast('Failed to load order details', 'error');
     });
 }
+
+let editOrderCart = [];
+let currentOrderForEdit = null;
+let currentDiscountItemId = null;
+
+function updateEditOrderTotals() {
+    const subtotal = editOrderCart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+    const itemDiscounts = editOrderCart.reduce((sum, item) => sum + (item.discount_amount || 0), 0);
+
+    const discountValue = parseFloat(document.getElementById('edit-order-discount-value').value) || 0;
+    const discountType = document.getElementById('edit-order-discount-type').value;
+    let orderDiscount = 0;
+    if (discountType === 'percentage') {
+        orderDiscount = ((subtotal - itemDiscounts) * discountValue) / 100;
+    } else {
+        orderDiscount = discountValue;
+    }
+
+    const totalDiscount = itemDiscounts + orderDiscount;
+    const total = subtotal - totalDiscount;
+
+    document.getElementById('edit-order-subtotal').textContent = `UGX ${subtotal.toLocaleString()}`;
+    document.getElementById('edit-order-discount').textContent = `UGX ${totalDiscount.toLocaleString()}`;
+    document.getElementById('edit-order-total').textContent = `UGX ${total.toLocaleString()}`;
+}
+
+function renderEditOrderCart() {
+    const cartContainer = document.getElementById('edit-order-cart-items');
+    if (!cartContainer) return;
+
+    if (editOrderCart.length === 0) {
+        cartContainer.innerHTML = `
+            <div class="text-center py-6 text-gray-500">
+                <i class="fas fa-shopping-cart text-2xl mb-2"></i>
+                <p class="text-sm">Cart is empty</p>
+            </div>
+        `;
+        updateEditOrderTotals();
+        return;
+    }
+
+    cartContainer.innerHTML = editOrderCart.map((item, index) => {
+        const isDecant = item.name.toLowerCase().includes('decant');
+        const iconClass = isDecant ? 'fas fa-vial' : 'fas fa-box';
+        const bgColor = isDecant ? 'from-purple-500 to-pink-600' : 'from-blue-500 to-indigo-600';
+        const cartItemId = index; // Using index as cartItemId for simplicity in the modal
+
+        return `
+        <div class="group bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 border border-purple-200 hover:border-purple-300 rounded-xl p-3 transition-all duration-200 shadow-sm hover:shadow-md">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center flex-1 mr-3">
+                    <div class="w-8 h-8 bg-gradient-to-r ${bgColor} rounded-lg flex items-center justify-center mr-3 shadow-sm">
+                        <i class="${iconClass} text-white text-xs"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="font-semibold text-sm text-gray-900 group-hover:text-purple-900 mb-1">${item.name}</p>
+                        <div class="flex items-center space-x-3 text-xs text-gray-600">
+                            <span class="flex items-center">
+                                <i class="fas fa-barcode text-gray-400 mr-1"></i>
+                                ${item.sku || 'N/A'}
+                            </span>
+                            <span class="flex items-center">
+                                <i class="fas fa-tag text-gray-400 mr-1"></i>
+                                UGX ${item.price.toLocaleString()}
+                            </span>
+                            ${isDecant ? '<span class="bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-xs">Decant</span>' : ''}
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="flex items-center bg-white rounded-lg border border-purple-200 shadow-sm">
+                        <button onclick="updateEditOrderCartQuantity(${cartItemId}, ${item.quantity - 1})"
+                                class="w-7 h-7 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-l-lg text-xs font-medium transition-all duration-200 flex items-center justify-center">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <span class="text-sm font-bold px-3 py-1 bg-white text-gray-900 min-w-[2rem] text-center">${item.quantity}</span>
+                        <button onclick="updateEditOrderCartQuantity(${cartItemId}, ${item.quantity + 1})"
+                                class="w-7 h-7 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-r-lg text-xs font-medium transition-all duration-200 flex items-center justify-center">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                    <button onclick="removeFromEditOrderCart(${cartItemId})"
+                            class="w-7 h-7 bg-gradient-to-r from-gray-500 to-gray-600 hover:from-red-500 hover:to-red-600 text-white rounded-lg text-xs font-medium transition-all duration-200 flex items-center justify-center shadow-sm hover:shadow-md"
+                            title="Remove item">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="mt-2 pt-2 border-t border-purple-200">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center space-x-2">
+                        <button onclick="toggleItemDiscount(${cartItemId})"
+                                class="text-xs px-2 py-1 rounded-md transition-all duration-200 ${item.discount_amount > 0 ? 'bg-green-100 text-green-700 border border-green-300' : 'bg-gray-100 text-gray-600 border border-gray-300'} hover:bg-green-200">
+                            <i class="fas fa-percent mr-1"></i>
+                            ${item.discount_amount > 0 ? 'Edit Discount' : 'Add Discount'}
+                        </button>
+                        ${item.discount_amount > 0 ? `
+                        <span class="text-xs text-green-600 font-medium">
+                            -UGX ${item.discount_amount.toLocaleString()}
+                        </span>
+                        ` : ''}
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs text-gray-600">Item Total:</span>
+                        ${item.discount_amount > 0 ? `
+                        <div class="text-xs text-gray-500 line-through">UGX ${(item.price * item.quantity).toLocaleString()}</div>
+                        <div class="text-sm font-bold text-purple-600">UGX ${((item.price * item.quantity) - item.discount_amount).toLocaleString()}</div>
+                        ` : `
+                        <div class="text-sm font-bold text-purple-600">UGX ${(item.price * item.quantity).toLocaleString()}</div>
+                        `}
+                    </div>
+                </div>
+            </div>
+        </div>
+        `;
+    }).join('');
+    updateEditOrderTotals();
+}
+
+function updateEditOrderCartQuantity(cartItemId, newQuantity) {
+    if (newQuantity <= 0) {
+        removeFromEditOrderCart(cartItemId);
+        return;
+    }
+
+    const item = editOrderCart[cartItemId];
+    if (item) {
+        item.quantity = newQuantity;
+        renderEditOrderCart();
+    }
+}
+
+function removeFromEditOrderCart(cartItemId) {
+    editOrderCart.splice(cartItemId, 1);
+    renderEditOrderCart();
+}
+
+function addToEditOrderCart(id, name, price, sku, stock) {
+    const existingItem = editOrderCart.find(item => item.id === id && item.name === name);
+    if (existingItem) {
+        existingItem.quantity++;
+    } else {
+        editOrderCart.push({
+            id: id,
+            name: name,
+            price: price,
+            quantity: 1,
+            sku: sku,
+            discount_amount: 0
+        });
+    }
+    renderEditOrderCart();
+}
+
+function toggleItemDiscount(cartItemId) {
+    const item = editOrderCart[cartItemId];
+    if (!item) return;
+
+    currentDiscountItemId = cartItemId;
+    const modal = document.getElementById('item-discount-modal');
+
+    // Populate modal with item details
+    document.getElementById('discount-item-name').textContent = item.name;
+    document.getElementById('discount-item-quantity').textContent = item.quantity;
+    document.getElementById('discount-item-price').textContent = item.price.toLocaleString();
+    document.getElementById('discount-item-subtotal').textContent = (item.price * item.quantity).toLocaleString();
+
+    if (item.discount_amount > 0) {
+        const itemSubtotal = item.price * item.quantity;
+        const discountPercentage = (item.discount_amount / itemSubtotal) * 100;
+
+        if (discountPercentage % 1 === 0 && discountPercentage <= 100) {
+            document.getElementById('item-discount-type').value = 'percentage';
+            document.getElementById('item-discount-value').value = discountPercentage;
+        } else {
+            document.getElementById('item-discount-type').value = 'fixed';
+            document.getElementById('item-discount-value').value = item.discount_amount;
+        }
+    } else {
+        document.getElementById('item-discount-type').value = 'fixed';
+        document.getElementById('item-discount-value').value = '';
+    }
+
+    document.getElementById('item-discount-type').addEventListener('change', calculateItemDiscount);
+    document.getElementById('item-discount-value').addEventListener('input', calculateItemDiscount);
+
+    calculateItemDiscount();
+
+    modal.classList.remove('hidden');
+    
+}
+
+function calculateItemDiscount() {
+    if (currentDiscountItemId === null) return;
+
+    const item = editOrderCart[currentDiscountItemId];
+    if (!item) return;
+
+    const discountType = document.getElementById('item-discount-type').value;
+    const discountValue = parseFloat(document.getElementById('item-discount-value').value) || 0;
+    const itemSubtotal = item.price * item.quantity;
+
+    let discountAmount = 0;
+
+    if (discountValue > 0) {
+        if (discountType === 'percentage') {
+            discountAmount = Math.min((itemSubtotal * discountValue) / 100, itemSubtotal);
+        } else {
+            discountAmount = Math.min(discountValue, itemSubtotal);
+        }
+    }
+
+    const finalPrice = itemSubtotal - discountAmount;
+
+    document.getElementById('calculated-discount').textContent = `UGX ${Math.round(discountAmount).toLocaleString()}`;
+    document.getElementById('final-item-price').textContent = `UGX ${Math.round(finalPrice).toLocaleString()}`;
+}
+
+function applyItemDiscount() {
+    if (currentDiscountItemId === null) return;
+
+    const item = editOrderCart[currentDiscountItemId];
+    if (!item) return;
+
+    const discountType = document.getElementById('item-discount-type').value;
+    const discountValue = parseFloat(document.getElementById('item-discount-value').value) || 0;
+    const itemSubtotal = item.price * item.quantity;
+
+    let discountAmount = 0;
+
+    if (discountValue > 0) {
+        if (discountType === 'percentage') {
+            discountAmount = Math.min((itemSubtotal * discountValue) / 100, itemSubtotal);
+        } else {
+            discountAmount = Math.min(discountValue, itemSubtotal);
+        }
+    }
+
+    item.discount_amount = discountAmount;
+
+    renderEditOrderCart();
+    closeItemDiscountModal();
+}
+
+function removeItemDiscount() {
+    if (currentDiscountItemId === null) return;
+
+    const item = editOrderCart[currentDiscountItemId];
+    if (item) {
+        item.discount_amount = 0;
+        renderEditOrderCart();
+    }
+
+    closeItemDiscountModal();
+}
+
+function closeItemDiscountModal() {
+    const modal = document.getElementById('item-discount-modal');
+    modal.classList.add('hidden');
+    
+    currentDiscountItemId = null;
+
+    document.getElementById('item-discount-type').removeEventListener('change', calculateItemDiscount);
+    document.getElementById('item-discount-value').removeEventListener('input', calculateItemDiscount);
+
+    document.getElementById('item-discount-value').value = '';
+    document.getElementById('calculated-discount').textContent = 'UGX 0';
+    document.getElementById('final-item-price').textContent = 'UGX 0';
+}
+
+
+function confirmOpenNewBottleForEditOrder(productId, productName, bottleSize, decantSize, decantPrice) {
+    const newBottleDecants = Math.floor(bottleSize / decantSize);
+    showToast(`Opening new bottle for ${productName}. You can get ${newBottleDecants} decants.`, 'info');
+    addToEditOrderCart(productId, `${productName} (${decantSize}ml Decant)`, decantPrice, `${productId}-DECANT`, newBottleDecants);
+}
+
+async function searchProducts() {
+    const query = document.getElementById('product-search').value.trim();
+    const resultsContainer = document.getElementById('search-results');
+
+    if (query.length < 2) {
+        resultsContainer.innerHTML = '';
+        return;
+    }
+
+    // Show loading indicator with skeleton effect
+    resultsContainer.innerHTML = `
+        <div class="space-y-2">
+            <div class="flex items-center justify-center py-4 px-3">
+                <div class="flex items-center space-x-3">
+                    <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+                    <span class="text-sm text-gray-600 font-medium">Searching products...</span>
+                </div>
+            </div>
+            <!-- Skeleton loading items -->
+            ${Array(3).fill(0).map(() => `
+                <div class="bg-white border border-gray-200 rounded-lg p-3 animate-pulse">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3 flex-1">
+                            <div class="w-8 h-8 bg-gray-200 rounded-md"></div>
+                            <div class="flex-1">
+                                <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                                <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+                            </div>
+                        </div>
+                        <div class="w-16 h-6 bg-gray-200 rounded"></div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+
+    try {
+        const response = await fetch(`/api/pos/products/search?query=${encodeURIComponent(query)}&limit=10`, {
+            credentials: 'include'
+        });
+
+        if (response.ok) {
+            const products = await response.json(); // POS API returns direct array of products
+            console.log('Products received:', products); // Debug log
+            console.log('Response status:', response.status); // Debug log
+            displaySearchResults(products);
+        } else {
+            console.error('Response not OK:', response.status, response.statusText); // Debug log
+            console.error('Product search failed:', response.status);
+            resultsContainer.innerHTML = `
+                <div class="text-center py-4 px-3 bg-gradient-to-r from-red-50 to-red-100 border border-red-200 rounded-xl">
+                    <div class="w-8 h-8 bg-red-300 rounded-lg flex items-center justify-center mx-auto mb-2">
+                        <i class="fas fa-exclamation-triangle text-red-600 text-sm"></i>
+                    </div>
+                    <p class="text-sm text-red-700 font-medium">Error searching products</p>
+                    <p class="text-xs text-red-600">Please try again</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Product search error:', error);
+        resultsContainer.innerHTML = `
+            <div class="text-center py-4 px-3 bg-gradient-to-r from-red-50 to-red-100 border border-red-200 rounded-xl">
+                <div class="w-8 h-8 bg-red-300 rounded-lg flex items-center justify-center mx-auto mb-2">
+                    <i class="fas fa-exclamation-triangle text-red-600 text-sm"></i>
+                </div>
+                <p class="text-sm text-red-700 font-medium">Error searching products</p>
+                <p class="text-xs text-red-600">Please try again</p>
+            </div>
+        `;
+    }
+}
+
+function displaySearchResults(products) {
+    try {
+        const resultsContainer = document.getElementById('search-results');
+
+        console.log('Displaying products:', products); // Debug log
+        console.log('Products length:', products ? products.length : 'products is null/undefined'); // Debug log
+        console.log('Results container:', resultsContainer); // Debug log
+
+        if (!resultsContainer) {
+            console.error('Results container not found!');
+            return;
+        }
+
+        if (!products || products.length === 0) {
+            resultsContainer.innerHTML = `
+                <div class="text-center py-4 px-3 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-xl">
+                    <div class="w-8 h-8 bg-gray-300 rounded-lg flex items-center justify-center mx-auto mb-2">
+                        <i class="fas fa-search text-gray-500 text-sm"></i>
+                    </div>
+                    <p class="text-sm text-gray-600 font-medium">No products found</p>
+                    <p class="text-xs text-gray-500">Try searching with different keywords</p>
+                </div>
+            `;
+            return;
+        }
+
+        resultsContainer.innerHTML = products.map(product => {
+            // Check if this is a perfume product with decants
+            if (product.is_perfume_with_decants && product.decant) {
+                // Determine decant option based on opened bottle status
+                let decantOption = '';
+
+                if (product.has_opened_bottle && product.opened_bottle_decants > 0) {
+                    // Has opened bottle with available decants
+                    decantOption = `
+                        <div class="group bg-white hover:bg-purple-50 border border-gray-200 hover:border-purple-300 rounded-lg p-2 cursor-pointer transition-all duration-200" onclick="addToEditOrderCart('${product.id}', '${product.name} (${product.decant.decant_size_ml}ml Decant)', ${product.decant.decant_price}, '${product.sku}-DECANT', ${product.opened_bottle_decants})">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <i class="fas fa-vial text-purple-500 mr-2"></i>
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900">Decant (${product.decant.decant_size_ml}ml)</p>
+                                        <p class="text-xs text-green-600">
+                                            <i class="fas fa-check-circle mr-1"></i>
+                                            ${product.opened_bottle_decants} decants from opened bottle
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-bold text-sm text-purple-600">UGX ${product.decant.decant_price.toLocaleString()}</p>
+                                    <button class="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white px-2 py-1 rounded text-xs font-medium transition-all duration-200">
+                                        <i class="fas fa-plus mr-1"></i>Add Decant
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else if (product.can_open_new_bottle) {
+                    // No opened bottle but can open new one
+                    const newBottleDecants = Math.floor(product.bottle_size_ml / product.decant.decant_size_ml);
+                    decantOption = `
+                        <div class="group bg-white hover:bg-orange-50 border border-orange-200 hover:border-orange-300 rounded-lg p-2 cursor-pointer transition-all duration-200" onclick="confirmOpenNewBottleForEditOrder('${product.id}', '${product.name}', ${product.bottle_size_ml}, ${product.decant.decant_size_ml}, ${product.decant.decant_price})">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <i class="fas fa-unlock text-orange-500 mr-2"></i>
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900">Open New Bottle for Decants</p>
+                                        <p class="text-xs text-orange-600">
+                                            <i class="fas fa-exclamation-triangle mr-1"></i>
+                                            No opened bottle - will open new (${newBottleDecants} decants)
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-bold text-sm text-orange-600">UGX ${product.decant.decant_price.toLocaleString()}</p>
+                                    <button class="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white px-2 py-1 rounded text-xs font-medium transition-all duration-200">
+                                        <i class="fas fa-unlock mr-1"></i>Open & Add
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // No opened bottle and no stock to open
+                    decantOption = `
+                        <div class="bg-gray-100 border border-gray-200 rounded-lg p-2 opacity-50">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <i class="fas fa-ban text-gray-400 mr-2"></i>
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-500">Decants Unavailable</p>
+                                        <p class="text-xs text-gray-400">No opened bottle, no stock to open</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-sm text-gray-400">Out of Stock</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Show both bottle and decant options for perfume products
+                return `
+                    <div class="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-3 space-y-2">
+                        <div class="flex items-center mb-2">
+                            <div class="w-4 h-4 bg-purple-500 rounded-md flex items-center justify-center mr-2">
+                                <i class="fas fa-spray-can text-white text-xs"></i>
+                            </div>
+                            <p class="font-semibold text-sm text-gray-900">${product.name}</p>
+                            <span class="ml-2 text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">Perfume</span>
+                        </div>
+                        <div class="flex items-center space-x-3 text-xs text-gray-600 mb-3">
+                            <span class="flex items-center">
+                                <i class="fas fa-barcode text-gray-400 mr-1"></i>
+                                ${product.sku}
+                            </span>
+                            <span class="flex items-center">
+                                <i class="fas fa-warehouse text-gray-400 mr-1"></i>
+                                ${product.stock_display}
+                            </span>
+                        </div>
+
+                        <!-- Full Bottle Option -->
+                        <div class="group bg-white hover:bg-blue-50 border border-gray-200 hover:border-blue-300 rounded-lg p-2 cursor-pointer transition-all duration-200" onclick="addToEditOrderCart('${product.id}', '${product.name} (Full Bottle)', ${product.price}, '${product.sku}', ${product.stock_quantity})">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <i class="fas fa-wine-bottle text-blue-500 mr-2"></i>
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900">Full Bottle (${product.bottle_size_ml}ml)</p>
+                                        <p class="text-xs text-gray-500">${product.stock_quantity} bottles available</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-bold text-sm text-blue-600">UGX ${product.price.toLocaleString()}</p>
+                                    <button class="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-2 py-1 rounded text-xs font-medium transition-all duration-200">
+                                        <i class="fas fa-plus mr-1"></i>Add Bottle
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Decant Option (Dynamic based on opened bottle status) -->
+                        ${decantOption}
+                    </div>
+                `;
+            } else {
+                // Regular product display
+                return `
+                    <div class="group bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200 hover:border-blue-300 rounded-xl p-3 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5" onclick="addToEditOrderCart('${product.id}', '${product.name}', ${product.price}, '${product.sku}', ${product.stock_quantity})">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1 mr-3">
+                                <div class="flex items-center mb-1">
+                                    <div class="w-4 h-4 bg-blue-500 rounded-md flex items-center justify-center mr-2">
+                                        <i class="fas fa-box text-white text-xs"></i>
+                                    </div>
+                                    <p class="font-semibold text-sm text-gray-900 group-hover:text-blue-900">${product.name}</p>
+                                </div>
+                                <div class="flex items-center space-x-3 text-xs text-gray-600">
+                                    <span class="flex items-center">
+                                        <i class="fas fa-barcode text-gray-400 mr-1"></i>
+                                        ${product.sku}
+                                    </span>
+                                    <span class="flex items-center">
+                                        <i class="fas fa-warehouse text-gray-400 mr-1"></i>
+                                        ${product.stock_quantity} ${product.unit}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-bold text-sm text-blue-600 mb-1">UGX ${product.price.toLocaleString()}</p>
+                                <button class="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-3 py-1 rounded-lg text-xs font-medium shadow-sm hover:shadow-md transition-all duration-200 transform hover:scale-105">
+                                    <i class="fas fa-plus mr-1"></i>Add
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }).join('');
+
+        console.log('Products displayed successfully'); // Debug log
+    } catch (error) {
+        console.error('Error in displaySearchResults:', error);
+    }
+}
+
+function editOrder(orderId) {
+    console.log('Editing order:', orderId);
+    fetch(`/api/orders/${orderId}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to fetch order details');
+            }
+            return response.json();
+        })
+        .then(order => {
+            showEditOrderModal(order);
+        })
+        .catch(error => {
+            console.error('Error fetching order details:', error);
+            showToast('Failed to load order details for editing.', 'error');
+        });
+}
+
+function showEditOrderModal(order) {
+    currentOrderForEdit = order;
+    const modal = document.getElementById('edit-order-modal');
+    const content = document.getElementById('edit-order-modal-content');
+
+    editOrderCart = order.items.map(item => ({
+        id: item.product_id,
+        name: item.product_name,
+        price: item.unit_price,
+        quantity: item.quantity,
+        sku: 'N/A',
+        discount_amount: item.discount_amount || 0
+    }));
+
+    const searchAndCartHtml = `
+        <div class="lg:col-span-2 space-y-4">
+            <!-- Product Search -->
+            <div class="bg-white shadow-md rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300">
+                <div class="px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-600">
+                    <div class="flex items-center">
+                        <div class="w-7 h-7 bg-white bg-opacity-20 rounded-md flex items-center justify-center mr-2">
+                            <i class="fas fa-search text-white text-sm"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-semibold text-white">Product Search</h3>
+                            <p class="text-blue-100 text-xs">Find products by name, SKU, or barcode</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <div class="relative">
+                        <input type="text"
+                               id="product-search"
+                               placeholder="Search by name, SKU, or barcode..."
+                               onkeyup="searchProducts()"
+                               class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 pr-20">
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 space-x-2">
+                            <button type="button" id="barcode-camera-btn"
+                                    class="p-1 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-all duration-200"
+                                    title="Scan barcode with camera">
+                                <i class="fas fa-camera text-sm"></i>
+                            </button>
+                            <i class="fas fa-search text-gray-400 text-sm"></i>
+                        </div>
+                    </div>
+                    <div id="search-results" class="mt-3 space-y-2 max-h-48 overflow-y-auto"></div>
+                </div>
+            </div>
+
+            <!-- Shopping Cart -->
+            <div class="bg-white shadow-md rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300">
+                <div class="px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-600">
+                    <div class="flex items-center">
+                        <div class="w-7 h-7 bg-white bg-opacity-20 rounded-md flex items-center justify-center mr-2">
+                            <i class="fas fa-shopping-cart text-white text-sm"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-semibold text-white">Shopping Cart</h3>
+                            <p class="text-purple-100 text-xs">Review selected items</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <div id="edit-order-cart-items" class="space-y-2">
+                        <!-- Cart items will be rendered here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    const clientInfoHtml = `
+            <div class="bg-white shadow-md rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 mt-4">
+                <div class="px-4 py-3 bg-gradient-to-r from-teal-500 to-cyan-600">
+                    <div class="flex items-center">
+                        <div class="w-7 h-7 bg-white bg-opacity-20 rounded-md flex items-center justify-center mr-2">
+                            <i class="fas fa-user text-white text-sm"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-semibold text-white">Client Information</h3>
+                            <p class="text-teal-100 text-xs">Select or add customer</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <div class="space-y-3">
+                        <div class="flex gap-2">
+                            <input type="text"
+                                   id="client-search"
+                                   placeholder="Search client by name or phone..."
+                                   class="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200">
+                            <button type="button"
+                                    id="add-client-btn"
+                                    class="px-3 py-2 bg-gradient-to-r from-teal-500 to-cyan-600 text-white rounded-lg hover:from-teal-600 hover:to-cyan-700 text-sm font-semibold shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300">
+                                <i class="fas fa-plus mr-1"></i>New
+                            </button>
+                        </div>
+                        <div id="client-results" class="hidden space-y-2 max-h-32 overflow-y-auto">
+                            <!-- Client search results will appear here -->
+                        </div>
+                        <div id="selected-client" class="hidden p-3 bg-gradient-to-r from-teal-50 to-cyan-50 border border-teal-200 rounded-lg">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <p class="font-semibold text-teal-900 text-sm" id="selected-client-name"></p>
+                                    <p class="text-xs text-teal-600" id="selected-client-details"></p>
+                                </div>
+                                <button type="button" id="clear-client" class="w-6 h-6 bg-teal-200 hover:bg-teal-300 rounded-md flex items-center justify-center text-teal-600 transition-colors duration-200">
+                                    <i class="fas fa-times text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    `;
+
+    const totalsAndActionsHtml = `
+        <div class="lg:col-span-1 space-y-4">
+            <!-- Order Summary -->
+            <div class="bg-white shadow-md rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300">
+                <div class="px-4 py-3 bg-gradient-to-r from-orange-500 to-red-600">
+                    <div class="flex items-center">
+                        <div class="w-7 h-7 bg-white bg-opacity-20 rounded-md flex items-center justify-center mr-2">
+                            <i class="fas fa-calculator text-white text-sm"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-semibold text-white">Order Summary</h3>
+                            <p class="text-orange-100 text-xs">Transaction totals & discount settings</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <div class="space-y-4">
+                        <!-- Discount Settings -->
+                        <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-3 border border-green-200">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center">
+                                    <div class="w-5 h-5 bg-gradient-to-r from-green-400 to-emerald-500 rounded-md flex items-center justify-center mr-2">
+                                        <i class="fas fa-percent text-white text-xs"></i>
+                                    </div>
+                                    <span class="text-sm font-semibold text-gray-800">Discount Settings</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <span id="edit-order-discount-toggle-status" class="text-xs text-gray-600 mr-2">Off</span>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" id="edit-order-discount-toggle" class="sr-only peer">
+                                        <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500"></div>
+                                    </label>
+                                </div>
+                            </div>
+                            <div id="edit-order-discount-controls" class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3" style="display: none;">
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-700 mb-1">Discount Type</label>
+                                    <select id="edit-order-discount-type"
+                                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200" onchange="updateEditOrderTotals()">
+                                        <option value="fixed" selected>Fixed Amount (UGX)</option>
+                                        <option value="percentage">Percentage (%)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-700 mb-1">Discount Value</label>
+                                    <input type="number"
+                                           id="edit-order-discount-value"
+                                           step="1"
+                                           min="0"
+                                           placeholder="e.g. 5000"
+                                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200" oninput="updateEditOrderTotals()">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Transaction Totals -->
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center p-2 bg-gray-50 rounded-lg">
+                                <span class="text-gray-600 text-sm font-medium">Subtotal:</span>
+                                <span id="edit-order-subtotal" class="font-semibold text-gray-900 text-sm">UGX 0</span>
+                            </div>
+                            <div class="flex justify-between items-center p-2 bg-green-50 rounded-lg">
+                                <span class="text-gray-600 text-sm font-medium">Discount:</span>
+                                <span id="edit-order-discount" class="font-semibold text-green-600 text-sm">UGX 0</span>
+                            </div>
+                            <div class="border-t border-gray-200 pt-3">
+                                <div class="flex justify-between items-center p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
+                                    <span class="text-base font-bold text-gray-900">Total:</span>
+                                    <span id="edit-order-total" class="text-lg font-bold text-blue-600">UGX 0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-end space-x-2 mt-4">
+                <button type="button" onclick="closeEditOrderModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancel</button>
+                <button type="button" onclick="updateOrder(currentOrderForEdit.id, editOrderCart)" class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600">Save Changes</button>
+            </div>
+            ${clientInfoHtml}
+        </div>
+    `;
+
+    content.innerHTML = `<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">${searchAndCartHtml}${totalsAndActionsHtml}</div>`;
+
+    modal.classList.remove('hidden');
+    
+
+    // Set up discount toggle
+    const discountToggle = document.getElementById('edit-order-discount-toggle');
+    const discountControls = document.getElementById('edit-order-discount-controls');
+    const discountToggleStatus = document.getElementById('edit-order-discount-toggle-status');
+
+    // Initialize discount state from order data
+    if (order.discount > 0) {
+        discountToggle.checked = true;
+        discountControls.style.display = 'grid';
+        discountToggleStatus.textContent = 'On';
+        document.getElementById('edit-order-discount-type').value = order.discount_type || 'fixed';
+        document.getElementById('edit-order-discount-value').value = order.discount;
+    } else {
+        discountToggle.checked = false;
+        discountControls.style.display = 'none';
+        discountToggleStatus.textContent = 'Off';
+    }
+
+    discountToggle.addEventListener('change', () => {
+        if (discountToggle.checked) {
+            discountControls.style.display = 'grid';
+            discountToggleStatus.textContent = 'On';
+        } else {
+            discountControls.style.display = 'none';
+            discountToggleStatus.textContent = 'Off';
+            document.getElementById('edit-order-discount-value').value = 0;
+            updateEditOrderTotals();
+        }
+    });
+
+    if (order.client_id && order.client_name) {
+        selectClient(order.client_id, order.client_name, order.client_phone || '');
+    } else {
+        clearSelectedClient();
+    }
+
+    renderEditOrderCart();
+    setupClientSearchAndAdd();
+}
+
+function closeEditOrderModal() {
+    const modal = document.getElementById('edit-order-modal');
+    modal.classList.add('hidden');
+    
+    document.getElementById('edit-order-modal-content').innerHTML = '<p>Loading order details...</p>';
+    editOrderCart = [];
+    currentOrderForEdit = null;
+}
+
+function updateOrder(orderId, cart) {
+    const discountValue = parseFloat(document.getElementById('edit-order-discount-value').value) || 0;
+    const discountType = document.getElementById('edit-order-discount-type').value;
+
+    const payload = {
+        items: cart.map(item => ({
+            product_id: item.id,
+            quantity: item.quantity,
+            unit_price: item.price,
+            discount: item.discount_amount || 0
+        })),
+        discount: discountValue,
+        discount_type: discountType
+    };
+
+    if (selectedClient && selectedClient.id) {
+        payload.client_id = selectedClient.id;
+    }
+
+    fetch(`/api/orders/${orderId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to update order');
+        }
+        return response.json();
+    })
+    .then(data => {
+        showToast('Order updated successfully!', 'success');
+        closeEditOrderModal();
+        loadOrders(); // Refresh the orders table
+    })
+    .catch(error => {
+        console.error('Error updating order:', error);
+        showToast('Failed to update order.', 'error');
+    });
+}
+
 
 function printOrder(orderId) {
     // Fetch order details and show receipt modal
@@ -1296,6 +2338,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadOrders();
     loadOrderStats();
     setupInfiniteScroll();
+    setupClientSearchAndAdd(); // Add this line
 
     // Add event listeners for filters
     document.getElementById('search-orders').addEventListener('input', debounce(function() {
@@ -1393,7 +2436,7 @@ document.addEventListener('click', function(event) {
 </script>
 
 <!-- Export Orders Modal -->
-<div id="export-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" style="display: none;">
+<div id="export-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center  p-4" style="display: none;">
     <div class="bg-white rounded-xl shadow-2xl w-full max-w-md">
         <div class="p-4">
             <div class="flex justify-between items-center mb-4">
@@ -1454,8 +2497,84 @@ document.addEventListener('click', function(event) {
     </div>
 </div>
 
+<!-- Item Discount Modal -->
+<div id="item-discount-modal" class="fixed inset-0 bg-black bg-opacity-75 backdrop-blur-sm hidden ">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all duration-300">
+            <div class="px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-t-xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                            <i class="fas fa-percent text-white text-xs"></i>
+                        </div>
+                        <h3 class="text-base font-semibold text-white">Item Discount</h3>
+                    </div>
+                    <button type="button" onclick="closeItemDiscountModal()" class="text-white hover:text-gray-200 transition-colors duration-200">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-4">
+                <div class="mb-4">
+                    <div class="bg-gray-50 rounded-lg p-3 mb-4">
+                        <div class="flex items-center mb-2">
+                            <i class="fas fa-box text-gray-500 mr-2"></i>
+                            <span class="text-sm font-semibold text-gray-800" id="discount-item-name">Product Name</span>
+                        </div>
+                        <div class="text-xs text-gray-600 space-y-1">
+                            <div>Quantity: <span id="discount-item-quantity" class="font-medium">1</span></div>
+                            <div>Unit Price: UGX <span id="discount-item-price" class="font-medium">0</span></div>
+                            <div>Subtotal: UGX <span id="discount-item-subtotal" class="font-medium">0</span></div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 mb-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Discount Type</label>
+                            <select id="item-discount-type" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200">
+                                <option value="fixed">Fixed Amount (UGX)</option>
+                                <option value="percentage">Percentage (%)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Discount Value</label>
+                            <input type="number" id="item-discount-value" step="1" min="0" placeholder="0"
+                                   class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200">
+                        </div>
+                    </div>
+
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-gray-700">Discount Amount:</span>
+                            <span class="font-bold text-green-600" id="calculated-discount">UGX 0</span>
+                        </div>
+                        <div class="flex justify-between items-center text-sm mt-1">
+                            <span class="text-gray-700">Final Price:</span>
+                            <span class="font-bold text-gray-900" id="final-item-price">UGX 0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="removeEditOrderItemDiscount()" class="px-3 py-2 text-xs font-medium text-red-700 bg-red-100 hover:bg-red-200 rounded-lg transition-all duration-200">
+                        <i class="fas fa-trash mr-1"></i>Remove Discount
+                    </button>
+                    <button type="button" onclick="closeItemDiscountModal()" class="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200">
+                        <i class="fas fa-times mr-1"></i>Cancel
+                    </button>
+                    <button type="button" onclick="applyEditOrderItemDiscount()" class="px-3 py-2 text-xs font-medium text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 rounded-lg transition-all duration-200">
+                        <i class="fas fa-check mr-1"></i>Apply Discount
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
 <!-- View Order Modal -->
-<div id="view-order-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4" style="display: none;">
+<div id="view-order-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center  p-2 sm:p-4" style="display: none;">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-screen overflow-hidden flex flex-col">
         <div class="p-4 sm:p-6 flex-shrink-0">
             <div class="flex justify-between items-start mb-4 sm:mb-6">
@@ -1498,7 +2617,7 @@ document.addEventListener('click', function(event) {
 </div>
 
 <!-- Receipt Modal -->
-<div id="receipt-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style="display: none;">
+<div id="receipt-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center " style="display: none;">
     <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 max-h-screen overflow-y-auto">
         <div class="p-6">
             <div class="flex justify-between items-center mb-6">
@@ -1537,7 +2656,7 @@ document.addEventListener('click', function(event) {
 </div>
 
 <!-- Status Update Confirmation Modal -->
-<div id="status-update-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50">
+<div id="status-update-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden ">
     <div class="flex items-center justify-center min-h-screen p-4">
         <div class="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all duration-300">
             <div class="px-4 py-3 bg-gradient-to-r from-orange-500 to-red-600 rounded-t-xl">
@@ -1578,4 +2697,121 @@ document.addEventListener('click', function(event) {
         </div>
     </div>
 </div>
+
+<!-- Edit Order Modal -->
+<div id="edit-order-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden ">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-7xl max-h-[90vh] flex flex-col transform transition-all duration-300">
+            <div class="px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-t-xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                            <i class="fas fa-edit text-white text-xs"></i>
+                        </div>
+                        <h3 class="text-base font-semibold text-white">Edit Order</h3>
+                    </div>
+                    <button type="button" onclick="closeEditOrderModal()" class="text-white hover:text-gray-200 transition-colors duration-200">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="edit-order-modal-content" class="p-4 flex-1 overflow-y-auto">
+                <p>Loading order details...</p>
+            </div>
+            <div class="p-4 bg-gray-50 rounded-b-xl border-t border-gray-200">
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="closeEditOrderModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancel</button>
+                    <button type="button" onclick="updateOrder(currentOrderForEdit.id, editOrderCart)" class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Client Modal -->
+<div id="add-client-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden ">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300">
+            <div class="px-4 py-3 bg-gradient-to-r from-teal-500 to-cyan-600 rounded-t-xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                            <i class="fas fa-user-plus text-white text-xs"></i>
+                        </div>
+                        <h3 class="text-base font-semibold text-white">Add New Customer</h3>
+                    </div>
+                    <button type="button" id="close-client-modal" class="text-white hover:text-gray-200 transition-colors duration-200">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
+            <form id="add-client-form" class="p-4 space-y-3">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                            <i class="fas fa-user text-gray-400 mr-1"></i>Full Name *
+                        </label>
+                        <input type="text" id="client-name-input" required
+                               class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                               placeholder="Enter customer's full name">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                            <i class="fas fa-phone text-gray-400 mr-1"></i>Phone Number *
+                        </label>
+                        <input type="tel" id="client-phone-input" required
+                               class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                               placeholder="Enter phone number">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                        <i class="fas fa-map-marker-alt text-gray-400 mr-1"></i>Address
+                    </label>
+                    <textarea id="client-address-input" rows="2"
+                              class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                              placeholder="Enter address (optional)"></textarea>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                            <i class="fas fa-city text-gray-400 mr-1"></i>City
+                        </label>
+                        <input type="text" id="client-city-input"
+                               class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                               placeholder="Enter city">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                            <i class="fas fa-flag text-gray-400 mr-1"></i>Country
+                        </label>
+                        <input type="text" id="client-country-input"
+                               class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                               placeholder="Enter country">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                        <i class="fas fa-sticky-note text-gray-400 mr-1"></i>Notes
+                    </label>
+                    <textarea id="client-notes-input" rows="2"
+                              class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                              placeholder="Additional notes (optional)"></textarea>
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t border-gray-200">
+                    <button type="button" id="cancel-client" class="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200">
+                        Cancel
+                    </button>
+                    <button type="submit" id="submit-client" class="px-3 py-2 text-xs font-medium text-white bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
+                        <i class="fas fa-user-plus mr-1"></i>Add Customer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+
+
 {% endblock %}

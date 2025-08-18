@@ -88,13 +88,26 @@ async def get_orders(
                 except:
                     created_by_name = "Staff Member"
 
+            client_phone = order.get("client_phone", "")
+            client_id = order.get("client_id")
+            if client_id:
+                try:
+                    if isinstance(client_id, str):
+                        client_id = ObjectId(client_id)
+                    
+                    client = await db.customers.find_one({"_id": client_id})
+                    if client and client.get("phone"):
+                        client_phone = client.get("phone")
+                except Exception:
+                    pass # Ignore if client_id is invalid or client not found
+
             orders.append({
                 "id": str(order["_id"]),
                 "order_number": order["order_number"],
                 "client_id": str(order.get("client_id", "")),
                 "client_name": order.get("client_name", "Walk-in Client"),
                 "client_email": order.get("client_email", ""),
-                "client_phone": order.get("client_phone", ""),
+                "client_phone": client_phone,
                 "items": order["items"],
                 "subtotal": order["subtotal"],
                 "tax": order["tax"],

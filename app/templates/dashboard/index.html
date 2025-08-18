@@ -1350,9 +1350,8 @@
             if (data.expenses && data.expenses.length > 0) {
                 updateExpensesList(data.expenses);
 
-                // Calculate total expenses
-                const totalExpenses = data.expenses.reduce((sum, expense) => sum + (expense.amount || 0), 0);
-                document.getElementById('total-expenses').textContent = formatCurrency(totalExpenses);
+                // Use total from stats
+                document.getElementById('total-expenses').textContent = formatCurrency(data.stats.total || 0);
             } else {
                 document.getElementById('expenses-list').innerHTML = `
                     <div class="text-center py-8">

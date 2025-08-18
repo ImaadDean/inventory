@@ -154,8 +154,9 @@ async def get_expenses(
                     # Convert datetime to string
                     expense["expense_date"] = expense["expense_date"].isoformat()
         
-        # Calculate stats
+        # Calculate stats for the filtered query
         total_pipeline = [
+            {"$match": query},
             {"$group": {"_id": None, "total": {"$sum": "$amount"}}}
         ]
         total_result = await expenses_collection.aggregate(total_pipeline).to_list(1)

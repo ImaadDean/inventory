@@ -863,7 +863,7 @@ function displaySearchResults(products) {
                 if (product.has_opened_bottle && product.opened_bottle_decants > 0) {
                     // Has opened bottle with available decants
                     decantOption = `
-                        <div class="group bg-white hover:bg-purple-50 border border-gray-200 hover:border-purple-300 rounded-lg p-2 cursor-pointer transition-all duration-200" onclick="addToCart('${product.id}', '${product.name} (${product.decant.decant_size_ml}ml Decant)', ${product.decant.decant_price}, '${product.sku}-DECANT', ${product.opened_bottle_decants})">
+                        <div class="group bg-white ${product.opened_bottle_decants > 0 ? 'hover:bg-purple-50 cursor-pointer' : 'opacity-50'} border border-gray-200 rounded-lg p-2 transition-all duration-200" ${product.opened_bottle_decants > 0 ? `onclick="addToCart('${product.id}', '${product.name} (${product.decant.decant_size_ml}ml Decant)', ${product.decant.decant_price}, '${product.sku}-DECANT', ${product.opened_bottle_decants})"` : ''}>
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center">
                                     <i class="fas fa-vial text-purple-500 mr-2"></i>
@@ -877,7 +877,7 @@ function displaySearchResults(products) {
                                 </div>
                                 <div class="text-right">
                                     <p class="font-bold text-sm text-purple-600">UGX ${product.decant.decant_price.toLocaleString()}</p>
-                                    <button class="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white px-2 py-1 rounded text-xs font-medium transition-all duration-200">
+                                    <button class="bg-gradient-to-r ${product.opened_bottle_decants > 0 ? 'from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700' : 'from-gray-400 to-gray-500'} text-white px-2 py-1 rounded text-xs font-medium transition-all duration-200" ${product.opened_bottle_decants > 0 ? '' : 'disabled'}>
                                         <i class="fas fa-plus mr-1"></i>Add Decant
                                     </button>
                                 </div>
@@ -929,6 +929,51 @@ function displaySearchResults(products) {
                     `;
                 }
 
+                let fullBottleOption;
+                if (product.stock_quantity > 0) {
+                    fullBottleOption = `
+                        <!-- Full Bottle Option -->
+                        <div class="group bg-white ${product.stock_quantity > 0 ? 'hover:bg-blue-50 cursor-pointer' : 'opacity-50'} border border-gray-200 rounded-lg p-2 transition-all duration-200" ${product.stock_quantity > 0 ? `onclick="addToCart('${product.id}', '${product.name} (Full Bottle)', ${product.price}, '${product.sku}', ${product.stock_quantity})"` : ''}>
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <i class="fas fa-wine-bottle text-blue-500 mr-2"></i>
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900">Full Bottle (${product.bottle_size_ml}ml)</p>
+                                        <p class="text-xs text-gray-500">${product.stock_quantity} bottles available</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-bold text-sm text-blue-600">UGX ${product.price.toLocaleString()}</p>
+                                    <button class="bg-gradient-to-r ${product.stock_quantity > 0 ? 'from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700' : 'from-gray-400 to-gray-500'} text-white px-2 py-1 rounded text-xs font-medium transition-all duration-200" ${product.stock_quantity > 0 ? '' : 'disabled'}>
+                                        <i class="fas fa-plus mr-1"></i>Add Bottle
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    fullBottleOption = `
+                        <!-- Full Bottle Option (Out of Stock) -->
+                        <div class="group bg-gray-100 border border-gray-200 rounded-lg p-2 opacity-50">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <i class="fas fa-wine-bottle text-gray-400 mr-2"></i>
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-500">Full Bottle (${product.bottle_size_ml}ml)</p>
+                                        <p class="text-xs text-red-500">Out of Stock</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-bold text-sm text-gray-400">UGX ${product.price.toLocaleString()}</p>
+                                    <button class="bg-gray-300 text-white px-2 py-1 rounded text-xs font-medium" disabled>
+                                        <i class="fas fa-plus mr-1"></i>Add Bottle
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
                 // Show both bottle and decant options for perfume products
                 return `
                     <div class="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-3 space-y-2">
@@ -949,26 +994,7 @@ function displaySearchResults(products) {
                                 ${product.stock_display}
                             </span>
                         </div>
-
-                        <!-- Full Bottle Option -->
-                        <div class="group bg-white hover:bg-blue-50 border border-gray-200 hover:border-blue-300 rounded-lg p-2 cursor-pointer transition-all duration-200" onclick="addToCart('${product.id}', '${product.name} (Full Bottle)', ${product.price}, '${product.sku}', ${product.stock_quantity})">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center">
-                                    <i class="fas fa-wine-bottle text-blue-500 mr-2"></i>
-                                    <div>
-                                        <p class="text-sm font-medium text-gray-900">Full Bottle (${product.bottle_size_ml}ml)</p>
-                                        <p class="text-xs text-gray-500">${product.stock_quantity} bottles available</p>
-                                    </div>
-                                </div>
-                                <div class="text-right">
-                                    <p class="font-bold text-sm text-blue-600">UGX ${product.price.toLocaleString()}</p>
-                                    <button class="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-2 py-1 rounded text-xs font-medium transition-all duration-200">
-                                        <i class="fas fa-plus mr-1"></i>Add Bottle
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
+                        ${fullBottleOption}
                         <!-- Decant Option (Dynamic based on opened bottle status) -->
                         ${decantOption}
                     </div>
@@ -1166,50 +1192,49 @@ function closeBarcodeScanner() {
 
 // Cart functionality
 function addToCart(id, name, price, sku, stockQuantity) {
-    // Create unique cart item ID - for decants, use product_id + "-DECANT"
     const isDecant = sku.endsWith('-DECANT');
-    const cartItemId = isDecant ? id + '-DECANT' : id;
-
+    const cartItemId = isDecant ? `${id}-DECANT` : id;
     const existingItem = cart.find(item => item.cartItemId === cartItemId);
 
-    // Ensure stockQuantity is provided
-    if (stockQuantity === undefined || stockQuantity === null) {
+    // For decants, stockQuantity represents available decants from an opened bottle.
+    // For regular products, it's the bottle stock.
+    const availableStock = stockQuantity;
+
+    if (availableStock === undefined || availableStock === null) {
         console.warn('Stock quantity not provided for product:', name);
-        stockQuantity = 0; // Default to 0 to prevent overselling
+        stockQuantity = 0;
     }
 
-    // Check stock availability
     const currentCartQuantity = existingItem ? existingItem.quantity : 0;
     const newQuantity = currentCartQuantity + 1;
 
-    if (newQuantity > stockQuantity) {
-        // Show stock limit warning
-        showStockWarning(name, stockQuantity, currentCartQuantity);
+    // The stock check is now against `availableStock`, which is correct for both
+    // decants (available from open bottle) and full bottles (stock_quantity).
+    if (newQuantity > availableStock) {
+        showStockWarning(name, availableStock, currentCartQuantity);
         return;
     }
 
     if (existingItem) {
         existingItem.quantity += 1;
-        // Update stock quantity in case it changed
-        existingItem.stockQuantity = stockQuantity;
+        existingItem.stockQuantity = availableStock; // Update with the latest stock info
     } else {
         cart.push({
-            cartItemId: cartItemId,  // Unique identifier for cart item
-            id: id,                  // Original product ID
+            cartItemId: cartItemId,
+            id: id,
             name: name,
             price: price,
             sku: sku,
             quantity: 1,
-            stockQuantity: stockQuantity,
+            stockQuantity: availableStock,
             isDecant: isDecant,
-            discount_amount: 0       // Initialize with no discount
+            discount_amount: 0
         });
     }
 
     updateCartDisplay();
     updateTotals();
 
-    // Clear search
     document.getElementById('product-search').value = '';
     document.getElementById('search-results').innerHTML = '';
 }
@@ -2099,6 +2124,7 @@ async function processSale() {
                 items: cart.map(item => ({
                     product_id: item.id,
                     quantity: item.quantity,
+                    is_decant: item.isDecant,
                     discount_amount: item.discount_amount || 0
                 })),
                 tax_rate: 0.0,
@@ -2218,6 +2244,7 @@ async function processSale() {
         items: cart.map(item => ({
             product_id: item.id,
             quantity: item.quantity,
+            is_decant: item.isDecant,
             discount_amount: item.discount_amount || 0
         })),
         tax_rate: 0.0,
