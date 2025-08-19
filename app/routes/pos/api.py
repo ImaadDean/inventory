@@ -429,8 +429,11 @@ async def create_sale(sale_data: SaleCreate, current_user: User = Depends(get_cu
             # Calculate item totals
             if item_data.is_decant:
                 unit_price = product["decant"]["decant_price"]
+                cost_price = product.get("cost_price", 0) # Or handle more gracefully
             else:
                 unit_price = product["price"]
+                cost_price = product.get("cost_price", 0)
+
             total_price = unit_price * item_data.quantity
             subtotal += total_price
 
@@ -439,6 +442,7 @@ async def create_sale(sale_data: SaleCreate, current_user: User = Depends(get_cu
                 "product_name": f"{product['name']} ({'Decant' if item_data.is_decant else 'Full Bottle'})",
                 "quantity": item_data.quantity,
                 "unit_price": unit_price,
+                "cost_price": cost_price,
                 "total_price": total_price,
                 "discount_amount": item_data.discount_amount,
                 "is_decant": item_data.is_decant

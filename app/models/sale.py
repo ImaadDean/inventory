@@ -29,6 +29,7 @@ class SaleItem(BaseModel):
     sku: str
     quantity: int = Field(..., gt=0)
     unit_price: float = Field(..., gt=0)
+    cost_price: float = Field(..., gt=0)
     total_price: float = Field(..., gt=0)
     discount_amount: float = Field(default=0.0, ge=0)
 

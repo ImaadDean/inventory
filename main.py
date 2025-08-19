@@ -41,6 +41,7 @@ from app.routes.orders.route import orders_routes
 from app.routes.reports.route import reports_routes
 from app.routes.scents.route import scents_routes
 from app.routes.installments.route import router as installments_routes
+from app.routes.reports.api import reports_api_router
 
 # Import authentication utilities
 from app.utils.auth import verify_token, get_user_by_username
@@ -212,9 +213,11 @@ app.include_router(suppliers_routes)
 app.include_router(expenses_routes)
 app.include_router(pos_routes)
 app.include_router(orders_routes)
-app.include_router(reports_routes, prefix="/reports")
+app.include_router(reports_api_router, prefix="/api/reports")
 app.include_router(scents_routes)
 app.include_router(installments_routes)
+app.include_router(reports_routes, prefix="/reports")
+app.include_router(reports_api_router, prefix="/api/reports")
 
 
 # Root endpoint - redirect based on authentication status and role
