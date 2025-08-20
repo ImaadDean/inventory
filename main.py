@@ -12,6 +12,7 @@ from app.middleware.activity_tracker import ActivityTrackingMiddleware
 from app.config.settings import settings
 from app.config.database import connect_to_mongo, close_mongo_connection, get_database
 from app.utils.expense_categories_init import initialize_default_expense_categories
+from app.utils.init_sales_indexes import init_sales_indexes
 
 # Import API routers
 from app.routes.auth.api import router as auth_api_router
@@ -26,6 +27,7 @@ from app.routes.orders.api import router as orders_api_router
 from app.routes.dashboard.api import router as dashboard_api_router
 from app.routes.scents.api import router as scents_api_router
 from app.routes.installments.api import router as installments_api_router
+from app.routes.sales.api import router as sales_api_router
 
 # Import HTML route routers
 from app.routes.auth.route import auth_routes
@@ -42,6 +44,7 @@ from app.routes.reports.route import reports_routes
 from app.routes.scents.route import scents_routes
 from app.routes.installments.route import router as installments_routes
 from app.routes.reports.api import reports_api_router
+from app.routes.sales.route import sales_routes
 
 # Import authentication utilities
 from app.utils.auth import verify_token, get_user_by_username
@@ -64,6 +67,12 @@ async def lifespan(app: FastAPI):
         await initialize_default_expense_categories(db)
     except Exception as e:
         logger.error(f"Failed to initialize expense categories: {e}")
+
+    # Initialize sales collection indexes
+    try:
+        await init_sales_indexes()
+    except Exception as e:
+        logger.error(f"Failed to initialize sales indexes: {e}")
 
     logger.info("Application startup complete")
 
@@ -201,6 +210,7 @@ app.include_router(orders_api_router)
 app.include_router(dashboard_api_router)
 app.include_router(scents_api_router)
 app.include_router(installments_api_router)
+app.include_router(sales_api_router)
 
 # Include HTML route routers
 app.include_router(auth_routes)
@@ -217,7 +227,7 @@ app.include_router(reports_api_router, prefix="/api/reports")
 app.include_router(scents_routes)
 app.include_router(installments_routes)
 app.include_router(reports_routes, prefix="/reports")
-app.include_router(reports_api_router, prefix="/api/reports")
+app.include_router(sales_routes)
 
 
 # Root endpoint - redirect based on authentication status and role

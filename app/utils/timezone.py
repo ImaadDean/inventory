@@ -236,3 +236,16 @@ def format_eat_date(dt: datetime, format_str: str = "%Y-%m-%d") -> str:
 def format_eat_time(dt: datetime, format_str: str = "%H:%M:%S") -> str:
     """Format time in East Africa Time - alias for format_kampala_time()"""
     return format_kampala_time(dt, format_str)
+
+
+def get_today_start_utc() -> datetime:
+    """Get the start of today (midnight) in UTC, based on Kampala's current date."""
+    now_in_kampala = now_kampala()
+    today_start_kampala = now_in_kampala.replace(hour=0, minute=0, second=0, microsecond=0)
+    return kampala_to_utc(today_start_kampala)
+
+def get_today_end_utc() -> datetime:
+    """Get the end of today (23:59:59.999999) in UTC, based on Kampala's current date."""
+    now_in_kampala = now_kampala()
+    today_end_kampala = now_in_kampala.replace(hour=23, minute=59, second=59, microsecond=999999)
+    return kampala_to_utc(today_end_kampala)

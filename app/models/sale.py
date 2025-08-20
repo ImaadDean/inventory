@@ -50,7 +50,7 @@ class Sale(BaseModel):
     tax_amount: float = Field(default=0.0, ge=0)
     discount_amount: float = Field(default=0.0, ge=0)
     total_amount: float = Field(..., gt=0)
-    payment_method: PaymentMethod
+    payment_method: str
     payment_received: float = Field(..., ge=0)
     change_given: float = Field(default=0.0, ge=0)
     status: SaleStatus = SaleStatus.COMPLETED

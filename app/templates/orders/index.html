@@ -1467,10 +1467,6 @@ function showEditOrderModal(order) {
                     </div>
                 </div>
             </div>
-            <div class="flex justify-end space-x-2 mt-4">
-                <button type="button" onclick="closeEditOrderModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancel</button>
-                <button type="button" onclick="updateOrder(currentOrderForEdit.id, editOrderCart)" class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600">Save Changes</button>
-            </div>
             ${clientInfoHtml}
         </div>
     `;
@@ -2498,7 +2494,7 @@ document.addEventListener('click', function(event) {
 </div>
 
 <!-- Item Discount Modal -->
-<div id="item-discount-modal" class="fixed inset-0 bg-black bg-opacity-75 backdrop-blur-sm hidden ">
+<div id="item-discount-modal" class="fixed inset-0 bg-black bg-opacity-75 backdrop-blur-sm hidden z-50">
     <div class="flex items-center justify-center min-h-screen p-4">
         <div class="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all duration-300">
             <div class="px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-t-xl">
@@ -2562,7 +2558,7 @@ document.addEventListener('click', function(event) {
                     <button type="button" onclick="closeItemDiscountModal()" class="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200">
                         <i class="fas fa-times mr-1"></i>Cancel
                     </button>
-                    <button type="button" onclick="applyEditOrderItemDiscount()" class="px-3 py-2 text-xs font-medium text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 rounded-lg transition-all duration-200">
+                    <button type="button" onclick="applyItemDiscount()" class="px-3 py-2 text-xs font-medium text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 rounded-lg transition-all duration-200">
                         <i class="fas fa-check mr-1"></i>Apply Discount
                     </button>
                 </div>
@@ -2699,7 +2695,7 @@ document.addEventListener('click', function(event) {
 </div>
 
 <!-- Edit Order Modal -->
-<div id="edit-order-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden ">
+<div id="edit-order-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-40">
     <div class="flex items-center justify-center min-h-screen p-4">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-7xl max-h-[90vh] flex flex-col transform transition-all duration-300">
             <div class="px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-t-xl">

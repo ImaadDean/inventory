@@ -229,6 +229,13 @@
                         </div>
                         Orders
                     </a>
+                    
+                    <a href="/sales" class="group flex items-center px-2 py-2 text-sm font-medium rounded-lg transition-all duration-200 {% if request.url.path.startswith('/sales') %}text-white bg-gradient-to-r from-blue-500 to-indigo-600 shadow-md{% else %}text-gray-700 hover:bg-blue-50 hover:text-blue-700{% endif %}">
+                        <div class="w-7 h-7 rounded-md flex items-center justify-center mr-2 transition-colors duration-200 {% if request.url.path.startswith('/sales') %}bg-white bg-opacity-20{% else %}bg-gray-100 group-hover:bg-blue-100{% endif %}">
+                            <i class="fas fa-chart-bar text-xs {% if request.url.path.startswith('/sales') %}text-white{% else %}text-gray-500 group-hover:text-blue-600{% endif %}"></i>
+                        </div>
+                        Sales
+                    </a>
                      {% if user and (user.role == 'admin' or user.role == 'manager') %}
                     <a href="/reports" class="group flex items-center px-2 py-2 text-sm font-medium rounded-lg transition-all duration-200 {% if request.url.path.startswith('/reports') %}text-white bg-gradient-to-r from-blue-500 to-indigo-600 shadow-md{% else %}text-gray-700 hover:bg-blue-50 hover:text-blue-700{% endif %}">
                         <div class="w-7 h-7 rounded-md flex items-center justify-center mr-2 transition-colors duration-200 {% if request.url.path.startswith('/reports') %}bg-white bg-opacity-20{% else %}bg-gray-100 group-hover:bg-blue-100{% endif %}">
@@ -439,6 +446,13 @@
                                     <i class="fas fa-shopping-cart text-xs {% if request.url.path.startswith('/orders') %}text-white{% else %}text-gray-500 group-hover:text-blue-600{% endif %}"></i>
                                 </div>
                                 Orders
+                            </a>
+                            <a href="/sales" @click="sidebarOpen = false"
+                               class="group flex items-center px-2 py-2 text-sm font-medium rounded-lg transition-all duration-200 {% if request.url.path.startswith('/sales') %}text-white bg-gradient-to-r from-blue-500 to-indigo-600 shadow-md{% else %}text-gray-700 hover:bg-blue-50 hover:text-blue-700{% endif %}">
+                                <div class="w-7 h-7 rounded-md flex items-center justify-center mr-2 transition-colors duration-200 {% if request.url.path.startswith('/sales') %}bg-white bg-opacity-20{% else %}bg-gray-100 group-hover:bg-blue-100{% endif %}">
+                                    <i class="fas fa-chart-bar text-xs {% if request.url.path.startswith('/sales') %}text-white{% else %}text-gray-500 group-hover:text-blue-600{% endif %}"></i>
+                                </div>
+                                Sales
                             </a>
                             {% if user and (user.role == 'admin' or user.role == 'manager') %}
                             <a href="/reports" @click="sidebarOpen = false"

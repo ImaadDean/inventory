@@ -1,799 +1,238 @@
 {% extends "base.html" %}
 
-{% block title %}Reports Dashboard - Inventory Management System{% endblock %}
+{% block title %}Reports & Analytics{% endblock %}
 
 {% block content %}
-<div class="space-y-4 animate-fade-in max-w-full overflow-x-hidden">
-    <!-- Enhanced Header -->
-    <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg shadow-lg overflow-hidden">
-        <div class="px-4 py-4">
-            <div class="md:flex md:items-center md:justify-between">
-                <div class="flex-1 min-w-0">
-                    <div class="flex items-center">
-                        <div class="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-3">
-                            <i class="fas fa-chart-bar text-white text-sm"></i>
-                        </div>
-                        <div>
-                            <h2 class="text-xl font-bold text-white">
-                                Reports & Analytics
-                            </h2>
-                            <p class="text-blue-100 text-sm">
-                                Generate business insights and detailed reports
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                <div class="mt-3 md:mt-0 md:ml-4 flex items-center space-x-3">
-                    <div class="text-right">
-                        <p class="text-blue-100 text-xs">Report Date</p>
-                        <p class="text-white text-sm font-semibold">{{ current_date | kampala_date_friendly }}</p>
-                    </div>
-                    <button type="button" onclick="exportAllData()" class="inline-flex items-center px-4 py-2 bg-white bg-opacity-20 hover:bg-opacity-30 text-white font-medium rounded-lg transition-all duration-200 backdrop-blur-sm text-sm">
-                        <i class="fas fa-download mr-2"></i>
-                        Export All
-                    </button>
-                </div>
-            </div>
+<div class="container mx-auto px-4 py-6">
+
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">Reports & Analytics</h1>
+        <div class="flex items-center space-x-2">
+            <button class="bg-blue-500 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-600 transition duration-200">
+                <i class="fas fa-download mr-2"></i>
+                Export All Data
+            </button>
         </div>
     </div>
 
-    <!-- Compact Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
         <!-- Today Stats -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow duration-200">
-            <div class="flex items-center justify-between mb-2">
-                <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-calendar-day text-blue-600 text-sm"></i>
+        <div class="bg-white p-6 rounded-lg shadow">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">Today</h3>
+            <div class="space-y-2">
+                <div class="flex justify-between items-center">
+                    <p class="text-gray-500 text-sm">Orders</p>
+                    <p id="today-orders" class="text-lg font-bold text-gray-800">0</p>
                 </div>
-                <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">Today</span>
-            </div>
-            <div>
-                <p id="today-orders" class="text-lg font-bold text-gray-900">...</p>
-                <p class="text-xs text-gray-500 mb-2">Orders</p>
-                <div class="space-y-1">
-                    <p class="text-xs text-gray-600">Revenue: <span id="today-revenue" class="font-semibold text-green-600">...</span></p>
-                    <p class="text-xs text-gray-600">Profit: <span id="today-profit" class="font-semibold text-blue-600">...</span></p>
-                    <p class="text-xs text-gray-600">Customers: <span id="today-customers" class="font-semibold">...</span></p>
+                <div class="flex justify-between items-center">
+                    <p class="text-gray-500 text-sm">Revenue</p>
+                    <p id="today-revenue" class="text-lg font-bold text-gray-800">UGX 0.00</p>
+                </div>
+                <div class="flex justify-between items-center">
+                    <p class="text-gray-500 text-sm">Profit</p>
+                    <p id="today-profit" class="text-lg font-bold text-gray-800">UGX 0.00</p>
+                </div>
+                <div class="flex justify-between items-center">
+                    <p class="text-gray-500 text-sm">Customers</p>
+                    <p id="today-customers" class="text-lg font-bold text-gray-800">0</p>
                 </div>
             </div>
         </div>
-
         <!-- This Week Stats -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow duration-200">
-            <div class="flex items-center justify-between mb-2">
-                <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-calendar-week text-green-600 text-sm"></i>
+        <div class="bg-white p-6 rounded-lg shadow">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">This Week</h3>
+            <div class="space-y-2">
+                <div class="flex justify-between items-center">
+                    <p class="text-gray-500 text-sm">Orders</p>
+                    <p id="week-orders" class="text-lg font-bold text-gray-800">0</p>
                 </div>
-                <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">This Week</span>
-            </div>
-            <div>
-                <p id="week-orders" class="text-lg font-bold text-gray-900">...</p>
-                <p class="text-xs text-gray-500 mb-2">Orders</p>
-                <div class="space-y-1">
-                    <p class="text-xs text-gray-600">Revenue: <span id="week-revenue" class="font-semibold text-green-600">...</span></p>
-                    <p class="text-xs text-gray-600">Profit: <span id="week-profit" class="font-semibold text-blue-600">...</span></p>
-                    <p class="text-xs text-gray-600">Customers: <span id="week-customers" class="font-semibold">...</span></p>
+                <div class="flex justify-between items-center">
+                    <p class="text-gray-500 text-sm">Revenue</p>
+                    <p id="week-revenue" class="text-lg font-bold text-gray-800">UGX 0.00</p>
+                </div>
+                <div class="flex justify-between items-center">
+                    <p class="text-gray-500 text-sm">Profit</p>
+                    <p id="week-profit" class="text-lg font-bold text-gray-800">UGX 0.00</p>
+                </div>
+                <div class="flex justify-between items-center">
+                    <p class="text-gray-500 text-sm">Customers</p>
+                    <p id="week-customers" class="text-lg font-bold text-gray-800">0</p>
                 </div>
             </div>
         </div>
-
         <!-- This Month Stats -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow duration-200">
-            <div class="flex items-center justify-between mb-2">
-                <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-calendar-alt text-purple-600 text-sm"></i>
+        <div class="bg-white p-6 rounded-lg shadow">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">This Month</h3>
+            <div class="space-y-2">
+                <div class="flex justify-between items-center">
+                    <p class="text-gray-500 text-sm">Orders</p>
+                    <p id="month-orders" class="text-lg font-bold text-gray-800">0</p>
                 </div>
-                <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">This Month</span>
-            </div>
-            <div>
-                <p id="month-orders" class="text-lg font-bold text-gray-900">...</p>
-                <p class="text-xs text-gray-500 mb-2">Orders</p>
-                <div class="space-y-1">
-                    <p class="text-xs text-gray-600">Revenue: <span id="month-revenue" class="font-semibold text-green-600">...</span></p>
-                    <p class="text-xs text-gray-600">Profit: <span id="month-profit" class="font-semibold text-blue-600">...</span></p>
-                    <p class="text-xs text-gray-600">Customers: <span id="month-customers" class="font-semibold">...</span></p>
+                <div class="flex justify-between items-center">
+                    <p class="text-gray-500 text-sm">Revenue</p>
+                    <p id="month-revenue" class="text-lg font-bold text-gray-800">UGX 0.00</p>
                 </div>
-            </div>
-        </div>
-
-        <!-- Total Stats -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow duration-200">
-            <div class="flex items-center justify-between mb-2">
-                <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-chart-line text-indigo-600 text-sm"></i>
+                <div class="flex justify-between items-center">
+                    <p class="text-gray-500 text-sm">Profit</p>
+                    <p id="month-profit" class="text-lg font-bold text-gray-800">UGX 0.00</p>
                 </div>
-                <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">All Time</span>
-            </div>
-            <div>
-                <p id="total-orders" class="text-lg font-bold text-gray-900">...</p>
-                <p class="text-xs text-gray-500 mb-2">Total Orders</p>
-                <div class="space-y-1">
-                    <p class="text-xs text-gray-600">Incomplete: <span id="total-incomplete-orders" class="font-semibold text-orange-600">...</span></p>
-                    <p class="text-xs text-gray-600">Products: <span id="total-products" class="font-semibold">...</span></p>
-                    <p class="text-xs text-gray-600">Customers: <span id="total-customers" class="font-semibold">...</span></p>
+                <div class="flex justify-between items-center">
+                    <p class="text-gray-500 text-sm">Customers</p>
+                    <p id="month-customers" class="text-lg font-bold text-gray-800">0</p>
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- Quick Reports Section -->
-    <div class="bg-white shadow-md rounded-lg overflow-hidden border border-gray-100">
-        <div class="px-4 py-3 bg-gradient-to-r from-yellow-400 to-orange-500">
-            <div class="flex items-center">
-                <div class="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
-                    <i class="fas fa-bolt text-white text-sm"></i>
+        <!-- All Time Stats -->
+        <div class="bg-white p-6 rounded-lg shadow">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">All Time</h3>
+            <div class="space-y-2">
+                <div class="flex justify-between items-center">
+                    <p class="text-gray-500 text-sm">Total Orders</p>
+                    <p id="total-orders" class="text-lg font-bold text-gray-800">0</p>
                 </div>
-                <div>
-                    <h3 class="text-base font-semibold text-white">Quick Reports</h3>
-                    <p class="text-yellow-100 text-xs">Generate instant reports</p>
+                <div class="flex justify-between items-center">
+                    <p class="text-gray-500 text-sm">Incomplete</p>
+                    <p id="incomplete-orders" class="text-lg font-bold text-gray-800">0</p>
                 </div>
-            </div>
-        </div>
-        <div class="p-4">
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <button onclick="generateTodaysSummary()" class="flex flex-col items-center justify-center px-3 py-4 bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-lg shadow-sm text-sm font-medium text-blue-700 hover:from-blue-100 hover:to-blue-200 hover:shadow-md transition-all duration-200 group">
-                    <i class="fas fa-calendar-day text-lg text-blue-500 mb-1 group-hover:scale-110 transition-transform duration-200"></i>
-                    <span class="text-xs">Today's Summary</span>
-                </button>
-                <button onclick="generateCriticalStock()" class="flex flex-col items-center justify-center px-3 py-4 bg-gradient-to-br from-red-50 to-red-100 border border-red-200 rounded-lg shadow-sm text-sm font-medium text-red-700 hover:from-red-100 hover:to-red-200 hover:shadow-md transition-all duration-200 group">
-                    <i class="fas fa-exclamation-triangle text-lg text-red-500 mb-1 group-hover:scale-110 transition-transform duration-200"></i>
-                    <span class="text-xs">Critical Stock</span>
-                </button>
-                <button onclick="generateSalesTrends()" class="flex flex-col items-center justify-center px-3 py-4 bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-lg shadow-sm text-sm font-medium text-green-700 hover:from-green-100 hover:to-green-200 hover:shadow-md transition-all duration-200 group">
-                    <i class="fas fa-chart-line text-lg text-green-500 mb-1 group-hover:scale-110 transition-transform duration-200"></i>
-                    <span class="text-xs">Sales Trends</span>
-                </button>
-                <button onclick="generateBestSellers()" class="flex flex-col items-center justify-center px-3 py-4 bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-lg shadow-sm text-sm font-medium text-purple-700 hover:from-purple-100 hover:to-purple-200 hover:shadow-md transition-all duration-200 group">
-                    <i class="fas fa-star text-lg text-purple-500 mb-1 group-hover:scale-110 transition-transform duration-200"></i>
-                    <span class="text-xs">Best Sellers</span>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Compact Report Categories -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <!-- Sales Reports -->
-        <div class="bg-white shadow-md rounded-lg overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-100">
-            <div class="px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600">
-                <div class="flex items-center">
-                    <div class="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
-                        <i class="fas fa-chart-pie text-white text-sm"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-base font-semibold text-white">Sales Reports</h3>
-                        <p class="text-green-100 text-xs">Revenue & performance</p>
-                    </div>
+                <div class="flex justify-between items-center">
+                    <p class="text-gray-500 text-sm">Products</p>
+                    <p id="total-products" class="text-lg font-bold text-gray-800">0</p>
                 </div>
-            </div>
-            <div class="p-4">
-                <div class="space-y-1">
-                    <a href="javascript:void(0)" onclick="openSalesReport('daily')" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-md transition-all duration-200 flex items-center group block">
-                        <i class="fas fa-calendar-day mr-2 text-green-500 group-hover:text-green-600 text-xs"></i>
-                        <span>Daily Sales Report</span>
-                    </a>
-                    <a href="javascript:void(0)" onclick="openSalesReport('weekly')" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-md transition-all duration-200 flex items-center group block">
-                        <i class="fas fa-calendar-week mr-2 text-green-500 group-hover:text-green-600 text-xs"></i>
-                        <span>Weekly Sales Report</span>
-                    </a>
-                    <a href="javascript:void(0)" onclick="openSalesReport('monthly')" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-md transition-all duration-200 flex items-center group block">
-                        <i class="fas fa-calendar-alt mr-2 text-green-500 group-hover:text-green-600 text-xs"></i>
-                        <span>Monthly Sales Report</span>
-                    </a>
-                    <a href="javascript:void(0)" onclick="openSalesReport('yearly')" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-md transition-all duration-200 flex items-center group block">
-                        <i class="fas fa-calendar mr-2 text-green-500 group-hover:text-green-600 text-xs"></i>
-                        <span>Yearly Sales Report</span>
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Inventory Reports -->
-        <div class="bg-white shadow-md rounded-lg overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-100">
-            <div class="px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600">
-                <div class="flex items-center">
-                    <div class="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
-                        <i class="fas fa-boxes text-white text-sm"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-base font-semibold text-white">Inventory Reports</h3>
-                        <p class="text-blue-100 text-xs">Stock levels & movements</p>
-                    </div>
-                </div>
-            </div>
-            <div class="p-4">
-                <div class="space-y-1">
-                    <a href="/reports/inventory" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-md transition-all duration-200 flex items-center group block">
-                        <i class="fas fa-chart-line mr-2 text-blue-500 group-hover:text-blue-600 text-xs"></i>
-                        <span>Stock Level Report</span>
-                    </a>
-                    <a href="/reports/inventory" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-md transition-all duration-200 flex items-center group block">
-                        <i class="fas fa-exchange-alt mr-2 text-blue-500 group-hover:text-blue-600 text-xs"></i>
-                        <span>Stock Movement Report</span>
-                    </a>
-                    <a href="/reports/inventory" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-md transition-all duration-200 flex items-center group block">
-                        <i class="fas fa-dollar-sign mr-2 text-blue-500 group-hover:text-blue-600 text-xs"></i>
-                        <span>Inventory Valuation</span>
-                    </a>
-                    <a href="/reports/inventory" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-yellow-50 hover:text-yellow-700 rounded-md transition-all duration-200 flex items-center group block">
-                        <i class="fas fa-exclamation-triangle mr-2 text-yellow-500 group-hover:text-yellow-600 text-xs"></i>
-                        <span>Low Stock Alert</span>
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Customer Reports -->
-        <div class="bg-white shadow-md rounded-lg overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-100">
-            <div class="px-4 py-3 bg-gradient-to-r from-purple-500 to-indigo-600">
-                <div class="flex items-center">
-                    <div class="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
-                        <i class="fas fa-users text-white text-sm"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-base font-semibold text-white">Customer Reports</h3>
-                        <p class="text-purple-100 text-xs">Analytics & behavior</p>
-                    </div>
-                </div>
-            </div>
-            <div class="p-4">
-                <div class="space-y-1">
-                    <a href="/reports/customers" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 rounded-md transition-all duration-200 flex items-center group block">
-                        <i class="fas fa-user-friends mr-2 text-purple-500 group-hover:text-purple-600 text-xs"></i>
-                        <span>Customer List</span>
-                    </a>
-                    <a href="/reports/customers" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 rounded-md transition-all duration-200 flex items-center group block">
-                        <i class="fas fa-shopping-cart mr-2 text-purple-500 group-hover:text-purple-600 text-xs"></i>
-                        <span>Purchase History</span>
-                    </a>
-                    <a href="/reports/customers" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 rounded-md transition-all duration-200 flex items-center group block">
-                        <i class="fas fa-crown mr-2 text-purple-500 group-hover:text-purple-600 text-xs"></i>
-                        <span>Top Customers</span>
-                    </a>
-                    <a href="/reports/customers" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 rounded-md transition-all duration-200 flex items-center group block">
-                        <i class="fas fa-clock mr-2 text-purple-500 group-hover:text-purple-600 text-xs"></i>
-                        <span>Customer Activity</span>
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Financial Reports -->
-        <div class="bg-white shadow-md rounded-lg overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-100">
-            <div class="px-4 py-3 bg-gradient-to-r from-orange-500 to-red-600">
-                <div class="flex items-center">
-                    <div class="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
-                        <i class="fas fa-dollar-sign text-white text-sm"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-base font-semibold text-white">Financial Reports</h3>
-                        <p class="text-orange-100 text-xs">Profit & loss analysis</p>
-                    </div>
-                </div>
-            </div>
-            <div class="p-4">
-                <div class="space-y-1">
-                    <a href="/reports/financial" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700 rounded-md transition-all duration-200 flex items-center group block">
-                        <i class="fas fa-chart-bar mr-2 text-orange-500 group-hover:text-orange-600 text-xs"></i>
-                        <span>Revenue Report</span>
-                    </a>
-                    <a href="/reports/financial" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700 rounded-md transition-all duration-200 flex items-center group block">
-                        <i class="fas fa-receipt mr-2 text-orange-500 group-hover:text-orange-600 text-xs"></i>
-                        <span>Expense Report</span>
-                    </a>
-                    <a href="/reports/financial" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700 rounded-md transition-all duration-200 flex items-center group block">
-                        <i class="fas fa-balance-scale mr-2 text-orange-500 group-hover:text-orange-600 text-xs"></i>
-                        <span>Profit & Loss</span>
-                    </a>
-                    <a href="/reports/financial" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700 rounded-md transition-all duration-200 flex items-center group block">
-                        <i class="fas fa-chart-pie mr-2 text-orange-500 group-hover:text-orange-600 text-xs"></i>
-                        <span>Financial Summary</span>
-                    </a>
+                <div class="flex justify-between items-center">
+                    <p class="text-gray-500 text-sm">Customers</p>
+                    <p id="total-customers" class="text-lg font-bold text-gray-800">0</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Custom Report Builder -->
-    <div class="bg-white shadow-md rounded-lg overflow-hidden border border-gray-100">
-        <div class="px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-700">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center">
-                    <div class="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
-                        <i class="fas fa-magic text-white text-sm"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-base font-bold text-white">Custom Report Builder</h3>
-                        <p class="text-indigo-100 text-xs">Create tailored reports with advanced filters</p>
-                    </div>
-                </div>
-                <div class="hidden md:flex items-center space-x-2">
-                    <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                    <span class="text-indigo-100 text-xs">Live Builder</span>
-                </div>
-            </div>
-        </div>
-        <div class="p-4 bg-gradient-to-br from-gray-50 to-blue-50">
-            <!-- Report Configuration -->
-            <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
-                <!-- Report Type -->
-                <div class="space-y-1">
-                    <label class="flex items-center text-sm font-medium text-gray-700">
-                        <i class="fas fa-chart-bar mr-2 text-indigo-500 text-xs"></i>
-                        Report Type
-                    </label>
-                    <select id="reportType" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white transition-all duration-200 text-sm hover:border-indigo-300">
-                        <option value="">Choose report type...</option>
-                        <option value="inventory">📦 Inventory Analysis</option>
-                        <option value="sales">💰 Sales Performance</option>
-                        <option value="customer">👥 Customer Insights</option>
-                        <option value="financial">📊 Financial Overview</option>
-                        <option value="analytics">📈 Business Analytics</option>
-                        <option value="expense">💳 Expense Analysis</option>
-                    </select>
-                </div>
-
-                <!-- Date Range -->
-                <div class="space-y-1">
-                    <label class="flex items-center text-sm font-medium text-gray-700">
-                        <i class="fas fa-calendar-alt mr-2 text-indigo-500 text-xs"></i>
-                        Time Period
-                    </label>
-                    <select id="dateRange" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white transition-all duration-200 text-sm hover:border-indigo-300">
-                        <option value="">Select time period...</option>
-                        <option value="today">📅 Today</option>
-                        <option value="yesterday">📅 Yesterday</option>
-                        <option value="week">📅 This Week</option>
-                        <option value="last_week">📅 Last Week</option>
-                        <option value="month">📅 This Month</option>
-                        <option value="last_month">📅 Last Month</option>
-                        <option value="quarter">📅 This Quarter</option>
-                        <option value="year">📅 This Year</option>
-                        <option value="custom">🗓️ Custom Range</option>
-                    </select>
-                </div>
-
-                <!-- Format -->
-                <div class="space-y-1">
-                    <label class="flex items-center text-sm font-medium text-gray-700">
-                        <i class="fas fa-file-export mr-2 text-indigo-500 text-xs"></i>
-                        Export Format
-                    </label>
-                    <select id="exportFormat" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white transition-all duration-200 text-sm hover:border-indigo-300">
-                        <option value="pdf">📄 PDF Document</option>
-                        <option value="excel">📊 Excel Spreadsheet</option>
-                        <option value="csv">📋 CSV Data</option>
-                        <option value="json">🔧 JSON Data</option>
-                    </select>
-                </div>
-            </div>
-
-            <!-- Custom Date Range (Hidden by default) -->
-            <div id="customDateRange" class="hidden mt-4 p-3 bg-white rounded-lg border border-indigo-200">
-                <h4 class="text-sm font-medium text-gray-700 mb-2 flex items-center">
-                    <i class="fas fa-calendar-week mr-2 text-indigo-500 text-xs"></i>
-                    Custom Date Range
-                </h4>
-                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <div>
-                        <label class="block text-xs font-medium text-gray-600 mb-1">From Date</label>
-                        <input type="date" id="fromDate" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-gray-600 mb-1">To Date</label>
-                        <input type="date" id="toDate" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="mt-4 flex flex-col sm:flex-row gap-2 sm:justify-between sm:items-center">
-                <div class="flex items-center space-x-2">
-                    <button type="button" class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200">
-                        <i class="fas fa-eye mr-2 text-xs"></i>
-                        Preview
-                    </button>
-                    <button type="button" class="inline-flex items-center px-3 py-2 border border-indigo-300 rounded-md shadow-sm text-sm font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-all duration-200">
-                        <i class="fas fa-save mr-2 text-xs"></i>
-                        Save Template
-                    </button>
-                </div>
-                <button type="button" id="generateCustomReport" class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium rounded-md shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105 text-sm">
-                    <i class="fas fa-rocket mr-2"></i>
-                    Generate Report
-                </button>
-            </div>
-        </div>
+    <!-- Main Chart -->
+    <div class="bg-white p-6 rounded-lg shadow mb-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">Sales Trends (Last 30 Days)</h2>
+        <div id="sales-chart"></div>
     </div>
 
-    <!-- Compact Quick Actions -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-        <h3 class="text-sm font-semibold text-gray-900 mb-3">Quick Actions</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <button onclick="exportAllData()" class="flex items-center justify-center px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition-colors duration-200 text-sm">
-                <i class="fas fa-download mr-2 text-xs"></i>
-                Export Data
-            </button>
-            <button onclick="generateMonthlyReport()" class="flex items-center justify-center px-3 py-2 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg transition-colors duration-200 text-sm">
-                <i class="fas fa-file-pdf mr-2 text-xs"></i>
-                Monthly Report
-            </button>
-            <button onclick="scheduleReport()" class="flex items-center justify-center px-3 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg transition-colors duration-200 text-sm">
-                <i class="fas fa-clock mr-2 text-xs"></i>
-                Schedule Report
-            </button>
-        </div>
+    <!-- Report Categories -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        <a href="/reports/sales" class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition duration-200 flex items-center">
+            <i class="fas fa-file-invoice-dollar text-blue-500 text-3xl"></i>
+            <div class="ml-4">
+                <h3 class="text-lg font-bold text-gray-800">Sales Reports</h3>
+                <p class="text-gray-500 text-sm">Detailed sales analysis</p>
+            </div>
+        </a>
+        <a href="/reports/inventory" class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition duration-200 flex items-center">
+            <i class="fas fa-boxes text-green-500 text-3xl"></i>
+            <div class="ml-4">
+                <h3 class="text-lg font-bold text-gray-800">Inventory Reports</h3>
+                <p class="text-gray-500 text-sm">Stock levels and valuation</p>
+            </div>
+        </a>
+        <a href="/reports/customers" class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition duration-200 flex items-center">
+            <i class="fas fa-users text-yellow-500 text-3xl"></i>
+            <div class="ml-4">
+                <h3 class="text-lg font-bold text-gray-800">Customer Reports</h3>
+                <p class="text-gray-500 text-sm">Customer analytics</p>
+            </div>
+        </a>
+        <a href="/reports/financial" class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition duration-200 flex items-center">
+            <i class="fas fa-piggy-bank text-red-500 text-3xl"></i>
+            <div class="ml-4">
+                <h3 class="text-lg font-bold text-gray-800">Financial Reports</h3>
+                <p class="text-gray-500 text-sm">Profit, loss, and expenses</p>
+            </div>
+        </a>
     </div>
+
 </div>
+{% endblock %}
 
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    console.log("[v0] Dashboard loaded, attempting to fetch stats...");
-    
-    fetch('/api/dashboard/summary', {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-        },
-        credentials: 'include' // Include credentials for authentication
-    })
-        .then(response => {
-            console.log("[v0] API response received:", response.status, response.statusText);
-            console.log("[v0] Response headers:", response.headers);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log("[v0] API Stats Data:", data);
-            
-            if (data && typeof data === 'object') {
-                updateDashboardStats(data);
-                console.log("[v0] Dashboard stats updated successfully");
-            } else {
-                throw new Error('Invalid data format received from API');
-            }
-        })
-        .catch(error => {
-            console.error("[v0] Error fetching report stats:", error);
-            console.log("[v0] Full error details:", {
-                message: error.message,
-                stack: error.stack,
-                name: error.name,
-                type: error.constructor.name
+    document.addEventListener('DOMContentLoaded', function() {
+        // Fetch data and update cards
+        fetch('/api/reports/stats')
+            .then(response => response.json())
+            .then(data => {
+                debugger;
+                console.log('Stats data:', data);
+                // Today
+                document.getElementById('today-orders').textContent = data.today.orders;
+                document.getElementById('today-revenue').textContent = `UGX ${data.today.revenue}`;
+                document.getElementById('today-profit').textContent = `UGX ${data.today.profit}`;
+                document.getElementById('today-customers').textContent = data.today.customers;
+
+                // This Week
+                document.getElementById('week-orders').textContent = data.week.orders;
+                document.getElementById('week-revenue').textContent = `UGx ${data.week.revenue}`;
+                document.getElementById('week-profit').textContent = `UGX ${data.week.profit}`;
+                document.getElementById('week-customers').textContent = data.week.customers;
+
+                // This Month
+                document.getElementById('month-orders').textContent = data.month.orders;
+                document.getElementById('month-revenue').textContent = `UGX ${data.month.revenue}`;
+                document.getElementById('month-profit').textContent = `UGX ${data.month.profit}`;
+                document.getElementById('month-customers').textContent = data.month.customers;
+
+                // All Time
+                document.getElementById('total-orders').textContent = data.total.orders;
+                document.getElementById('incomplete-orders').textContent = data.total.incomplete_orders;
+                document.getElementById('total-products').textContent = data.total.products;
+                document.getElementById('total-customers').textContent = data.total.customers;
             });
-            
-            console.log("[v0] Attempting fallback API call...");
-            fallbackApiCall();
-        });
-});
 
-function updateDashboardStats(data) {
-    try {
-        // Today Stats (using sales_overview from API)
-        if (data.sales_overview) {
-            const todayOrders = document.getElementById('today-orders');
-            const todayRevenue = document.getElementById('today-revenue');
-            const todayProfit = document.getElementById('today-profit'); // Not directly available from API
-            const todayCustomers = document.getElementById('today-customers'); // Using recent_clients_count
+        // Fetch sales trend data and render chart
+        fetch('/api/reports/sales-data')
+            .then(response => response.json())
+            .then(data => {
+                console.log('Sales data:', data);
+                if (data.success) {
+                    const salesTrend = data.chart_data.sales_trend;
+                    var options = {
+                        chart: {
+                            type: 'area',
+                            height: 350,
+                            toolbar: {
+                                show: false
+                            }
+                        },
+                        series: [{
+                            name: 'Sales',
+                            data: salesTrend.revenue
+                        }],
+                        xaxis: {
+                            categories: salesTrend.labels
+                        },
+                        dataLabels: {
+                            enabled: false
+                        },
+                        stroke: {
+                            curve: 'smooth'
+                        },
+                        fill: {
+                            type: 'gradient',
+                            gradient: {
+                                shadeIntensity: 1,
+                                opacityFrom: 0.7,
+                                opacityTo: 0.9,
+                                stops: [0, 90, 100]
+                            }
+                        },
+                        tooltip: {
+                            x: {
+                                format: 'dd/MM/yy HH:mm'
+                            },
+                        },
+                    };
 
-            if (todayOrders) todayOrders.textContent = data.sales_overview.total_transactions || '0';
-            if (todayRevenue) todayRevenue.textContent = `UGX ${(data.sales_overview.total_sales || 0).toLocaleString()}`;
-            if (todayProfit) todayProfit.textContent = 'UGX 0'; // Placeholder as profit not directly in API
-            if (todayCustomers) todayCustomers.textContent = data.recent_clients_count || '0';
-        }
-
-        // This Week Stats (not directly available from API, setting to placeholders)
-        const weekOrders = document.getElementById('week-orders');
-        const weekRevenue = document.getElementById('week-revenue');
-        const weekProfit = document.getElementById('week-profit');
-        const weekCustomers = document.getElementById('week-customers');
-        if (weekOrders) weekOrders.textContent = '...';
-        if (weekRevenue) weekRevenue.textContent = 'UGX ...';
-        if (weekProfit) weekProfit.textContent = 'UGX ...';
-        if (weekCustomers) weekCustomers.textContent = '...';
-
-        // This Month Stats (not directly available from API, setting to placeholders)
-        const monthOrders = document.getElementById('month-orders');
-        const monthRevenue = document.getElementById('month-revenue');
-        const monthProfit = document.getElementById('month-profit');
-        const monthCustomers = document.getElementById('month-customers');
-        if (monthOrders) monthOrders.textContent = '...';
-        if (monthRevenue) monthRevenue.textContent = 'UGX ...';
-        if (monthProfit) monthProfit.textContent = 'UGX ...';
-        if (monthCustomers) monthCustomers.textContent = '...';
-
-        // Total Stats (using inventory_overview and other counts from API)
-        if (data.inventory_overview) {
-            const totalOrders = document.getElementById('total-orders'); // Not directly available as total
-            const totalIncomplete = document.getElementById('total-incomplete-orders'); // Not directly available
-            const totalProducts = document.getElementById('total-products');
-            const totalCustomers = document.getElementById('total-customers'); // Not directly available as total
-
-            if (totalOrders) totalOrders.textContent = '...'; // Placeholder
-            if (totalIncomplete) totalIncomplete.textContent = '...'; // Placeholder
-            if (totalProducts) totalProducts.textContent = data.inventory_overview.total_products || '0';
-            if (totalCustomers) totalCustomers.textContent = '...'; // Placeholder
-        }
-        
-        showToast('Dashboard stats loaded successfully!', 'success');
-    } catch (error) {
-        console.error("[v0] Error updating dashboard stats:", error);
-        showToast('Error updating dashboard display', 'error');
-    }
-}
-
-function setDefaultValues() {
-    console.log("[v0] Setting default values due to API failure");
-    
-    const defaultElements = [
-        'today-orders', 'today-revenue', 'today-profit', 'today-customers',
-        'week-orders', 'week-revenue', 'week-profit', 'week-customers',
-        'month-orders', 'month-revenue', 'month-profit', 'month-customers',
-        'total-orders', 'total-incomplete-orders', 'total-products', 'total-customers'
-    ];
-    
-    defaultElements.forEach(id => {
-        const element = document.getElementById(id);
-        if (element) {
-            if (id.includes('revenue') || id.includes('profit')) {
-                element.textContent = 'UGX 0';
-            } else {
-                element.textContent = '0';
-            }
-        }
+                    var chart = new ApexCharts(document.querySelector("#sales-chart"), options);
+                    chart.render();
+                }
+            })
+            .catch(error => console.error('Error fetching sales data:', error));
     });
-}
-
-function fallbackApiCall() {
-    console.log("[v0] Trying fallback fetch without CORS mode...");
-    
-    fetch('http://192.168.1.6:8000/api/dashboard/summary')
-        .then(response => {
-            console.log("[v0] Fallback API response:", response.status, response.statusText);
-            if (!response.ok) {
-                throw new Error(`Fallback HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log("[v0] Fallback API data received:", data);
-            updateDashboardStats(data);
-        })
-        .catch(fallbackError => {
-            console.error("[v0] Fallback API call also failed:", fallbackError);
-            showToast(`API connection failed: ${fallbackError.message}`, 'error');
-            
-            setDefaultValues();
-        });
-}
-
-// Enhanced report functionality
-document.addEventListener('DOMContentLoaded', function() {
-    // Custom Report Builder functionality
-    const dateRangeSelect = document.getElementById('dateRange');
-    const customDateRange = document.getElementById('customDateRange');
-    const generateButton = document.getElementById('generateCustomReport');
-
-    // Show/hide custom date range
-    if (dateRangeSelect) {
-        dateRangeSelect.addEventListener('change', function() {
-            if (this.value === 'custom') {
-                customDateRange.classList.remove('hidden');
-                customDateRange.classList.add('animate-fade-in');
-            } else {
-                customDateRange.classList.add('hidden');
-            }
-        });
-    }
-
-    // Generate custom report
-    if (generateButton) {
-        generateButton.addEventListener('click', function() {
-            const reportType = document.getElementById('reportType').value;
-            const dateRange = document.getElementById('dateRange').value;
-            const exportFormat = document.getElementById('exportFormat').value;
-
-            if (!reportType) {
-                showToast('Please select a report type', 'error');
-                return;
-            }
-
-            if (!dateRange) {
-                showToast('Please select a date range', 'error');
-                return;
-            }
-
-            // Validate custom date range if selected
-            if (dateRange === 'custom') {
-                const fromDate = document.getElementById('fromDate').value;
-                const toDate = document.getElementById('toDate').value;
-
-                if (!fromDate || !toDate) {
-                    showToast('Please select both from and to dates', 'error');
-                    return;
-                }
-
-                if (new Date(fromDate) > new Date(toDate)) {
-                    showToast('From date cannot be later than to date', 'error');
-                    return;
-                }
-            }
-
-            // Show loading state
-            this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating...';
-            this.disabled = true;
-
-            // Simulate report generation
-            setTimeout(() => {
-                const reportTypeText = reportType.charAt(0).toUpperCase() + reportType.slice(1);
-                const formatText = exportFormat.toUpperCase();
-
-                showToast(`${reportTypeText} report generated successfully! (${formatText})`, 'success');
-
-                // Reset button
-                this.innerHTML = '<i class="fas fa-rocket mr-2"></i>Generate Report';
-                this.disabled = false;
-
-                // Simulate download
-                setTimeout(() => {
-                    showToast(`${reportTypeText}_report.${exportFormat} downloaded`, 'info');
-                }, 1000);
-            }, 3000);
-        });
-    }
-
-    // Set default dates for custom range
-    const today = new Date();
-    const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-
-    const fromDateInput = document.getElementById('fromDate');
-    const toDateInput = document.getElementById('toDate');
-
-    if (fromDateInput) fromDateInput.value = lastWeek.toISOString().split('T')[0];
-    if (toDateInput) toDateInput.value = today.toISOString().split('T')[0];
-});
-
-// Quick Reports Functions
-function generateTodaysSummary() {
-    showToast('Generating today's summary...', 'info');
-    setTimeout(() => {
-        showToast('Today's summary report generated successfully!', 'success');
-    }, 2000);
-}
-
-function generateCriticalStock() {
-    showToast('Generating critical stock report...', 'info');
-    setTimeout(() => {
-        showToast('Critical stock report generated successfully!', 'success');
-    }, 2000);
-}
-
-function generateSalesTrends() {
-    showToast('Generating sales trends report...', 'info');
-    setTimeout(() => {
-        showToast('Sales trends report generated successfully!', 'success');
-    }, 2000);
-}
-
-function generateBestSellers() {
-    showToast('Generating best sellers report...', 'info');
-    setTimeout(() => {
-        showToast('Best sellers report generated successfully!', 'success');
-    }, 2000);
-}
-
-// Original Functions
-function exportAllData() {
-    showToast('Exporting all data...', 'info');
-    setTimeout(() => {
-        showToast('All data exported successfully!', 'success');
-    }, 2000);
-}
-
-function generateMonthlyReport() {
-    showToast('Generating monthly report...', 'info');
-    setTimeout(() => {
-        showToast('Monthly report generated successfully!', 'success');
-    }, 2000);
-}
-
-function scheduleReport() {
-    showToast('Opening report scheduler...', 'info');
-    setTimeout(() => {
-        showToast('Report scheduled successfully!', 'success');
-    }, 1500);
-}
-
-// Function to open sales report with specific date range
-function openSalesReport(period) {
-    const today = new Date();
-    let fromDate, toDate;
-
-    switch(period) {
-        case 'daily':
-            // Today
-            fromDate = today.toISOString().split('T')[0];
-            toDate = today.toISOString().split('T')[0];
-            break;
-
-        case 'weekly':
-            // This week (Monday to Sunday)
-            const startOfWeek = new Date(today);
-            const day = today.getDay();
-            const diff = today.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
-            startOfWeek.setDate(diff);
-
-            fromDate = startOfWeek.toISOString().split('T')[0];
-            toDate = today.toISOString().split('T')[0];
-            break;
-
-        case 'monthly':
-            // This month
-            const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-            fromDate = startOfMonth.toISOString().split('T')[0];
-            toDate = today.toISOString().split('T')[0];
-            break;
-
-        case 'yearly':
-            // This year
-            const startOfYear = new Date(today.getFullYear(), 0, 1);
-            fromDate = startOfYear.toISOString().split('T')[0];
-            toDate = today.toISOString().split('T')[0];
-            break;
-
-        default:
-            // Default to last 7 days
-            const weekAgo = new Date(today);
-            weekAgo.setDate(today.getDate() - 7);
-            fromDate = weekAgo.toISOString().split('T')[0];
-            toDate = today.toISOString().split('T')[0];
-    }
-
-    // Navigate to sales report with date parameters
-    const url = `/reports/sales?from_date=${fromDate}&to_date=${toDate}&period=${period}`;
-    window.location.href = url;
-}
-
-// Toast notification function (if not already defined)
-function showToast(message, type = 'info') {
-    // Create toast element
-    const toast = document.createElement('div');
-    toast.className = `fixed top-4 right-4 px-4 py-2 rounded-lg shadow-lg z-50 text-white text-sm font-medium transition-all duration-300 transform translate-x-full`;
-
-    // Set color based on type
-    switch(type) {
-        case 'success':
-            toast.className += ' bg-green-500';
-            break;
-        case 'error':
-            toast.className += ' bg-red-500';
-            break;
-        case 'warning':
-            toast.className += ' bg-yellow-500';
-            break;
-        default:
-            toast.className += ' bg-blue-500';
-    }
-
-    toast.textContent = message;
-    document.body.appendChild(toast);
-
-    // Show toast
-    setTimeout(() => {
-        toast.classList.remove('translate-x-full');
-    }, 100);
-
-    // Hide toast after 3 seconds
-    setTimeout(() => {
-        toast.classList.add('translate-x-full');
-        setTimeout(() => {
-            document.body.removeChild(toast);
-        }, 300);
-    }, 3000);
-}
 </script>
 {% endblock %}

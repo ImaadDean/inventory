@@ -101,3 +101,18 @@ class Order(BaseModel):
                 "notes": "Installment order with down payment"
             }
         }
+
+class OrderUpdateItem(BaseModel):
+    product_id: str
+    quantity: int = Field(..., gt=0)
+    unit_price: float = Field(..., ge=0)
+    discount: float = Field(default=0.0, ge=0)
+
+class OrderUpdate(BaseModel):
+    items: List[OrderUpdateItem]
+    discount: float = Field(default=0.0, ge=0)
+    discount_type: str = "fixed"
+    client_id: Optional[str] = None
+    notes: Optional[str] = None
+    status: Optional[OrderStatus] = None
+    payment_status: Optional[OrderPaymentStatus] = None

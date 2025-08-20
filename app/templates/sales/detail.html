@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Sale Details{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Sale Details</h2>
+        <div>
+            <a href="/sales" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Sales
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Sale Information</h5>
+                    <p><strong>Sale Number:</strong> {{ sale.sale_number }}</p>
+                    <p><strong>Date:</strong> {{ sale.created_at|datetime }}</p>
+                    <p><strong>Status:</strong> 
+                        <span class="badge bg-{% if sale.status == 'completed' %}success{% elif sale.status == 'pending' %}warning{% elif sale.status == 'cancelled' %}danger{% else %}secondary{% endif %}">
+                            {{ sale.status }}
+                        </span>
+                    </p>
+                    <p><strong>Payment Method:</strong> {{ sale.payment_method }}</p>
+                    <p><strong>Processed By:</strong> {{ sale.cashier_name }}</p>
+                </div>
+                <div class="col-md-6">
+                    <h5>Customer Information</h5>
+                    <p><strong>Name:</strong> {{ sale.customer_name or 'Walk-in Customer' }}</p>
+                    <p><strong>Email:</strong> {{ sale.customer_email or 'N/A' }}</p>
+                    <p><strong>Phone:</strong> {{ sale.customer_phone or 'N/A' }}</p>
+                </div>
+            </div>
+            
+            <h5 class="mt-4">Items</h5>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>SKU</th>
+                            <th>Quantity</th>
+                            <th>Unit Price</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in sale.items %}
+                        <tr>
+                            <td>{{ item.product_name }}</td>
+                            <td>{{ item.sku }}</td>
+                            <td>{{ item.quantity }}</td>
+                            <td>UGX {{ "{:,.2f}".format(item.unit_price) }}</td>
+                            <td>UGX {{ "{:,.2f}".format(item.total_price) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="row mt-3">
+                <div class="col-md-6 offset-md-6">
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Subtotal:</strong></td>
+                            <td class="text-end">UGX {{ "{:,.2f}".format(sale.subtotal) }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Tax:</strong></td>
+                            <td class="text-end">UGX {{ "{:,.2f}".format(sale.tax_amount) }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Discount:</strong></td>
+                            <td class="text-end">UGX {{ "{:,.2f}".format(sale.discount_amount) }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Total:</strong></td>
+                            <td class="text-end"><strong>UGX {{ "{:,.2f}".format(sale.total_amount) }}</strong></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Payment Received:</strong></td>
+                            <td class="text-end">UGX {{ "{:,.2f}".format(sale.payment_received) }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Change Given:</strong></td>
+                            <td class="text-end">UGX {{ "{:,.2f}".format(sale.change_given) }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            
+            {% if sale.notes %}
+            <div class="mt-3">
+                <h5>Notes</h5>
+                <p>{{ sale.notes }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

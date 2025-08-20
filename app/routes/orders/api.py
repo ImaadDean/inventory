@@ -2,14 +2,164 @@ from fastapi import APIRouter, HTTPException, status, Depends, Query, Request
 from typing import Optional, List
 from datetime import datetime, date
 from bson import ObjectId
+import asyncio
 from ...config.database import get_database
 from ...models import User
+from ...models.order import OrderUpdate
 from ...utils.auth import get_current_user, get_current_user_hybrid_dependency, verify_token, get_user_by_username
 
 router = APIRouter(prefix="/api/orders", tags=["Orders API"])
 
 
+@router.put("/{order_id}", response_model=dict)
+async def update_order(
+    order_id: str,
+    order_data: OrderUpdate,
+    current_user: User = Depends(get_current_user_hybrid_dependency())
+):
+    """Update an existing order, its corresponding sale record, and adjust product stock."""
+    db = await get_database()
+    client = db.client
 
+    async with await client.start_session() as session:
+        async with session.start_transaction():
+            try:
+                # 1. Fetch the existing order
+                existing_order = await db.orders.find_one({"_id": ObjectId(order_id)}, session=session)
+                if not existing_order:
+                    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+
+                # 2. Calculate stock changes
+                stock_deltas = {}
+                # Credit back the old items
+                for item in existing_order.get("items", []):
+                    product_id = str(item["product_id"])
+                    stock_deltas[product_id] = stock_deltas.get(product_id, 0) + item["quantity"]
+
+                # Debit the new items
+                for item_data in order_data.items:
+                    product_id = item_data.product_id
+                    stock_deltas[product_id] = stock_deltas.get(product_id, 0) - item_data.quantity
+
+                # 3. Validate new stock levels and prepare product updates
+                product_updates = []
+                for product_id, delta in stock_deltas.items():
+                    if delta != 0:
+                        product = await db.products.find_one({"_id": ObjectId(product_id)}, session=session)
+                        if not product:
+                            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Product with ID {product_id} not found")
+                        
+                        if product['stock_quantity'] + delta < 0:
+                            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Not enough stock for product {product['name']}")
+                        
+                        product_updates.append(
+                            db.products.update_one(
+                                {"_id": ObjectId(product_id)},
+                                {"$inc": {"stock_quantity": delta}},
+                                session=session
+                            )
+                        )
+
+                # 4. Prepare updated order items and calculate totals
+                new_items = []
+                new_subtotal = 0
+                total_items_discount = 0
+
+                for item_data in order_data.items:
+                    product = await db.products.find_one({"_id": ObjectId(item_data.product_id)}, session=session)
+                    total_price = item_data.quantity * item_data.unit_price
+                    new_subtotal += total_price
+                    total_items_discount += item_data.discount
+
+                    new_items.append({
+                        "product_id": item_data.product_id,
+                        "product_name": product["name"],
+                        "quantity": item_data.quantity,
+                        "unit_price": item_data.unit_price,
+                        "total_price": total_price,
+                        "discount_amount": item_data.discount
+                    })
+
+                # 5. Calculate overall discount and total
+                order_discount_amount = 0
+                if order_data.discount_type == 'percentage':
+                    order_discount_amount = (new_subtotal - total_items_discount) * (order_data.discount / 100)
+                else:
+                    order_discount_amount = order_data.discount
+
+                total_discount = total_items_discount + order_discount_amount
+                new_total = new_subtotal - total_discount
+
+                # 6. Prepare the update data for the order
+                order_update_data = {
+                    "items": new_items,
+                    "subtotal": new_subtotal,
+                    "discount": total_discount,
+                    "total": new_total,
+                    "notes": order_data.notes or existing_order.get("notes"),
+                    "updated_at": datetime.utcnow()
+                }
+
+                # 7. Handle client update
+                if order_data.client_id:
+                    client_doc = await db.customers.find_one({"_id": ObjectId(order_data.client_id)}, session=session)
+                    if not client_doc:
+                        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
+                    order_update_data["client_id"] = ObjectId(order_data.client_id)
+                    order_update_data["client_name"] = client_doc["name"]
+                    order_update_data["client_phone"] = client_doc.get("phone")
+
+                # 8. Execute all database updates
+                # Update stocks
+                if product_updates:
+                    await asyncio.gather(*product_updates)
+
+                # Update order
+                await db.orders.update_one(
+                    {"_id": ObjectId(order_id)},
+                    {"$set": order_update_data},
+                    session=session
+                )
+
+                # 9. If there's a linked sale, update it too
+                if existing_order.get("sale_id"):
+                    sale_update_data = {
+                        "items": [
+                            {
+                                "product_id": ObjectId(item["product_id"]),
+                                "product_name": item["product_name"],
+                                "sku": (await db.products.find_one({"_id": ObjectId(item["product_id"])}, session=session)).get("sku", ""),
+                                "quantity": item["quantity"],
+                                "unit_price": item["unit_price"],
+                                "cost_price": (await db.products.find_one({"_id": ObjectId(item["product_id"])}, session=session)).get("cost_price", 0),
+                                "total_price": item["total_price"],
+                                "discount_amount": item["discount_amount"]
+                            } for item in new_items
+                        ],
+                        "subtotal": new_subtotal,
+                        "discount_amount": total_discount,
+                        "total_amount": new_total,
+                        "notes": order_data.notes or existing_order.get("notes"),
+                        "updated_at": datetime.utcnow()
+                    }
+                    if order_data.client_id:
+                        sale_update_data["customer_id"] = ObjectId(order_data.client_id)
+                        sale_update_data["customer_name"] = order_update_data["client_name"]
+
+                    await db.sales.update_one(
+                        {"_id": existing_order["sale_id"]},
+                        {"$set": sale_update_data},
+                        session=session
+                    )
+
+            except HTTPException as e:
+                await session.abort_transaction()
+                raise e
+            except Exception as e:
+                await session.abort_transaction()
+                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An error occurred: {str(e)}")
+
+    return {"success": True, "message": "Order updated successfully"}
 
 
 @router.get("/", response_model=dict)
@@ -448,6 +598,3 @@ async def update_order_status(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update order status: {str(e)}"
         )
-
-
-
