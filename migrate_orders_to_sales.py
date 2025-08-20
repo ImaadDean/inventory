@@ -138,12 +138,30 @@ async def convert_order_to_sale(order, db, sale_index):
                 if product_id:
                     product = await db.products.find_one({"_id": ObjectId(product_id)})
                     if product:
-                        if product.get("is_decant", False):
-                            if product.get("original_cost") and product.get("original_volume") and product.get("decant_volume"):
-                                calculated_cost = (product["original_cost"] / product["original_volume"]) * product["decant_volume"]
+                        decant_info = product.get("decant")
+                        is_decant_sale = False
+                        if decant_info and decant_info.get("is_decantable"):
+                            # Check if the item price matches the decant price to confirm it's a decant sale
+                            if item.get("unit_price") == decant_info.get("decant_price"):
+                                is_decant_sale = True
+
+                        if is_decant_sale:
+                            logger.info(f"Processing decant sale for product {product.get('name')}")
+                            original_cost = product.get("cost_price")
+                            original_volume = product.get("bottle_size_ml")
+                            decant_volume = decant_info.get("decant_size_ml")
+                            
+                            if original_cost is not None and original_volume and decant_volume:
+                                calculated_cost = (original_cost / original_volume) * decant_volume
                                 sale_item["cost_price"] = calculated_cost
+                                logger.info(f"Calculated decant cost for {product.get('name')}: {calculated_cost}")
+                            else:
+                                logger.warning(f"Missing data for decant cost calculation for product {product.get('name')}. Falling back to product cost price.")
+                                # Fallback if some decant info is missing, though it should be there.
+                                sale_item["cost_price"] = product.get("cost_price", product.get("price", 0))
                         else:
                             sale_item["cost_price"] = product.get("cost_price", product.get("price", 0))
+                        
                         sale_item["sku"] = product.get("sku", "")
             except Exception as e:
                 logger.warning(f"Could not fetch product info for item: {e}")
