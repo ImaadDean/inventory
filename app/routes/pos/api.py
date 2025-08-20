@@ -374,6 +374,7 @@ async def create_sale(sale_data: SaleCreate, current_user: User = Depends(get_cu
         # Calculate totals
         subtotal = 0
         sale_items = []
+        total_profit = 0
 
         for item_data in sale_data.items:
             # Get product details
@@ -426,10 +427,18 @@ async def create_sale(sale_data: SaleCreate, current_user: User = Depends(get_cu
                         detail=f"Insufficient stock for product {product['name']}. Available: {product['stock_quantity']}, Requested: {item_data.quantity}"
                     )
 
-            # Calculate item totals
+            # Calculate item totals and cost price
             if item_data.is_decant:
                 unit_price = product["decant"]["decant_price"]
-                cost_price = product.get("cost_price", 0) # Or handle more gracefully
+                
+                bottle_cost_price = product.get("cost_price", 0)
+                bottle_size_ml = product.get("bottle_size_ml")
+                decant_size_ml = product.get("decant", {}).get("decant_size_ml")
+
+                if bottle_cost_price > 0 and bottle_size_ml and decant_size_ml:
+                    cost_price = (bottle_cost_price / bottle_size_ml) * decant_size_ml
+                else:
+                    cost_price = 0 
             else:
                 unit_price = product["price"]
                 cost_price = product.get("cost_price", 0)
@@ -437,7 +446,11 @@ async def create_sale(sale_data: SaleCreate, current_user: User = Depends(get_cu
             total_price = unit_price * item_data.quantity
             subtotal += total_price
 
-            sale_items.append({
+            # Calculate profit for the item
+            unit_profit = unit_price - cost_price
+            item_profit = (unit_profit * item_data.quantity) - item_data.discount_amount
+            
+            sale_item_doc = {
                 "product_id": ObjectId(item_data.product_id),
                 "product_name": f"{product['name']} ({'Decant' if item_data.is_decant else 'Full Bottle'})",
                 "quantity": item_data.quantity,
@@ -445,8 +458,11 @@ async def create_sale(sale_data: SaleCreate, current_user: User = Depends(get_cu
                 "cost_price": cost_price,
                 "total_price": total_price,
                 "discount_amount": item_data.discount_amount,
-                "is_decant": item_data.is_decant
-            })
+                "is_decant": item_data.is_decant,
+                "profit": max(0, item_profit)
+            }
+            sale_items.append(sale_item_doc)
+            total_profit += sale_item_doc["profit"]
 
         # Calculate tax and total
         tax_amount = subtotal * sale_data.tax_rate
@@ -467,6 +483,7 @@ async def create_sale(sale_data: SaleCreate, current_user: User = Depends(get_cu
             "tax_amount": tax_amount,
             "discount_amount": sale_data.discount_amount,
             "total_amount": total_amount,
+            "total_profit": total_profit,
             "payment_method": sale_data.payment_method,
             "payment_received": sale_data.payment_received,
             "change_given": change_given,
@@ -612,7 +629,7 @@ async def create_sale(sale_data: SaleCreate, current_user: User = Depends(get_cu
 
 @router.post("/orders")
 async def create_order(order_data: dict, current_user: User = Depends(get_current_user_hybrid_dependency())):
-    """Create a new order from POS sale"""
+    """Create a new order from POS and also save it as a sale"""
     try:
         db = await get_database()
 
@@ -642,16 +659,70 @@ async def create_order(order_data: dict, current_user: User = Depends(get_curren
         }
 
         # Insert order
-        result = await db.orders.insert_one(order_doc)
+        order_result = await db.orders.insert_one(order_doc)
+        order_id = order_result.inserted_id
+
+        # If order is paid, create a corresponding sale record
+        if order_data.get("payment_method") != "not_paid":
+            sale_count = await db.sales.count_documents({})
+            sale_number = f"SALE-{sale_count + 1:06d}"
+
+            sale_items = []
+            for item_data in order_data["items"]:
+                product = await db.products.find_one({"_id": ObjectId(item_data["product_id"])})
+                if not product:
+                    continue
+
+                if item_data.get("is_decant"):
+                    unit_price = product.get("decant", {}).get("decant_price", 0)
+                else:
+                    unit_price = product.get("price", 0)
+
+                sale_items.append({
+                    "product_id": ObjectId(item_data["product_id"]),
+                    "product_name": item_data["product_name"],
+                    "sku": product.get("sku", ""),
+                    "quantity": item_data["quantity"],
+                    "unit_price": unit_price,
+                    "cost_price": product.get("cost_price", 0),
+                    "total_price": item_data["total_price"],
+                    "discount_amount": item_data.get("discount_amount", 0),
+                })
+
+            payment_received = order_data["total"]
+            change_given = 0
+
+            sale_doc = {
+                "sale_number": sale_number,
+                "customer_id": ObjectId(order_data["client_id"]) if order_data.get("client_id") else None,
+                "customer_name": order_data.get("client_name", "Walk-in Client"),
+                "cashier_id": current_user.id,
+                "cashier_name": current_user.username,
+                "items": sale_items,
+                "subtotal": order_data["subtotal"],
+                "tax_amount": order_data["tax"],
+                "discount_amount": order_data.get("discount", 0),
+                "total_amount": order_data["total"],
+                "payment_method": order_data.get("payment_method", "cash"),
+                "payment_received": payment_received,
+                "change_given": change_given,
+                "status": "completed",
+                "notes": order_data.get("notes", ""),
+                "created_at": order_doc["created_at"],
+                "updated_at": order_doc["updated_at"],
+            }
+            sale_result = await db.sales.insert_one(sale_doc)
+            sale_id = sale_result.inserted_id
+
+            # Link sale to order
+            await db.orders.update_one({"_id": order_id}, {"$set": {"sale_id": sale_id}})
 
         # Update product stock quantities only if payment is made
         if order_data.get("payment_method") != "not_paid":
             for item in order_data["items"]:
-                # Check if this is a decant sale by looking at the product
                 product = await db.products.find_one({"_id": ObjectId(item["product_id"])})
 
                 if item.get("is_decant"):
-                    # Handle decant sale - reduce ml instead of stock count
                     success, message, updated_product = await process_decant_sale(
                         db, ObjectId(item["product_id"]), item["quantity"]
                     )
@@ -661,7 +732,6 @@ async def create_order(order_data: dict, current_user: User = Depends(get_curren
                             detail=f"Failed to process decant sale for {item.get('product_name', 'product')}: {message}"
                         )
                 else:
-                    # Handle regular product sale - reduce stock count atomically
                     update_result = await db.products.update_one(
                         {"_id": ObjectId(item["product_id"]), "stock_quantity": {"$gte": item["quantity"]}},
                         {"$inc": {"stock_quantity": -item["quantity"]}}
@@ -691,7 +761,7 @@ async def create_order(order_data: dict, current_user: User = Depends(get_curren
             )
 
         return {
-            "id": str(result.inserted_id),
+            "id": str(order_id),
             "order_number": order_number,
             "message": "Order created successfully"
         }

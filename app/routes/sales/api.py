@@ -91,6 +91,11 @@ async def get_sales(
                         client_phone = client.get("phone")
                 except Exception:
                     pass # Ignore if client_id is invalid or client not found
+            
+            sale_items = sale.get("items", [])
+            for item in sale_items:
+                if 'product_id' in item and isinstance(item['product_id'], ObjectId):
+                    item['product_id'] = str(item['product_id'])
 
             sales.append({
                 "id": str(sale["_id"]),
@@ -99,7 +104,7 @@ async def get_sales(
                 "customer_name": sale.get("customer_name", "Walk-in Customer"),
                 "customer_email": sale.get("customer_email", ""),
                 "customer_phone": client_phone,
-                "items": sale["items"],
+                "items": sale_items,
                 "subtotal": sale["subtotal"],
                 "tax_amount": sale.get("tax_amount", 0),
                 "discount_amount": sale.get("discount_amount", 0),
@@ -343,6 +348,11 @@ async def get_sale(sale_id: str):
                         cashier_name = user.get("full_name", "Staff Member")
             except:
                 cashier_name = "Staff Member"
+        
+        sale_items = sale.get("items", [])
+        for item in sale_items:
+            if 'product_id' in item and isinstance(item['product_id'], ObjectId):
+                item['product_id'] = str(item['product_id'])
 
         return {
             "id": str(sale["_id"]),
@@ -351,7 +361,7 @@ async def get_sale(sale_id: str):
             "customer_name": sale.get("customer_name", "Walk-in Customer"),
             "customer_email": sale.get("customer_email", ""),
             "customer_phone": sale.get("customer_phone", ""),
-            "items": sale["items"],
+            "items": sale_items,
             "subtotal": sale["subtotal"],
             "tax_amount": sale.get("tax_amount", 0),
             "discount_amount": sale.get("discount_amount", 0),

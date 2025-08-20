@@ -401,6 +401,58 @@ let totalPages = 1;
 let isLoading = false;
 let allOrders = [];
 
+function showOrderLoadingIndicator(rows = 5) {
+    const tableBody = document.querySelector('#orders-table-body');
+    if (!tableBody) return;
+
+    const skeletonRow = `
+        <tr class="animate-pulse">
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                    <div class="w-8 h-8 bg-gray-300 rounded-lg mr-3"></div>
+                    <div class="flex flex-col space-y-1">
+                        <div class="h-4 bg-gray-300 rounded w-24"></div>
+                        <div class="h-3 bg-gray-300 rounded w-16"></div>
+                    </div>
+                </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="space-y-1">
+                    <div class="h-4 bg-gray-300 rounded w-32"></div>
+                    <div class="h-3 bg-gray-300 rounded w-24"></div>
+                </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="h-4 bg-gray-300 rounded w-16"></div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="h-4 bg-gray-300 rounded w-20"></div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="h-4 bg-gray-300 rounded w-20"></div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="h-4 bg-gray-300 rounded w-24 font-bold"></div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="h-6 bg-gray-300 rounded-full w-24"></div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="h-4 bg-gray-300 rounded w-24"></div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-right">
+                <div class="flex items-center justify-end space-x-2">
+                    <div class="h-8 w-8 bg-gray-300 rounded-lg"></div>
+                    <div class="h-8 w-8 bg-gray-300 rounded-lg"></div>
+                    <div class="h-8 w-8 bg-gray-300 rounded-lg"></div>
+                </div>
+            </td>
+        </tr>
+    `;
+
+    tableBody.innerHTML = skeletonRow.repeat(rows);
+}
+
 function loadOrders(page = 1, append = false) {
     if (isLoading) return;
     isLoading = true;
@@ -411,6 +463,9 @@ function loadOrders(page = 1, append = false) {
         if (loadingMessage) {
             loadingMessage.style.display = 'block';
         }
+    } else {
+        // Show skeleton loader for initial load
+        showOrderLoadingIndicator();
     }
 
     // Build query parameters

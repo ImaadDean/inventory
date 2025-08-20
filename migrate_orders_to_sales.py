@@ -42,15 +42,12 @@ async def migrate_orders_to_sales():
     try:
         logger.info("Starting migration of orders to sales...")
         
-        # Connect to MongoDB
         client = AsyncIOMotorClient(settings.mongodb_url)
         db = client[settings.MONGO_DATABASE]
         
-        # Get all orders
         orders_collection = db.orders
         sales_collection = db.sales
         
-        # Check if sales collection exists and has documents
         sales_count = await sales_collection.count_documents({})
         if sales_count > 0:
             logger.warning(f"Sales collection already contains {sales_count} documents. Skipping migration.")
@@ -64,18 +61,15 @@ async def migrate_orders_to_sales():
         migrated_count = 0
         failed_count = 0
         
-        for order in orders:
+        for i, order in enumerate(orders):
             try:
-                # Skip installment orders for now (they're not completed sales)
                 if order.get("payment_method") == "installment":
                     logger.info(f"Skipping installment order {order.get('order_number')}")
                     continue
                 
-                # Convert order to sale
-                sale_data = await convert_order_to_sale(order, db)
+                sale_data = await convert_order_to_sale(order, db, i)
                 
                 if sale_data:
-                    # Insert sale into sales collection
                     result = await sales_collection.insert_one(sale_data)
                     if result.inserted_id:
                         migrated_count += 1
@@ -93,23 +87,23 @@ async def migrate_orders_to_sales():
         
         logger.info(f"Migration completed. Successfully migrated: {migrated_count}, Failed: {failed_count}")
         
-        # Close connection
         client.close()
         
     except Exception as e:
         logger.error(f"Error during migration: {e}")
 
 
-async def convert_order_to_sale(order, db):
+async def convert_order_to_sale(order, db, sale_index):
     """Convert an order document to a sale document"""
     try:
-        # Create sale data structure
+        sale_number = f"SALE-{sale_index + 1:06d}"
+        
         sale_data = {
-            "sale_number": order.get("order_number", ""),
+            "sale_number": sale_number,
             "customer_id": order.get("client_id"),
             "customer_name": order.get("client_name", ""),
-            "cashier_id": order.get("created_by", ObjectId()),  # Use created_by as cashier_id
-            "cashier_name": "System",  # We'll update this with actual user name if available
+            "cashier_id": order.get("created_by", ObjectId()),
+            "cashier_name": "System",
             "items": [],
             "subtotal": order.get("subtotal", 0),
             "tax_amount": order.get("tax", 0),
@@ -124,7 +118,6 @@ async def convert_order_to_sale(order, db):
             "updated_at": order.get("updated_at", datetime.utcnow())
         }
         
-        # Convert items
         order_items = order.get("items", [])
         sale_items = []
         
@@ -132,50 +125,40 @@ async def convert_order_to_sale(order, db):
             sale_item = {
                 "product_id": item.get("product_id", ""),
                 "product_name": item.get("product_name", ""),
-                "sku": "",  # Orders don't have SKU, we'll fetch it from products collection
+                "sku": "",
                 "quantity": item.get("quantity", 0),
                 "unit_price": item.get("unit_price", 0),
-                "cost_price": item.get("unit_price", 0),  # Use unit_price as cost_price for now
+                "cost_price": item.get("unit_price", 0),
                 "total_price": item.get("total_price", 0),
                 "discount_amount": item.get("discount_amount", 0)
             }
             
-            # Try to get actual cost price from products collection
             try:
                 product_id = item.get("product_id")
                 if product_id:
                     product = await db.products.find_one({"_id": ObjectId(product_id)})
                     if product:
-                        # Handle decant products
                         if product.get("is_decant", False):
-                            # For decants: (original_cost / original_volume) * decant_volume
                             if product.get("original_cost") and product.get("original_volume") and product.get("decant_volume"):
                                 calculated_cost = (product["original_cost"] / product["original_volume"]) * product["decant_volume"]
                                 sale_item["cost_price"] = calculated_cost
                         else:
-                            # For regular products: use cost_price directly
                             sale_item["cost_price"] = product.get("cost_price", product.get("price", 0))
-                            
-                        # Add SKU if available
                         sale_item["sku"] = product.get("sku", "")
             except Exception as e:
                 logger.warning(f"Could not fetch product info for item: {e}")
             
-            # Calculate profit for this item
-            # Profit = (unit_price - cost_price) * quantity - discount_amount
             unit_profit = sale_item["unit_price"] - sale_item["cost_price"]
             total_profit = (unit_profit * sale_item["quantity"]) - sale_item["discount_amount"]
-            sale_item["profit"] = max(0, total_profit)  # Ensure profit is not negative
+            sale_item["profit"] = max(0, total_profit)
             
             sale_items.append(sale_item)
         
         sale_data["items"] = sale_items
         
-        # Calculate total profit for the entire sale
         total_profit = sum(item["profit"] for item in sale_items)
         sale_data["total_profit"] = total_profit
         
-        # Try to get cashier name from users collection
         try:
             cashier_id = order.get("created_by")
             if cashier_id:
@@ -183,10 +166,8 @@ async def convert_order_to_sale(order, db):
                 if user:
                     sale_data["cashier_name"] = user.get("full_name", "System")
         except Exception:
-            # If we can't get the user, keep "System" as cashier_name
             pass
         
-        # Validate required fields
         if not sale_data["sale_number"]:
             logger.error("Order missing sale_number")
             return None
