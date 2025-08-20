@@ -314,7 +314,7 @@
         if (dateFrom) params.append('date_from', dateFrom);
         if (dateTo) params.append('date_to', dateTo);
 
-        fetch(`/api/sales?${params.toString()}`)
+        fetch(`/api/sales/?${params.toString()}`)
             .then(response => response.json())
             .then(data => {
                 hideLoadingIndicator();
