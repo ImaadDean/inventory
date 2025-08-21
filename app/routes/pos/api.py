@@ -368,8 +368,18 @@ async def create_sale(sale_data: SaleCreate, current_user: User = Depends(get_cu
         db = await get_database()
 
         # Generate sale number
-        sale_count = await db.sales.count_documents({})
-        sale_number = f"SALE-{sale_count + 1:06d}"
+        last_sale = await db.sales.find_one({}, sort=[("_id", -1)])
+        if last_sale and last_sale.get("sale_number"):
+            try:
+                last_sale_number = int(last_sale["sale_number"].split("-")[-1])
+                new_sale_number = last_sale_number + 1
+            except (ValueError, IndexError):
+                # Fallback if parsing fails
+                sale_count = await db.sales.count_documents({})
+                new_sale_number = sale_count + 1
+        else:
+            new_sale_number = 1
+        sale_number = f"SALE-{new_sale_number:06d}"
 
         # Calculate totals
         subtotal = 0
@@ -664,8 +674,18 @@ async def create_order(order_data: dict, current_user: User = Depends(get_curren
 
         # If order is paid, create a corresponding sale record
         if order_data.get("payment_method") != "not_paid":
-            sale_count = await db.sales.count_documents({})
-            sale_number = f"SALE-{sale_count + 1:06d}"
+            last_sale = await db.sales.find_one({}, sort=[("_id", -1)])
+            if last_sale and last_sale.get("sale_number"):
+                try:
+                    last_sale_number = int(last_sale["sale_number"].split("-")[-1])
+                    new_sale_number = last_sale_number + 1
+                except (ValueError, IndexError):
+                    # Fallback if parsing fails
+                    sale_count = await db.sales.count_documents({})
+                    new_sale_number = sale_count + 1
+            else:
+                new_sale_number = 1
+            sale_number = f"SALE-{new_sale_number:06d}"
 
             sale_items = []
             for item_data in order_data["items"]:
