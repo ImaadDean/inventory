@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     MONGO_USERNAME: str = "imaad"
     MONGO_PASSWORD: str = "Ertdfgxc"  # Atlas password
     MONGO_CLUSTER: str = "cluster0.n5vfpbr.mongodb.net"
-    MONGO_DATABASE: str = "perfumesandmorebytuta"
+    MONGO_DATABASE: str = "perfumesandmore"
     MONGO_POOL_SIZE: int = 20
 
     # JWT Configuration
@@ -32,7 +32,12 @@ class Settings(BaseSettings):
     BASE_URL: str = get_dynamic_base_url()
 
     # CORS Configuration
-    ALLOWED_ORIGINS: list = ["*"]
+    ALLOWED_ORIGINS: list = [
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+        get_dynamic_base_url(),
+        "https://inventory.perfumesandmorebytuta.com/" # Please replace with your actual domain
+    ]
 
     # Timezone Configuration
     TIMEZONE: str = "Africa/Kampala"

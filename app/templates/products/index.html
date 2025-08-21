@@ -2690,7 +2690,7 @@ function loadScentsForEditWithCheckboxes() {
     console.log('🌸 loadScentsForEditWithCheckboxes() called');
     console.log('Loading scents with checkboxes for edit modal');
 
-    return fetch('/api/scents?active_only=true', {
+    return fetch('/api/scents/?active_only=true', {
         method: 'GET',
         credentials: 'include',
         headers: {
@@ -3372,7 +3372,7 @@ function performDeleteProduct(productId, productName) {
 // Load scents for add modal
 async function loadScents() {
     try {
-        const response = await fetch('/api/scents?active_only=true', {
+        const response = await fetch('/api/scents/?active_only=true', {
             credentials: 'include'
         });
 
@@ -3402,7 +3402,7 @@ async function loadScents() {
 // Load scents for edit modal
 async function loadScentsForEdit() {
     try {
-        const response = await fetch('/api/scents?active_only=true', {
+        const response = await fetch('/api/scents/?active_only=true', {
             credentials: 'include'
         });
 
