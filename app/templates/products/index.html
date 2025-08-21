@@ -450,7 +450,7 @@
                             </label>
                             <select name="payment_method" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200">
                                 <option value="">Select Payment Method</option>
-                                <option value="pending">Pending Payment</option>
+                                <option value="pending payment">Pending Payment</option>
                                 <option value="cash">Cash</option>
                                 <option value="mobile_money">Mobile Money</option>
                             </select>
@@ -693,7 +693,7 @@
                     </label>
                     <select id="edit-payment-method" name="payment_method" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
                         <option value="">Not specified</option>
-                        <option value="pending">Pending Payment</option>
+                        <option value="pending payment">Pending Payment</option>
                         <option value="cash">Cash</option>
                         <option value="mobile_money">Mobile Money</option>
                     </select>
@@ -898,6 +898,7 @@
                             <select id="restock-payment-method"
                                     class="w-full px-3 py-2 text-sm border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
                                 <option value="">Select method</option>
+                                <option value="pending payment">🕒 Pending Payment</option>
                                 <option value="cash">💵 Cash</option>
                                 <option value="mobile_money">📱 Mobile Money</option>
                                 <option value="card">💳 Card</option>
@@ -3049,6 +3050,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 min_stock_level: parseInt(formData.get('min_stock_level')),
                 unit: formData.get('unit').trim(),
                 supplier: formData.get('supplier')?.trim() || null,
+                payment_method: formData.get('payment_method') || null,
                 is_active: true
             };
 

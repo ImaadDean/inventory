@@ -8,10 +8,10 @@ class ExpenseBase(BaseModel):
     category: str = Field(..., min_length=1, max_length=50, description="Expense category")
     amount: float = Field(..., gt=0, description="Expense amount")
     expense_date: date = Field(..., description="Date of expense")
-    payment_method: str = Field(..., min_length=1, max_length=50, description="Payment method")
+    payment_method: str = Field(default="pending payment", min_length=1, max_length=50, description="Payment method (e.g., cash, mobile money, pending payment)")
     vendor: Optional[str] = Field(None, max_length=200, description="Vendor or supplier")
     notes: Optional[str] = Field(None, max_length=1000, description="Additional notes")
-    status: str = Field(default="pending", description="Payment status")
+    status: str = Field(default="not_paid", description="Payment status (paid or not_paid)")
 
 class ExpenseCreate(ExpenseBase):
     """Schema for creating an expense"""

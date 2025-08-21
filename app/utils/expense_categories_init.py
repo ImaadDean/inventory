@@ -83,7 +83,14 @@ async def initialize_default_expense_categories(db):
 async def create_restocking_expense(db, product_name, quantity, unit_cost, total_cost, supplier_name=None, user_username=None, payment_method=None):
     """Create an automatic expense entry when restocking products"""
     try:
+        print(f"create_restocking_expense called with payment_method: {payment_method}")
         expenses_collection = db.expenses
+
+        # Determine status based on payment method
+        final_payment_method = payment_method or "pending payment"
+        status = "not_paid"
+        if final_payment_method.strip().lower() in ["cash", "mobile_money"]:
+            status = "paid"
 
         # Create expense document for restocking
         expense_doc = {
@@ -91,10 +98,10 @@ async def create_restocking_expense(db, product_name, quantity, unit_cost, total
             "category": "Restocking",
             "amount": float(total_cost),
             "expense_date": format_kampala_date(now_kampala()),  # Convert to string in EAT
-            "payment_method": payment_method or "pending",
+            "payment_method": final_payment_method,
             "vendor": supplier_name or "Unknown Supplier",
             "notes": f"Automatic expense created for restocking {quantity} units of {product_name} at UGX {unit_cost:,.2f} per unit",
-            "status": "pending" if not payment_method else "paid",
+            "status": status,
             "created_at": kampala_to_utc(now_kampala()),
             "updated_at": kampala_to_utc(now_kampala()),
             "created_by": user_username or "system",
@@ -118,7 +125,14 @@ async def create_restocking_expense(db, product_name, quantity, unit_cost, total
 async def create_stocking_expense(db, product_name, quantity, unit_cost, total_cost, supplier_name=None, user_username=None, payment_method=None):
     """Create an automatic expense entry when adding new products (initial stocking)"""
     try:
+        print(f"create_stocking_expense called with payment_method: {payment_method}")
         expenses_collection = db.expenses
+
+        # Determine status based on payment method
+        final_payment_method = payment_method or "pending payment"
+        status = "not_paid"
+        if final_payment_method.strip().lower() in ["cash", "mobile_money"]:
+            status = "paid"
 
         # Create expense document for initial stocking
         expense_doc = {
@@ -126,10 +140,10 @@ async def create_stocking_expense(db, product_name, quantity, unit_cost, total_c
             "category": "Stocking",
             "amount": float(total_cost),
             "expense_date": format_kampala_date(now_kampala()),  # Convert to string in EAT
-            "payment_method": payment_method or "pending",
+            "payment_method": final_payment_method,
             "vendor": supplier_name or "Unknown Supplier",
             "notes": f"Automatic expense created for initial stocking of {quantity} units of {product_name} at UGX {unit_cost:,.2f} per unit",
-            "status": "pending" if not payment_method else "paid",
+            "status": status,
             "created_at": kampala_to_utc(now_kampala()),
             "updated_at": kampala_to_utc(now_kampala()),
             "created_by": user_username or "system",

@@ -195,14 +195,13 @@ async def create_product(
                 db=db,
                 supplier_name=supplier.strip(),
                 product_id=product_id,
-                product_name=name,
-                product_sku=sku.strip().upper()
+                product_name=name
             )
 
             # Create expense record for initial stock
             if parsed_stock_quantity > 0:
                 total_cost = parsed_cost_price * parsed_stock_quantity
-                expense_id = await create_restocking_expense(
+                expense_id = await create_stocking_expense(
                     db=db,
                     product_name=name,
                     quantity=parsed_stock_quantity,
@@ -210,7 +209,7 @@ async def create_product(
                     total_cost=total_cost,
                     supplier_name=supplier.strip(),
                     user_username=current_user.username,
-                    payment_method=payment_method or "Initial Stock"
+                    payment_method=payment_method
                 )
 
                 if expense_id:

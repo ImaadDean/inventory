@@ -11,10 +11,10 @@ class Expense(BaseModel):
     category: str = Field(..., min_length=1, max_length=50)
     amount: float = Field(..., gt=0)
     expense_date: date = Field(...)
-    payment_method: str = Field(..., min_length=1, max_length=50)
+    payment_method: str = Field(default="pending payment", min_length=1, max_length=50)
     vendor: Optional[str] = Field(None, max_length=200)
     notes: Optional[str] = Field(None, max_length=1000)
-    status: str = Field(default="pending")  # pending, paid, overdue
+    status: str = Field(default="not_paid")  # paid, not_paid
     created_at: datetime = Field(default_factory=lambda: kampala_to_utc(now_kampala()))
     updated_at: datetime = Field(default_factory=lambda: kampala_to_utc(now_kampala()))
     created_by: Optional[str] = None

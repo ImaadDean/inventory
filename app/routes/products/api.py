@@ -12,7 +12,7 @@ from ...models import Product, Category, User
 from ...models.product_supplier_price import ProductSupplierPriceCreate
 from ...services.product_supplier_price_service import ProductSupplierPriceService
 from ...utils.auth import require_admin_or_inventory, get_current_user, get_current_user_hybrid, get_current_user_hybrid_dependency, verify_token, get_user_by_username
-from ...utils.expense_categories_init import create_restocking_expense
+from ...utils.expense_categories_init import create_restocking_expense, create_stocking_expense
 from ...utils.timezone import now_kampala, kampala_to_utc
 from ...utils.decant_handler import calculate_decant_availability, open_new_bottle_for_decants
 
@@ -285,7 +285,7 @@ async def create_product_api(
             # Create expense record for initial stock
             if product_data.stock_quantity > 0:
                 total_cost = product_data.cost_price * product_data.stock_quantity
-                expense_id = await create_restocking_expense(
+                expense_id = await create_stocking_expense(
                     db=db,
                     product_name=product_data.name,
                     quantity=product_data.stock_quantity,
@@ -293,7 +293,7 @@ async def create_product_api(
                     total_cost=total_cost,
                     supplier_name=product_data.supplier,
                     user_username=current_user.username,
-                    payment_method="Initial Stock"  # Default payment method for new products
+                    payment_method=product_data.payment_method
                 )
 
             # Create price record for supplier pricing history

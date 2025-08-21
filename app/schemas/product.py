@@ -96,6 +96,7 @@ class ProductCreate(BaseModel):
     min_stock_level: int = Field(default=4, ge=0)
     unit: str = Field(default="pcs", max_length=20)
     supplier: Optional[str] = Field(None, max_length=200)
+    payment_method: Optional[str] = Field(None, max_length=50, description="Payment method for expense")
 
     # Image fields
     image_public_id: Optional[str] = Field(None, description="Cloudinary public ID for product image")

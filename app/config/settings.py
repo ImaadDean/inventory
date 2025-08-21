@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     MONGO_USERNAME: str = "imaad"
     MONGO_PASSWORD: str = "Ertdfgxc"  # Atlas password
     MONGO_CLUSTER: str = "cluster0.n5vfpbr.mongodb.net"
-    MONGO_DATABASE: str = "perfumesandmorebytuta"
+    MONGO_DATABASE: str = "perfumesandmore"
     MONGO_POOL_SIZE: int = 20
 
     # JWT Configuration
