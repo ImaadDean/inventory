@@ -21,12 +21,14 @@ router = APIRouter()
 @router.get("/api/expenses/", response_model=dict)
 async def get_expenses(
     page: int = Query(1, ge=1),
-    size: int = Query(10, ge=1, le=100),
+    size: int = Query(5, ge=1, le=100),
     search: Optional[str] = Query(None),
     category: Optional[str] = Query(None),
     status: Optional[str] = Query(None),
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
+    sort_by: Optional[str] = Query("created_at"),  # New parameter
+    sort_order: Optional[str] = Query("desc"),     # New parameter
     user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Get expenses with pagination and filtering"""
@@ -92,10 +94,14 @@ async def get_expenses(
                     date_conditions.append({
                         "$expr": {
                             "$and": [
-                                {"$gte": [{"$dateFromString": {"dateString": "$expense_date", "onError": None}},
-                                         {"$dateFromString": {"dateString": from_str, "onError": None}}]},
-                                {"$lte": [{"$dateFromString": {"dateString": "$expense_date", "onError": None}},
-                                         {"$dateFromString": {"dateString": to_str, "onError": None}}]}
+                                {"$gte": [
+                                    {"$dateFromString": {"dateString": "$expense_date", "onError": None}},
+                                    {"$dateFromString": {"dateString": from_str, "onError": None}}
+                                ]},
+                                {"$lte": [
+                                    {"$dateFromString": {"dateString": "$expense_date", "onError": None}},
+                                    {"$dateFromString": {"dateString": to_str, "onError": None}}
+                                ]}
                             ]
                         }
                     })
@@ -132,12 +138,15 @@ async def get_expenses(
                 else:
                     query["$or"] = date_conditions
         
+        # Determine sort order
+        sort_direction = 1 if sort_order == "asc" else -1
+        
         # Get total count
         total = await expenses_collection.count_documents(query)
         
         # Get expenses with pagination
         skip = (page - 1) * size
-        cursor = expenses_collection.find(query).skip(skip).limit(size).sort("expense_date", -1)
+        cursor = expenses_collection.find(query).skip(skip).limit(size).sort(sort_by, sort_direction) # Use sort_by and sort_direction
         expenses = await cursor.to_list(length=size)
         
         # Convert ObjectId to string and format data
@@ -155,29 +164,20 @@ async def get_expenses(
                     expense["expense_date"] = expense["expense_date"].isoformat()
         
         # Calculate stats for the filtered query
-        total_pipeline = [
-            {"$match": query},
-            {"$group": {"_id": None, "total": {"$sum": "$amount"}}}
-        ]
-        total_result = await expenses_collection.aggregate(total_pipeline).to_list(1)
-        total_amount = total_result[0]["total"] if total_result else 0
-        
+        total_amount = 0
+        async for expense in expenses_collection.find(query):
+            total_amount += expense.get('amount', 0)
+
         # This month stats
         current_month = get_month_start()
-        month_pipeline = [
-            {"$match": {"expense_date": {"$gte": current_month}}},
-            {"$group": {"_id": None, "total": {"$sum": "$amount"}}}
-        ]
-        month_result = await expenses_collection.aggregate(month_pipeline).to_list(1)
-        month_amount = month_result[0]["total"] if month_result else 0
-        
+        month_amount = 0
+        async for expense in expenses_collection.find({"expense_date": {"$gte": current_month}}):
+            month_amount += expense.get('amount', 0)
+
         # Pending expenses
-        pending_pipeline = [
-            {"$match": {"status": "pending"}},
-            {"$group": {"_id": None, "total": {"$sum": "$amount"}}}
-        ]
-        pending_result = await expenses_collection.aggregate(pending_pipeline).to_list(1)
-        pending_amount = pending_result[0]["total"] if pending_result else 0
+        pending_amount = 0
+        async for expense in expenses_collection.find({"status": "pending"}):
+            pending_amount += expense.get('amount', 0)
         
         # Categories count
         categories_count = len(await expenses_collection.distinct("category"))
@@ -201,6 +201,7 @@ async def get_expenses(
     except Exception as e:
         logger.error(f"Error fetching expenses: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch expenses")
+            
 
 @router.post("/api/expenses/", response_model=dict)
 async def create_expense(
