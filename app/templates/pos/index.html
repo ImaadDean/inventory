@@ -792,37 +792,55 @@ async function searchProducts() {
     `;
 
     try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
         const response = await fetch(`/api/pos/products/search?query=${encodeURIComponent(query)}&limit=10`, {
-            credentials: 'include'
+            credentials: 'include',
+            signal: controller.signal
         });
 
+        clearTimeout(timeoutId);
+
         if (response.ok) {
-            const products = await response.json(); // POS API returns direct array of products
-            console.log('Products received:', products); // Debug log
-            console.log('Response status:', response.status); // Debug log
+            const products = await response.json();
+            console.log('[v0] Products received:', products);
+            console.log('[v0] Response status:', response.status);
             displaySearchResults(products);
         } else {
-            console.error('Response not OK:', response.status, response.statusText); // Debug log
-            console.error('Product search failed:', response.status);
+            console.error('[v0] Response not OK:', response.status, response.statusText);
+            console.error('[v0] Product search failed:', response.status);
             resultsContainer.innerHTML = `
                 <div class="text-center py-4 px-3 bg-gradient-to-r from-red-50 to-red-100 border border-red-200 rounded-xl">
                     <div class="w-8 h-8 bg-red-300 rounded-lg flex items-center justify-center mx-auto mb-2">
                         <i class="fas fa-exclamation-triangle text-red-600 text-sm"></i>
                     </div>
-                    <p class="text-sm text-red-700 font-medium">Error searching products</p>
-                    <p class="text-xs text-red-600">Please try again</p>
+                    <p class="text-sm text-red-700 font-medium">Error searching products (${response.status})</p>
+                    <p class="text-xs text-red-600">Please check if the API endpoint exists</p>
                 </div>
             `;
         }
     } catch (error) {
-        console.error('Product search error:', error);
+        console.error('[v0] Product search error:', error);
+        
+        let errorMessage = 'Error searching products';
+        let errorDetail = 'Please try again';
+        
+        if (error.name === 'AbortError') {
+            errorMessage = 'Search timeout';
+            errorDetail = 'Request took too long - check your connection';
+        } else if (error.message.includes('fetch')) {
+            errorMessage = 'Connection error';
+            errorDetail = 'Cannot reach the server';
+        }
+        
         resultsContainer.innerHTML = `
             <div class="text-center py-4 px-3 bg-gradient-to-r from-red-50 to-red-100 border border-red-200 rounded-xl">
                 <div class="w-8 h-8 bg-red-300 rounded-lg flex items-center justify-center mx-auto mb-2">
                     <i class="fas fa-exclamation-triangle text-red-600 text-sm"></i>
                 </div>
-                <p class="text-sm text-red-700 font-medium">Error searching products</p>
-                <p class="text-xs text-red-600">Please try again</p>
+                <p class="text-sm text-red-700 font-medium">${errorMessage}</p>
+                <p class="text-xs text-red-600">${errorDetail}</p>
             </div>
         `;
     }
@@ -863,7 +881,7 @@ function displaySearchResults(products) {
                 if (product.has_opened_bottle && product.opened_bottle_decants > 0) {
                     // Has opened bottle with available decants
                     decantOption = `
-                        <div class="group bg-white ${product.opened_bottle_decants > 0 ? 'hover:bg-purple-50 cursor-pointer' : 'opacity-50'} border border-gray-200 rounded-lg p-2 transition-all duration-200" ${product.opened_bottle_decants > 0 ? `onclick="addToCart('${product.id}', '${product.name} (${product.decant.decant_size_ml}ml Decant)', ${product.decant.decant_price}, '${product.sku}-DECANT', ${product.opened_bottle_decants})"` : ''}>
+                        <div class="group bg-white ${product.opened_bottle_decants > 0 ? 'hover:bg-purple-50 cursor-pointer' : 'opacity-50'} border border-gray-200 rounded-lg p-2 transition-all duration-200" ${product.opened_bottle_decants > 0 ? `onclick="addToCart('${product.id}', '${product.name.replace(/'/g, "\\'")} (${product.decant.decant_size_ml}ml Decant)', ${product.decant.decant_price}, '${product.sku}-DECANT', ${product.opened_bottle_decants})"` : ''}>
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center">
                                     <i class="fas fa-vial text-purple-500 mr-2"></i>
@@ -888,7 +906,7 @@ function displaySearchResults(products) {
                     // No opened bottle but can open new one
                     const newBottleDecants = Math.floor(product.bottle_size_ml / product.decant.decant_size_ml);
                     decantOption = `
-                        <div class="group bg-white hover:bg-orange-50 border border-orange-200 hover:border-orange-300 rounded-lg p-2 cursor-pointer transition-all duration-200" onclick="confirmOpenNewBottle('${product.id}', '${product.name}', ${product.bottle_size_ml}, ${product.decant.decant_size_ml}, ${product.decant.decant_price})">
+                        <div class="group bg-white hover:bg-orange-50 border border-orange-200 hover:border-orange-300 rounded-lg p-2 cursor-pointer transition-all duration-200" onclick="confirmOpenNewBottle('${product.id}', '${product.name.replace(/'/g, "\\'")}', ${product.bottle_size_ml}, ${product.decant.decant_size_ml}, ${product.decant.decant_price})">
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center">
                                     <i class="fas fa-unlock text-orange-500 mr-2"></i>
@@ -933,7 +951,7 @@ function displaySearchResults(products) {
                 if (product.stock_quantity > 0) {
                     fullBottleOption = `
                         <!-- Full Bottle Option -->
-                        <div class="group bg-white ${product.stock_quantity > 0 ? 'hover:bg-blue-50 cursor-pointer' : 'opacity-50'} border border-gray-200 rounded-lg p-2 transition-all duration-200" ${product.stock_quantity > 0 ? `onclick="addToCart('${product.id}', '${product.name} (Full Bottle)', ${product.price}, '${product.sku}', ${product.stock_quantity})"` : ''}>
+                        <div class="group bg-white ${product.stock_quantity > 0 ? 'hover:bg-blue-50 cursor-pointer' : 'opacity-50'} border border-gray-200 rounded-lg p-2 transition-all duration-200" ${product.stock_quantity > 0 ? `onclick="addToCart('${product.id}', '${product.name.replace(/'/g, "\\'")} (Full Bottle)', ${product.price}, '${product.sku}', ${product.stock_quantity})"` : ''}>
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center">
                                     <i class="fas fa-wine-bottle text-blue-500 mr-2"></i>
@@ -1002,7 +1020,7 @@ function displaySearchResults(products) {
             } else {
                 // Regular product display
                 return `
-                    <div class="group bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200 hover:border-blue-300 rounded-xl p-3 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5" onclick="addToCart('${product.id}', '${product.name}', ${product.price}, '${product.sku}', ${product.stock_quantity})">
+                    <div class="group bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200 hover:border-blue-300 rounded-xl p-3 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5" onclick="addToCart('${product.id}', '${product.name.replace(/'/g, "\\'")}', ${product.price}, '${product.sku}', ${product.stock_quantity})">
                         <div class="flex items-center justify-between">
                             <div class="flex-1 mr-3">
                                 <div class="flex items-center mb-1">
@@ -2504,7 +2522,7 @@ function showInstallmentReceipt(receiptData) {
             <div class="receipt-header text-center mb-4">
                 <h2 class="text-xl font-bold">PERFUMES AND MORE</h2>
                 <p class="text-sm text-gray-600 italic">by Tuta</p>
-                <p class=\"text-xs font-bold mt-1\">INSTALLMENT PLAN RECEIPT</p>
+                <p class="text-xs font-bold mt-1">INSTALLMENT PLAN RECEIPT</p>
                 <div class="border-b border-gray-300 my-2"></div>
             </div>
 
@@ -2523,11 +2541,11 @@ function showInstallmentReceipt(receiptData) {
                 </div>
                 <div class="flex justify-between">
                     <span>Installment #:</span>
-                    <span class=\"font-bold\">${receiptData.installmentNumber}</span>
+                    <span class="font-bold">${receiptData.installmentNumber}</span>
                 </div>
                 <div class="flex justify-between">
                     <span>Status:</span>
-                    <span class=\"font-medium\">Installment Plan</span>
+                    <span class="font-medium">Installment Plan</span>
                 </div>
                 <div class="flex justify-between">
                     <span>Processed by:</span>
@@ -2600,15 +2618,15 @@ function showInstallmentReceipt(receiptData) {
                 </div>
             </div>
 
-            <div class=\"receipt-installment text-sm mb-4 bg-gray-50 p-3 rounded-lg border\">
-                <div class=\"text-sm font-semibold mb-2\">INSTALLMENT PLAN DETAILS:</div>
+            <div class="receipt-installment text-sm mb-4 bg-gray-50 p-3 rounded-lg border">
+                <div class="text-sm font-semibold mb-2">INSTALLMENT PLAN DETAILS:</div>
                 <div class="flex justify-between">
                     <span>Down Payment (Received):</span>
-                    <span class=\"font-bold\">UGX ${Math.round(receiptData.downPayment).toLocaleString('en-UG')}</span>
+                    <span class="font-bold">UGX ${Math.round(receiptData.downPayment).toLocaleString('en-UG')}</span>
                 </div>
                 <div class="flex justify-between">
                     <span>Remaining Balance:</span>
-                    <span class=\"font-bold\">UGX ${Math.round(receiptData.remainingAmount).toLocaleString('en-UG')}</span>
+                    <span class="font-bold">UGX ${Math.round(receiptData.remainingAmount).toLocaleString('en-UG')}</span>
                 </div>
                 <div class="flex justify-between">
                     <span>Number of Payments:</span>
@@ -2616,7 +2634,7 @@ function showInstallmentReceipt(receiptData) {
                 </div>
                 <div class="flex justify-between border-t border-purple-200 pt-1 mt-1">
                     <span>Amount per Payment:</span>
-                    <span class=\"font-bold\">UGX ${Math.round(receiptData.perPaymentAmount).toLocaleString('en-UG')}</span>
+                    <span class="font-bold">UGX ${Math.round(receiptData.perPaymentAmount).toLocaleString('en-UG')}</span>
                 </div>
             </div>
 
@@ -2624,7 +2642,7 @@ function showInstallmentReceipt(receiptData) {
                 <div class="border-b border-gray-300 my-2"></div>
                 <div class="flex justify-between">
                     <span>Payment Method:</span>
-                    <span class=\"capitalize font-medium\">Installment Plan</span>
+                    <span class="capitalize font-medium">Installment Plan</span>
                 </div>
                 <div class="flex justify-between">
                     <span>Down Payment Received:</span>
@@ -2634,7 +2652,7 @@ function showInstallmentReceipt(receiptData) {
 
             <div class="receipt-footer text-center text-xs text-gray-500 mt-4">
                 <div class="border-b border-gray-300 my-2"></div>
-                <p class=\"font-bold\">INSTALLMENT PLAN</p>
+                <p class="font-bold">INSTALLMENT PLAN</p>
                 <p>Next payment due as per schedule</p>
                 <p>Thank you for choosing our installment plan!</p>
                 <p>Please keep this receipt for your records</p>
