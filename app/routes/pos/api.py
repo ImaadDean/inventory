@@ -453,8 +453,8 @@ async def create_sale(sale_data: SaleCreate, current_user: User = Depends(get_cu
                 unit_price = product["price"]
                 cost_price = product.get("cost_price", 0)
 
-            total_price = unit_price * item_data.quantity
-            subtotal += total_price
+            pre_discount_total_price = unit_price * item_data.quantity
+            subtotal += pre_discount_total_price
 
             # Calculate profit for the item
             unit_profit = unit_price - cost_price
@@ -466,7 +466,7 @@ async def create_sale(sale_data: SaleCreate, current_user: User = Depends(get_cu
                 "quantity": item_data.quantity,
                 "unit_price": unit_price,
                 "cost_price": cost_price,
-                "total_price": total_price,
+                "total_price": pre_discount_total_price - item_data.discount_amount,
                 "discount_amount": item_data.discount_amount,
                 "is_decant": item_data.is_decant,
                 "profit": max(0, item_profit)
@@ -476,7 +476,9 @@ async def create_sale(sale_data: SaleCreate, current_user: User = Depends(get_cu
 
         # Calculate tax and total
         tax_amount = subtotal * sale_data.tax_rate
-        total_amount = subtotal + tax_amount - sale_data.discount_amount
+        total_item_discounts = sum(item["discount_amount"] for item in sale_items)
+        total_discount = total_item_discounts + sale_data.discount_amount
+        total_amount = subtotal + tax_amount - total_discount
 
         # Calculate change
         change_given = max(0, sale_data.payment_received - total_amount) if sale_data.payment_method == "cash" else 0
@@ -491,7 +493,7 @@ async def create_sale(sale_data: SaleCreate, current_user: User = Depends(get_cu
             "items": sale_items,
             "subtotal": subtotal,
             "tax_amount": tax_amount,
-            "discount_amount": sale_data.discount_amount,
+            "discount_amount": total_discount,
             "total_amount": total_amount,
             "total_profit": total_profit,
             "payment_method": sale_data.payment_method,
@@ -533,7 +535,7 @@ async def create_sale(sale_data: SaleCreate, current_user: User = Depends(get_cu
             "items": order_items,
             "subtotal": subtotal,
             "tax": tax_amount,
-            "discount": sale_data.discount_amount,
+            "discount": total_discount,
             "total": total_amount,
             "status": "completed",  # Regular sales are completed immediately
             "payment_method": sale_data.payment_method,

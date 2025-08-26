@@ -611,6 +611,47 @@
     </div>
 </div>
 
+<!-- No Client Confirmation Modal -->
+<div id="no-client-confirm-modal" class="fixed inset-0 bg-black bg-opacity-75 backdrop-blur-sm hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all duration-300">
+            <div class="px-4 py-3 bg-gradient-to-r from-orange-500 to-red-600 rounded-t-xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                            <i class="fas fa-user-slash text-white text-xs"></i>
+                        </div>
+                        <h3 class="text-base font-semibold text-white">Confirm No Client</h3>
+                    </div>
+                    <button type="button" onclick="closeNoClientConfirmModal()" class="text-white hover:text-gray-200 transition-colors duration-200">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-4">
+                <div class="flex items-start mb-4">
+                    <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-exclamation-triangle text-orange-600"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h4 class="text-sm font-semibold text-gray-900 mb-1">No Client Selected</h4>
+                        <p class="text-xs text-gray-600">You have not selected a client for this sale. The sale will be recorded under "Walk-in Client".</p>
+                        <p class="text-xs text-gray-600 mt-2">Do you want to proceed?</p>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="closeNoClientConfirmModal()" class="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200">
+                        <i class="fas fa-times mr-1"></i>Cancel
+                    </button>
+                    <button type="button" onclick="proceedWithNoClient()" class="px-3 py-2 text-xs font-medium text-white bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 rounded-lg transition-all duration-200">
+                        <i class="fas fa-check mr-1"></i>Confirm & Proceed
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Item Discount Modal -->
 <div id="item-discount-modal" class="fixed inset-0 bg-black bg-opacity-75 backdrop-blur-sm hidden z-50">
     <div class="flex items-center justify-center min-h-screen p-4">
@@ -1779,15 +1820,6 @@ function updateProcessSaleButton() {
         return;
     }
 
-    // Check if no client is selected (only after cart has items)
-    if (!selectedClient) {
-        processSaleButton.disabled = true;
-        processSaleButton.innerHTML = '<i class="fas fa-user mr-2"></i>Select Client';
-        processSaleButton.classList.remove('bg-gradient-to-r', 'from-green-500', 'to-emerald-600', 'hover:from-green-600', 'hover:to-emerald-700');
-        processSaleButton.classList.add('bg-gray-400', 'cursor-not-allowed');
-        return;
-    }
-
     // Check cash payment sufficiency
     if (paymentMethod === 'cash' && amountReceived < total) {
         processSaleButton.disabled = true;
@@ -1830,14 +1862,20 @@ function updateProcessSaleButton() {
 // Function to enable/disable payment method dropdown
 function updatePaymentMethodState() {
     const paymentMethodDropdown = document.getElementById('payment-method');
+    const installmentOption = paymentMethodDropdown.querySelector('option[value="installment"]');
 
-    // Disable entire dropdown if no client is selected
-    if (!selectedClient) {
-        paymentMethodDropdown.disabled = true;
-        paymentMethodDropdown.classList.add('bg-gray-100', 'cursor-not-allowed');
-    } else {
-        paymentMethodDropdown.disabled = false;
-        paymentMethodDropdown.classList.remove('bg-gray-100', 'cursor-not-allowed');
+    if (installmentOption) {
+        if (!selectedClient) {
+            installmentOption.disabled = true;
+        } else {
+            installmentOption.disabled = false;
+        }
+    }
+
+    // If installment was selected and client is removed, switch to cash
+    if (!selectedClient && paymentMethodDropdown.value === 'installment') {
+        paymentMethodDropdown.value = 'cash';
+        handlePaymentMethodChange();
     }
 }
 
@@ -2102,6 +2140,15 @@ async function processSale() {
         return;
     }
 
+    if (!selectedClient) {
+        openNoClientConfirmModal();
+        return;
+    }
+
+    proceedWithSale();
+}
+
+async function proceedWithSale() {
     const paymentMethod = document.getElementById('payment-method').value;
     let amountReceived = paymentMethod === 'cash' ? (parseFloat(document.getElementById('amount-received').value) || 0) : total;
 
@@ -2332,6 +2379,19 @@ async function processSale() {
         processSaleButton.disabled = false;
         processSaleButton.innerHTML = originalButtonText;
     }
+}
+
+function openNoClientConfirmModal() {
+    document.getElementById('no-client-confirm-modal').classList.remove('hidden');
+}
+
+function closeNoClientConfirmModal() {
+    document.getElementById('no-client-confirm-modal').classList.add('hidden');
+}
+
+function proceedWithNoClient() {
+    closeNoClientConfirmModal();
+    proceedWithSale();
 }
 
 // Receipt functions
