@@ -110,7 +110,7 @@ async def get_dashboard_summary(current_user: User = Depends(get_current_user_hy
             "active_products": {"$sum": {"$cond": [{"$eq": ["$is_active", True]}, 1, 0]}},
             "low_stock_products": {"$sum": {"$cond": [{"$lte": ["$stock_quantity", "$min_stock_level"]}, 1, 0]}},
             "out_of_stock_products": {"$sum": {"$cond": [{"$eq": ["$stock_quantity", 0]}, 1, 0]}},
-            "total_inventory_value": {"$sum": {"$multiply": ["$stock_quantity", "$price"]}}
+            "total_inventory_value": {"$sum": {"$multiply": ["$stock_quantity", "$cost_price"]}}
         }}
     ]
 
