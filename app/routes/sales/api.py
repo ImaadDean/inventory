@@ -137,13 +137,27 @@ async def get_sales(
 
 
 @router.get("/stats")
-async def get_sales_stats():
+async def get_sales_stats(
+    date_from: Optional[date] = Query(None),
+    date_to: Optional[date] = Query(None)
+):
     """Get sales statistics"""
     try:
         db = await get_database()
 
+        # Build filter query
+        filter_query = {}
+        if date_from:
+            filter_query["created_at"] = {"$gte": datetime.combine(date_from, datetime.min.time())}
+        if date_to:
+            if "created_at" in filter_query:
+                filter_query["created_at"]["$lte"] = datetime.combine(date_to, datetime.max.time())
+            else:
+                filter_query["created_at"] = {"$lte": datetime.combine(date_to, datetime.max.time())}
+
         # Count sales using aggregation
         pipeline = [
+            {"$match": filter_query},
             {
                 "$group": {
                     "_id": None,

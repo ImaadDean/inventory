@@ -664,6 +664,16 @@ function displayOrders(orders, total = 0, page = 1, totalPages = 1) {
                     <button onclick="printOrder('${order.id}')" class="p-2 text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded-lg transition-all duration-200" title="Print Order">
                         <i class="fas fa-print text-sm"></i>
                     </button>
+                    ${order.payment_status === 'pending' ? `
+                    <button onclick="openPaymentModal('${order.id}', ${order.total})" class="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-all duration-200" title="Mark as Paid">
+                        <i class="fas fa-check-circle text-sm"></i>
+                    </button>
+                    ` : ''}
+                    ${order.payment_status === 'partially_paid' ? `
+                    <button onclick="openPaymentModal('${order.id}', ${order.balance})" class="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-all duration-200" title="Add Payment">
+                        <i class="fas fa-plus-circle text-sm"></i>
+                    </button>
+                    ` : ''}
                 </div>
             </td>
         </tr>
@@ -718,7 +728,6 @@ function getPaymentMethodText(paymentMethod) {
         case 'cash': return 'Cash';
         case 'mobile_money': return 'Mobile Money';
         case 'installment': return 'Installment Plan';
-        case 'card': return 'Card';
         case 'not_paid': return 'Not Paid';
         default: return paymentMethod || 'Unknown';
     }
@@ -781,6 +790,81 @@ function viewOrder(orderId) {
 let editOrderCart = [];
 let currentOrderForEdit = null;
 let currentDiscountItemId = null;
+let currentOrderIdForPayment = null;
+let currentOrderTotalForPayment = null;
+
+function openPaymentModal(orderId, total) {
+    currentOrderIdForPayment = orderId;
+
+    fetch(`/api/orders/${orderId}`)
+        .then(response => response.json())
+        .then(order => {
+            currentOrderTotalForPayment = order.total;
+            const paidAmount = order.paid_amount || 0;
+            const balance = order.balance || order.total;
+
+            document.getElementById('payment-total').textContent = `UGX ${order.total.toLocaleString()}`;
+            document.getElementById('payment-paid').textContent = `UGX ${paidAmount.toLocaleString()}`;
+            document.getElementById('payment-remaining').textContent = `UGX ${balance.toLocaleString()}`;
+
+            const paymentAmountInput = document.getElementById('payment-amount');
+            paymentAmountInput.value = balance;
+            paymentAmountInput.max = balance;
+
+            document.getElementById('payment-modal').classList.remove('hidden');
+        });
+}
+
+function closePaymentModal() {
+    currentOrderIdForPayment = null;
+    currentOrderTotalForPayment = null;
+    document.getElementById('payment-modal').classList.add('hidden');
+}
+
+function handlePaymentSubmit() {
+    if (!currentOrderIdForPayment) return;
+
+    const amountInput = document.getElementById('payment-amount');
+    const amount = parseFloat(amountInput.value) || 0;
+
+    if (amount > parseFloat(amountInput.max)) {
+        showToast('Amount cannot be greater than the remaining balance.', 'error');
+        return;
+    }
+
+    let payment_type = 'full';
+    if (amount < currentOrderTotalForPayment) {
+        payment_type = 'partial';
+    }
+
+    const paymentData = {
+        payment_type: payment_type,
+        amount: amount
+    };
+
+    fetch(`/api/orders/${currentOrderIdForPayment}/payment`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(paymentData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to update payment status');
+        }
+        return response.json();
+    })
+    .then(data => {
+        showToast('Payment status updated successfully!', 'success');
+        closePaymentModal();
+        loadOrders(); // Refresh the orders table
+    })
+    .catch(error => {
+        console.error('Error updating payment status:', error);
+        showToast('Failed to update payment status.', 'error');
+    });
+}
 
 function updateEditOrderTotals() {
     const subtotal = editOrderCart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
@@ -2774,6 +2858,62 @@ document.addEventListener('click', function(event) {
                     <button type="button" onclick="closeEditOrderModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancel</button>
                     <button type="button" onclick="updateOrder(currentOrderForEdit.id, editOrderCart)" class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600">Save Changes</button>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Modal -->
+<div id="payment-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all duration-300">
+            <div class="px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-t-xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                            <i class="fas fa-credit-card text-white text-xs"></i>
+                        </div>
+                        <h3 class="text-base font-semibold text-white">Record Payment</h3>
+                    </div>
+                    <button type="button" onclick="closePaymentModal()" class="text-white hover:text-gray-200 transition-colors duration-200">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-4">
+                <div id="payment-summary" class="mb-4 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Total:</span>
+                        <span id="payment-total" class="font-semibold">UGX 0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Paid:</span>
+                        <span id="payment-paid" class="font-semibold">UGX 0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Remaining:</span>
+                        <span id="payment-remaining" class="font-semibold">UGX 0</span>
+                    </div>
+                </div>
+                <form id="payment-form">
+                    <div class="space-y-4">
+                        <div>
+                            <label for="payment-amount" class="block text-xs font-semibold text-gray-700 mb-1">Amount to Pay</label>
+                            <input type="number" id="payment-amount" name="amount" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        </div>
+                        <div>
+                            <label for="payment-method" class="block text-xs font-semibold text-gray-700 mb-1">Payment Method</label>
+                            <select id="payment-method" name="payment_method" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                                <option value="cash">Cash</option>
+                                <option value="mobile_money">Mobile Money</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-2 mt-6">
+                        <button type="button" onclick="closePaymentModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg">Cancel</button>
+                        <button type="button" onclick="handlePaymentSubmit()" class="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg">Record Payment</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

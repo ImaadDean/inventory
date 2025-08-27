@@ -19,18 +19,20 @@ async def update_payment(order_id: str, payment_data: PaymentUpdate):
     if not order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
 
-    if payment_data.payment_type == "full":
-        await db.orders.update_one(
-            {"_id": ObjectId(order_id)},
-            {"$set": {"payment_status": "paid"}}
-        )
-    elif payment_data.payment_type == "partial":
-        # You can add more complex logic here for partial payments if needed
-        await db.orders.update_one(
-            {"_id": ObjectId(order_id)},
-            {"$set": {"payment_status": "partially_paid"}}
-        )
+    paid_amount = order.get("paid_amount", 0) + payment_data.amount
+    balance = order["total"] - paid_amount
+
+    if balance < 0:
+        balance = 0
+
+    if balance == 0:
+        payment_status = "paid"
     else:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid payment type")
+        payment_status = "partially_paid"
+
+    await db.orders.update_one(
+        {"_id": ObjectId(order_id)},
+        {"$set": {"payment_status": payment_status, "paid_amount": paid_amount, "balance": balance}}
+    )
 
     return {"success": True, "message": "Payment status updated successfully"}

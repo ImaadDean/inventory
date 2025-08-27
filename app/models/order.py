@@ -51,6 +51,8 @@ class Order(BaseModel):
     tax: float = Field(default=0.0, ge=0)
     discount: float = Field(default=0.0, ge=0)
     total: float = Field(..., gt=0)
+    paid_amount: float = Field(default=0.0, ge=0)
+    balance: float = Field(default=0.0, ge=0)
     
     # Status and payment
     status: OrderStatus = OrderStatus.PENDING

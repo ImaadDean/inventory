@@ -165,7 +165,7 @@ async def get_dashboard_summary(current_user: User = Depends(get_current_user_hy
 
     # Top selling products (last 30 days)
     thirty_days_ago = kampala_to_utc(now_kampala() - timedelta(days=30))
-    top_products_pipeline = [
+    '''    top_products_pipeline = [
         {"$match": {"created_at": {"$gte": thirty_days_ago}}},
         {"$unwind": "$items"},
         {"$group": {
@@ -176,7 +176,25 @@ async def get_dashboard_summary(current_user: User = Depends(get_current_user_hy
             "total_revenue": {"$sum": "$items.total_price"}
         }},
         {"$sort": {"quantity_sold": -1}},
-        {"$limit": 4}
+        {"$limit": 4},
+        {
+            "$lookup": {
+                "from": "products",
+                "localField": "_id",
+                "foreignField": "_id",
+                "as": "product_details"
+            }
+        },
+        {
+            "$addFields": {
+                "product_price": {
+                    "$ifNull": [
+                        {"$arrayElemAt": ["$product_details.price", 0]},
+                        0
+                    ]
+                }
+            }
+        }
     ]
 
     top_products_cursor = db.orders.aggregate(top_products_pipeline)
@@ -188,10 +206,11 @@ async def get_dashboard_summary(current_user: User = Depends(get_current_user_hy
             "product_name": product["product_name"],
             "sku": product["sku"],
             "quantity_sold": product["quantity_sold"],
-            "total_revenue": product["total_revenue"]
+            "total_revenue": product["total_revenue"],
+            "price": product.get("product_price", 0)
         }
         for product in top_products_data
-    ]
+    ]'''
 
     return {
         "sales_overview": sales_overview,
@@ -278,6 +297,9 @@ async def get_top_products_chart_data(current_user: User = Depends(get_current_u
     top_products_pipeline = [
         {"$match": {"created_at": {"$gte": start_utc, "$lte": end_utc}}},
         {"$unwind": "$items"},
+        {"$set": {
+            "items.quantity": {"$toInt": "$items.quantity"}
+        }},
         {"$group": {
             "_id": "$items.product_id",
             "product_name": {"$first": "$items.product_name"},
@@ -285,38 +307,56 @@ async def get_top_products_chart_data(current_user: User = Depends(get_current_u
             "quantity_sold": {"$sum": "$items.quantity"},
             "total_sales": {"$sum": "$items.total_price"}
         }},
-        {"$sort": {"total_sales": -1}},
-        {"$limit": 8}  # Top 8 products for better chart display
+        {"$sort": {"quantity_sold": -1}},
+        {"$limit": 8},
+        {
+            "$addFields": {
+                "product_oid": {
+                    "$cond": {
+                        "if": {"$eq": [{"$type": "$_id"}, "string"]},
+                        "then": {"$toObjectId": "$_id"},
+                        "else": "$_id"
+                    }
+                }
+            }
+        },
+        {
+            "$lookup": {
+                "from": "products",
+                "localField": "product_oid",
+                "foreignField": "_id",
+                "as": "product_details"
+            }
+        },
+        {
+            "$addFields": {
+                "price": {
+                    "$ifNull": [
+                        {"$arrayElemAt": ["$product_details.price", 0]},
+                        0
+                    ]
+                }
+            }
+        },
+        {
+            "$project": {
+                "_id": 1,
+                "product_name": 1,
+                "sku": 1,
+                "quantity_sold": 1,
+                "total_sales": 1,
+                "price": 1
+            }
+        }
     ]
 
     top_products_cursor = db.orders.aggregate(top_products_pipeline)
     top_products_data = await top_products_cursor.to_list(length=8)
 
-    product_names = []
-    sales_amounts = []
-
-    for product in top_products_data:
-        # Truncate long product names for better display
-        product_name = product["product_name"] if product["product_name"] else "Unknown Product"
-        if len(product_name) > 20:
-            product_name = product_name[:17] + "..."
-
-        product_names.append(product_name)
-        sales_amounts.append(product["total_sales"])
-
-    # If no products found, return default
-    if not product_names:
-        product_names = ["No sales data"]
-        sales_amounts = [0]
-
     # Debug information
-    print(f"Top products chart data: {product_names}")
-    print(f"Sales amounts: {sales_amounts}")
-    print(f"Total sales: {sum(sales_amounts)}")
+    print(f"Top products chart data: {top_products_data}")
 
     return {
         "success": True,
-        "product_names": product_names,
-        "sales_amounts": sales_amounts,
-        "total_sales": sum(sales_amounts)
+        "top_products": top_products_data
     }

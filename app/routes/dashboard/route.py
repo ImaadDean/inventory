@@ -83,7 +83,7 @@ async def get_dashboard_data():
             "active_products": {"$sum": {"$cond": [{"$eq": ["$is_active", True]}, 1, 0]}},
             "low_stock_products": {"$sum": {"$cond": [{"$lte": ["$stock_quantity", "$min_stock_level"]}, 1, 0]}},
             "out_of_stock_products": {"$sum": {"$cond": [{"$eq": ["$stock_quantity", 0]}, 1, 0]}},
-            "total_inventory_value": {"$sum": {"$multiply": ["$stock_quantity", "$price"]}}
+            "total_inventory_value": {"$sum": {"$multiply": ["$stock_quantity", "$cost_price"]}}
         }}
     ]
 
@@ -145,13 +145,42 @@ async def get_dashboard_data():
         {"$unwind": "$items"},
         {"$group": {
             "_id": "$items.product_id",
-            "product_name": {"$first": "$items.name"},
+            "product_name": {"$first": "$items.product_name"},
             "sku": {"$first": "$items.sku"},
             "quantity_sold": {"$sum": "$items.quantity"},
-            "total_revenue": {"$sum": "$items.total"}
+            "total_revenue": {"$sum": "$items.total_price"}
         }},
         {"$sort": {"quantity_sold": -1}},
-        {"$limit": 4}
+        {"$limit": 4},
+        {
+            "$addFields": {
+                "product_oid": {
+                    "$cond": {
+                        "if": {"$eq": [{"$type": "$_id"}, "string"]},
+                        "then": {"$toObjectId": "$_id"},
+                        "else": "$_id"
+                    }
+                }
+            }
+        },
+        {
+            "$lookup": {
+                "from": "products",
+                "localField": "product_oid",
+                "foreignField": "_id",
+                "as": "product_details"
+            }
+        },
+        {
+            "$addFields": {
+                "product_price": {
+                    "$ifNull": [
+                        {"$arrayElemAt": ["$product_details.price", 0]},
+                        0
+                    ]
+                }
+            }
+        }
     ]
 
     top_products_cursor = db.orders.aggregate(top_products_pipeline)
@@ -163,7 +192,8 @@ async def get_dashboard_data():
             "product_name": product["product_name"],
             "sku": product["sku"],
             "quantity_sold": product["quantity_sold"],
-            "total_revenue": product["total_revenue"]
+            "total_revenue": product["total_revenue"],
+            "price": product.get("product_price", 0)
         }
         for product in top_products_data
     ]

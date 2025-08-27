@@ -135,6 +135,13 @@
                         <option value="cancelled">Cancelled</option>
                         <option value="refunded">Refunded</option>
                     </select>
+                    <select id="period-filter" class="px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xs transition-all duration-200">
+                        <option value="today">Today</option>
+                        <option value="yesterday">Yesterday</option>
+                        <option value="this_week">This Week</option>
+                        <option value="this_month">This Month</option>
+                        <option value="custom">Custom</option>
+                    </select>
                     <input type="date" id="date-from" class="px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xs transition-all duration-200">
                     <input type="date" id="date-to" class="px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xs transition-all duration-200">
                     <div class="flex space-x-1">
@@ -236,7 +243,7 @@
     // Sales management JavaScript
     document.addEventListener('DOMContentLoaded', function() {
         initializeSalesManagement();
-        loadSalesStats();
+        // loadSalesStats() is now called from initializeSalesManagement via handlePeriodChange
         setupInfiniteScroll();
     });
 
@@ -248,15 +255,28 @@
     let hasMoreSales = true;
 
     function initializeSalesManagement() {
-        // Load initial sales
-        loadSales(1, false);
-
         // Set up event listeners for filters
-        const debouncedLoad = debounce(() => loadSales(1, false), 300);
-        document.getElementById('search-input').addEventListener('input', debouncedLoad);
-        document.getElementById('status-filter').addEventListener('change', () => loadSales(1, false));
-        document.getElementById('date-from').addEventListener('change', () => loadSales(1, false));
-        document.getElementById('date-to').addEventListener('change', () => loadSales(1, false));
+        const debouncedSearch = debounce(() => {
+            document.getElementById('period-filter').value = 'custom';
+            loadSales(1, false);
+            loadSalesStats();
+        }, 300);
+        document.getElementById('search-input').addEventListener('input', debouncedSearch);
+        
+        document.getElementById('status-filter').addEventListener('change', () => {
+            loadSales(1, false);
+            loadSalesStats();
+        });
+
+        const dateChangeHandler = () => {
+            document.getElementById('period-filter').value = 'custom';
+            loadSales(1, false);
+            loadSalesStats();
+        };
+        document.getElementById('date-from').addEventListener('change', dateChangeHandler);
+        document.getElementById('date-to').addEventListener('change', dateChangeHandler);
+        
+        document.getElementById('period-filter').addEventListener('change', handlePeriodChange);
 
         // Other event listeners
         document.getElementById('refresh-sales').addEventListener('click', () => {
@@ -275,10 +295,60 @@
                 viewSaleDetails(saleId);
             }
         });
+        
+        // Set default period to today and load data
+        document.getElementById('period-filter').value = 'today';
+        handlePeriodChange();
+    }
+
+    function handlePeriodChange() {
+        const period = document.getElementById('period-filter').value;
+        const dateFrom = document.getElementById('date-from');
+        const dateTo = document.getElementById('date-to');
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+
+        switch (period) {
+            case 'today':
+                dateFrom.value = todayStr;
+                dateTo.value = todayStr;
+                break;
+            case 'yesterday':
+                const yesterday = new Date(today);
+                yesterday.setDate(today.getDate() - 1);
+                const yesterdayStr = yesterday.toISOString().split('T')[0];
+                dateFrom.value = yesterdayStr;
+                dateTo.value = yesterdayStr;
+                break;
+            case 'this_week':
+                const dayOfWeek = today.getDay();
+                const firstDayOfWeek = new Date(today);
+                firstDayOfWeek.setDate(today.getDate() - dayOfWeek);
+                dateFrom.value = firstDayOfWeek.toISOString().split('T')[0];
+                dateTo.value = todayStr;
+                break;
+            case 'this_month':
+                const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+                dateFrom.value = firstDayOfMonth.toISOString().split('T')[0];
+                dateTo.value = todayStr;
+                break;
+            case 'custom':
+                // Do nothing, allow user to select
+                return; 
+        }
+        loadSales(1, false);
+        loadSalesStats();
     }
 
     function loadSalesStats() {
-        fetch('/api/sales/stats')
+        const dateFrom = document.getElementById('date-from').value;
+        const dateTo = document.getElementById('date-to').value;
+
+        const params = new URLSearchParams();
+        if (dateFrom) params.append('date_from', dateFrom);
+        if (dateTo) params.append('date_to', dateTo);
+        
+        fetch(`/api/sales/stats?${params.toString()}`)
             .then(response => response.json())
             .then(data => {
                 document.getElementById('total-sales-count').textContent = data.total_sales || 0;
@@ -620,7 +690,9 @@
         document.getElementById('status-filter').value = '';
         document.getElementById('date-from').value = '';
         document.getElementById('date-to').value = '';
+        document.getElementById('period-filter').value = 'custom';
         loadSales(1, false);
+        loadSalesStats();
     }
 
     function exportSales() {

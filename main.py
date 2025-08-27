@@ -28,6 +28,7 @@ from app.routes.dashboard.api import router as dashboard_api_router
 from app.routes.scents.api import router as scents_api_router
 from app.routes.installments.api import router as installments_api_router
 from app.routes.sales.api import router as sales_api_router
+from app.routes.orders.payment_api import router as payment_api_router
 
 # Import HTML route routers
 from app.routes.auth.route import auth_routes
@@ -211,6 +212,7 @@ app.include_router(dashboard_api_router)
 app.include_router(scents_api_router)
 app.include_router(installments_api_router)
 app.include_router(sales_api_router)
+app.include_router(payment_api_router)
 
 # Include HTML route routers
 app.include_router(auth_routes)
