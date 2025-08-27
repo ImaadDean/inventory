@@ -602,3 +602,59 @@ async def update_order_status(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update order status: {str(e)}"
         )
+
+
+@router.delete("/{order_id}", response_model=dict)
+async def delete_order(
+    order_id: str,
+    current_user: User = Depends(get_current_user_hybrid_dependency())
+):
+    """Delete an order, restore product stock, and delete any associated sale."""
+    db = await get_database()
+    client = db.client
+
+    async with await client.start_session() as session:
+        async with session.start_transaction():
+            try:
+                # 1. Fetch the existing order
+                existing_order = await db.orders.find_one({"_id": ObjectId(order_id)}, session=session)
+                if not existing_order:
+                    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+
+                # 2. Restore stock for each item in the order
+                if existing_order.get("items"):
+                    product_updates = []
+                    for item in existing_order["items"]:
+                        product_id = item["product_id"]
+                        quantity = item["quantity"]
+                        
+                        if not ObjectId.is_valid(product_id):
+                            print(f"Warning: Invalid product_id '{product_id}' in order '{order_id}'. Skipping stock update for this item.")
+                            continue
+
+                        product_updates.append(
+                            db.products.update_one(
+                                {"_id": ObjectId(product_id)},
+                                {"$inc": {"stock_quantity": quantity}},
+                                session=session
+                            )
+                        )
+                    
+                    if product_updates:
+                        await asyncio.gather(*product_updates)
+
+                # 3. If there's a linked sale, delete it
+                if existing_order.get("sale_id"):
+                    await db.sales.delete_one(
+                        {"_id": existing_order["sale_id"]},
+                        session=session
+                    )
+
+                # 4. Delete the order itself
+                await db.orders.delete_one({"_id": ObjectId(order_id)}, session=session)
+
+            except Exception as e:
+                await session.abort_transaction()
+                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An error occurred: {str(e)}")
+
+    return {"success": True, "message": "Order deleted successfully and stock restored"}
