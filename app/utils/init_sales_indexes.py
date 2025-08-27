@@ -8,8 +8,6 @@ from app.config.database import get_database
 async def init_sales_indexes():
     """Initialize database indexes for sales collection"""
     try:
-        print("🔄 Initializing sales collection indexes...")
-        
         db = await get_database()
         sales_collection = db.sales
         
@@ -45,10 +43,8 @@ async def init_sales_indexes():
             ("created_at", 1)
         ])
         
-        print("✅ Sales collection indexes created successfully")
-        
     except Exception as e:
-        print(f"❌ Error creating sales indexes: {e}")
+        pass
 
 
 if __name__ == "__main__":

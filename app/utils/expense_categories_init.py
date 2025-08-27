@@ -34,7 +34,7 @@ async def initialize_default_expense_categories(db):
         })
 
         if restocking_exists and stocking_exists:
-            logger.info("Restocking and Stocking categories already exist")
+            # logger.info("Restocking and Stocking categories already exist")
             return
         
         # Create Restocking category if it doesn't exist
@@ -83,7 +83,6 @@ async def initialize_default_expense_categories(db):
 async def create_restocking_expense(db, product_name, quantity, unit_cost, total_cost, supplier_name=None, user_username=None, payment_method=None):
     """Create an automatic expense entry when restocking products"""
     try:
-        print(f"create_restocking_expense called with payment_method: {payment_method}")
         expenses_collection = db.expenses
 
         # Determine status based on payment method
@@ -125,7 +124,6 @@ async def create_restocking_expense(db, product_name, quantity, unit_cost, total
 async def create_stocking_expense(db, product_name, quantity, unit_cost, total_cost, supplier_name=None, user_username=None, payment_method=None):
     """Create an automatic expense entry when adding new products (initial stocking)"""
     try:
-        print(f"create_stocking_expense called with payment_method: {payment_method}")
         expenses_collection = db.expenses
 
         # Determine status based on payment method

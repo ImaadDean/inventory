@@ -12,7 +12,7 @@ class UserCreate(BaseModel):
     role: UserRole = UserRole.CASHIER
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "username": "jane_doe",
                 "email": "jane@example.com",
@@ -32,7 +32,7 @@ class UserUpdate(BaseModel):
     password: Optional[str] = Field(None, min_length=6)
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "username": "janesmith",
                 "email": "newemail@example.com",
@@ -57,7 +57,7 @@ class UserResponse(BaseModel):
     last_activity: Optional[datetime] = None
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "id": "507f1f77bcf86cd799439011",
                 "username": "jane_doe",
@@ -86,7 +86,7 @@ class UserWithActivity(BaseModel):
     activity_status: Dict[str, Any]
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "id": "507f1f77bcf86cd799439011",
                 "username": "jane_doe",
@@ -116,7 +116,7 @@ class UserList(BaseModel):
     size: int
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "users": [
                     {

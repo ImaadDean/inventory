@@ -44,7 +44,7 @@ class CategoryCreate(BaseModel):
     description: Optional[str] = Field(None, max_length=500)
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "name": "Electronics",
                 "description": "Electronic devices and accessories"
@@ -57,7 +57,7 @@ class CategoryUpdate(BaseModel):
     description: Optional[str] = Field(None, max_length=500)
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "name": "Consumer Electronics",
                 "description": "Updated description for electronics category"
@@ -73,7 +73,7 @@ class CategoryResponse(BaseModel):
     updated_at: Optional[datetime] = None
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "id": "507f1f77bcf86cd799439011",
                 "name": "Electronics",
@@ -108,7 +108,7 @@ class ProductCreate(BaseModel):
     scent_ids: Optional[List[str]] = Field(None, description="List of scent IDs associated with this product")
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "name": "iPhone 15 Pro",
                 "description": "Latest iPhone model with advanced features",
@@ -146,7 +146,7 @@ class ProductUpdate(BaseModel):
     decant: Optional[DecantUpdate] = None
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "price": 899.99,
                 "stock_quantity": 75,
@@ -186,7 +186,7 @@ class ProductResponse(BaseModel):
     stock_display: Optional[str] = None
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "id": "507f1f77bcf86cd799439011",
                 "name": "iPhone 15 Pro",
@@ -214,7 +214,7 @@ class ProductList(BaseModel):
     size: int
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "products": [
                     {
@@ -241,7 +241,7 @@ class StockUpdate(BaseModel):
     payment_method: Optional[str] = Field(None, max_length=50, description="Payment method for expense")
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "quantity": 25,
                 "reason": "New stock received from supplier",

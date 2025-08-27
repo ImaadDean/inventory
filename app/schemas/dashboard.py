@@ -21,7 +21,7 @@ class SalesOverview(BaseModel):
     total_items_sold: int
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "total_sales": 15750.50,
                 "total_transactions": 125,
@@ -39,7 +39,7 @@ class InventoryOverview(BaseModel):
     total_inventory_value: float
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "total_products": 500,
                 "active_products": 485,
@@ -58,7 +58,7 @@ class TopSellingProduct(BaseModel):
     total_revenue: float
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "product_id": "507f1f77bcf86cd799439011",
                 "product_name": "iPhone 15 Pro",
@@ -78,7 +78,7 @@ class LowStockProduct(BaseModel):
     stock_difference: int
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "product_id": "507f1f77bcf86cd799439011",
                 "product_name": "iPhone 15 Pro",
@@ -100,7 +100,7 @@ class SalesReport(BaseModel):
     daily_sales: List[Dict[str, Any]]  # Date and sales amount
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "period": "this_month",
                 "start_date": "2024-01-01T00:00:00Z",
@@ -136,7 +136,7 @@ class InventoryReport(BaseModel):
     categories_summary: List[Dict[str, Any]]
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "inventory_overview": {
                     "total_products": 500,
@@ -168,7 +168,7 @@ class DashboardSummary(BaseModel):
     top_selling_products: List[TopSellingProduct]
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "sales_overview": {
                     "total_sales": 15750.50,

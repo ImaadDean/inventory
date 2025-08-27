@@ -89,7 +89,7 @@ class ForgotPasswordRequest(BaseModel):
     email: EmailStr
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "email": "user@example.com"
             }
@@ -102,7 +102,7 @@ class ResetPasswordRequest(BaseModel):
     confirm_password: str = Field(..., min_length=6, max_length=100)
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "token": "abc123def456ghi789jkl012mno345pq",
                 "new_password": "newpassword123",

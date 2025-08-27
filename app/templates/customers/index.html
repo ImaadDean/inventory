@@ -455,6 +455,16 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
+// Debounce function
+function debounce(func, delay) {
+    let timeout;
+    return function(...args) {
+        const context = this;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), delay);
+    };
+}
+
 // Client management functionality
 function openAddClientModal() {
     const modal = document.getElementById('add-client-modal');
@@ -504,19 +514,31 @@ function closeAddClientModal() {
     submitButton.disabled = false;
 }
 
-function loadClients(page = 1, append = false) {
+function loadClients(page = 1, append = false, searchQuery = '') {
     if (isLoadingClients) return;
 
-    console.log(`Loading clients page ${page}...`);
+    console.log(`Loading clients page ${page} with search: "${searchQuery}"...`);
     isLoadingClients = true;
 
     // Show loading state
     if (append) {
         showAutoLoadingState();
+    } else {
+        // Clear existing clients if it's a new search or initial load
+        document.querySelector('#clients-table-body').innerHTML = '';
+    }
+
+    // Build query parameters
+    const params = new URLSearchParams({
+        page: page,
+        size: 10
+    });
+    if (searchQuery) {
+        params.append('search', searchQuery);
     }
 
     // Load clients from the table API with pagination
-    fetch(`/api/customers/table?page=${page}&size=10`, {
+    fetch(`/api/customers/table?${params.toString()}`, {
         method: 'GET',
         credentials: 'include',
         headers: {
@@ -826,14 +848,14 @@ function updateClientStats(stats) {
     }
 }
 
-function refreshClientsData() {
+function refreshClientsData(searchQuery = '') {
     // Reset infinite scroll state
     currentClientsPage = 1;
     allClients = [];
     loadedClientsCount = 0;
     hasMoreClients = true;
 
-    loadClients();
+    loadClients(1, false, searchQuery); // Load first page with search query
     loadClientStats();
 }
 
@@ -952,6 +974,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Setup infinite scroll for clients
     setupClientsInfiniteScroll();
+
+    // Setup search input event listener
+    const searchInput = document.getElementById('search-clients');
+    if (searchInput) {
+        const debouncedSearch = debounce(() => {
+            refreshClientsData(searchInput.value);
+        }, 300); // Debounce for 300ms
+        searchInput.addEventListener('input', debouncedSearch);
+    }
 });
 
 // Setup keyboard event handlers

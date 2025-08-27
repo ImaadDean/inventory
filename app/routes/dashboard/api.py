@@ -165,7 +165,7 @@ async def get_dashboard_summary(current_user: User = Depends(get_current_user_hy
 
     # Top selling products (last 30 days)
     thirty_days_ago = kampala_to_utc(now_kampala() - timedelta(days=30))
-    '''    top_products_pipeline = [
+    top_products_pipeline = [
         {"$match": {"created_at": {"$gte": thirty_days_ago}}},
         {"$unwind": "$items"},
         {"$group": {
@@ -210,7 +210,7 @@ async def get_dashboard_summary(current_user: User = Depends(get_current_user_hy
             "price": product.get("product_price", 0)
         }
         for product in top_products_data
-    ]'''
+    ]
 
     return {
         "sales_overview": sales_overview,
@@ -268,11 +268,6 @@ async def get_sales_chart_data(current_user: User = Depends(get_current_user_hyb
             labels.append("Yesterday")
         else:
             labels.append(kampala_date.strftime("%a"))  # Mon, Tue, etc.
-
-    # Debug information
-    print(f"Sales chart data: {sales_data}")
-    print(f"Labels: {labels}")
-    print(f"Total revenue: {sum(sales_data)}")
 
     return {
         "success": True,
@@ -352,9 +347,6 @@ async def get_top_products_chart_data(current_user: User = Depends(get_current_u
 
     top_products_cursor = db.orders.aggregate(top_products_pipeline)
     top_products_data = await top_products_cursor.to_list(length=8)
-
-    # Debug information
-    print(f"Top products chart data: {top_products_data}")
 
     return {
         "success": True,

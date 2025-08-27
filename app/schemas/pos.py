@@ -11,7 +11,7 @@ class SaleItemCreate(BaseModel):
     is_decant: bool = False
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "product_id": "507f1f77bcf86cd799439011",
                 "quantity": 2,
@@ -29,7 +29,7 @@ class SaleItemResponse(BaseModel):
     discount_amount: float
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "product_id": "507f1f77bcf86cd799439011",
                 "product_name": "iPhone 15 Pro",
@@ -52,7 +52,7 @@ class SaleCreate(BaseModel):
     notes: Optional[str] = Field(None, max_length=500)
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "customer_name": "John Doe",
                 "items": [
@@ -92,7 +92,7 @@ class SaleResponse(BaseModel):
     updated_at: Optional[datetime] = None
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "id": "507f1f77bcf86cd799439012",
                 "sale_number": "SALE-2024-001",
@@ -127,7 +127,7 @@ class SaleList(BaseModel):
     size: int
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "sales": [
                     {
@@ -155,7 +155,7 @@ class ProductSearch(BaseModel):
     unit: str
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "id": "507f1f77bcf86cd799439011",
                 "name": "iPhone 15 Pro",
