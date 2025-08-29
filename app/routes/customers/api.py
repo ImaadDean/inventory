@@ -12,76 +12,13 @@ from ...models import Customer, User
 from ...utils.auth import get_current_user, get_current_user_hybrid, get_current_user_hybrid_dependency, verify_token, get_user_by_username
 from ...utils.timezone import now_kampala, kampala_to_utc
 from fastapi.responses import StreamingResponse, JSONResponse, Response
-import io
-import csv
+
 import vobject # Added for VCF export
 
 router = APIRouter(prefix="/api/customers", tags=["Customer Management API"])
 
 
-@router.get("/export/google-csv")
-async def export_clients_to_csv(
-    user: User = Depends(get_current_user_hybrid_dependency()),
-    export_type: str = Query("new", enum=["new", "all", "range"]),
-    start_date: Optional[str] = Query(None),
-    end_date: Optional[str] = Query(None)
-):
-    """
-    Export active clients to a CSV file compatible with Google Contacts.
-    Supports exporting all, new since last export, or clients within a date range.
-    """
-    db = await get_database()
-    query = {"is_active": True}
-    update_timestamp = False
 
-    if export_type == "new":
-        user_doc = await db.users.find_one({"_id": user.id})
-        last_export_time = user_doc.get("last_client_export") if user_doc else None
-        if last_export_time:
-            query["created_at"] = {"$gt": last_export_time}
-        update_timestamp = True
-    
-    elif export_type == "range":
-        if not start_date or not end_date:
-            raise HTTPException(status_code=400, detail="Start date and end date are required for range export.")
-        try:
-            s_date = kampala_to_utc(datetime.fromisoformat(start_date).replace(hour=0, minute=0, second=0))
-            e_date = kampala_to_utc(datetime.fromisoformat(end_date).replace(hour=23, minute=59, second=59))
-            query["created_at"] = {"$gte": s_date, "$lte": e_date}
-        except ValueError:
-            raise HTTPException(status_code=400, detail="Invalid date format. Please use YYYY-MM-DD.")
-
-    customers = await db.customers.find(query).sort("created_at", -1).to_list(length=None)
-
-    if not customers:
-        return JSONResponse(content={"message": "No clients found for the selected criteria."}, status_code=200)
-
-    string_io = io.StringIO()
-    headers = ["Name", "Phone 1 - Value"]
-    writer = csv.writer(string_io)
-    writer.writerow(headers)
-
-    for customer in customers:
-        if customer.get("name") and customer.get("phone"):
-            writer.writerow([
-                customer.get("name"),
-                customer.get("phone")
-            ])
-            
-    string_io.seek(0)
-
-    if update_timestamp:
-        await db.users.update_one(
-            {"_id": user.id},
-            {"$set": {"last_client_export": kampala_to_utc(now_kampala())}}
-        )
-
-    filename = f"clients-{export_type}-{datetime.now().strftime('%Y-%m-%d')}.csv"
-    return StreamingResponse(
-        iter([string_io.getvalue()]),
-        media_type="text/csv",
-        headers={"Content-Disposition": f"attachment; filename={filename}"}
-    )
 
 
 
@@ -829,7 +766,7 @@ async def update_customer(
         )
 
 
-@router.get("/export-vcf", response_class=StreamingResponse)
+@router.get("/export/vcf", response_class=StreamingResponse)
 async def export_customers_vcf(
     current_user: User = Depends(get_current_user_hybrid_dependency()),
     db: AsyncIOMotorClient = Depends(get_database)

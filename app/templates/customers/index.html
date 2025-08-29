@@ -138,10 +138,7 @@
                             <i class="fas fa-refresh text-xs"></i>
                             <span>Refresh</span>
                         </button>
-                        <button onclick="exportClients()" class="bg-green-500 hover:bg-green-600 text-white px-2 py-1.5 rounded-lg flex items-center space-x-1 text-xs transition-all duration-200">
-                            <i class="fas fa-download text-xs"></i>
-                            <span>Export CSV</span>
-                        </button>
+                        
                         <button onclick="exportClientsVCF()" class="bg-purple-500 hover:bg-purple-600 text-white px-2 py-1.5 rounded-lg flex items-center space-x-1 text-xs transition-all duration-200">
                             <i class="fas fa-address-book text-xs"></i>
                             <span>Export VCF</span>
@@ -945,11 +942,13 @@ function deleteClient(clientId) {
     }
 }
 
-async function exportClients() {
-    showToast('Checking for new clients to export...', 'info');
+
+
+async function exportClientsVCF() {
+    showToast('Exporting clients to VCF...', 'info');
     
     try {
-        const response = await fetch('/api/customers/export/google-csv', {
+        const response = await fetch('/api/customers/export/vcf', {
             method: 'GET',
             credentials: 'include'
         });
@@ -957,7 +956,7 @@ async function exportClients() {
         if (response.ok) {
             const contentType = response.headers.get("content-type");
 
-            if (contentType && contentType.includes("text/csv")) {
+            if (contentType && (contentType.includes("text/vcard") || contentType.includes("text/x-vcard"))) {
                 const blob = await response.blob();
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -965,7 +964,7 @@ async function exportClients() {
                 a.href = url;
                 
                 const disposition = response.headers.get('Content-Disposition');
-                let filename = 'clients.csv';
+                let filename = 'clients.vcf';
                 if (disposition && disposition.includes('attachment')) {
                     const filenameMatch = disposition.match(/filename="?([^"]+)"?/);
                     if (filenameMatch && filenameMatch[1]) {
@@ -980,18 +979,22 @@ async function exportClients() {
                 window.URL.revokeObjectURL(url);
                 a.remove();
                 
-                showToast('Client contacts download started!', 'success');
+                showToast('Client contacts VCF download started!', 'success');
 
             } else if (contentType && contentType.includes("application/json")) {
                 const data = await response.json();
-                showToast(data.message || 'No new clients to export.', 'info');
+                showToast(data.message || 'No clients to export.', 'info');
+            } else {
+                 const text = await response.text();
+                 console.error('Unexpected content type:', contentType, 'content:', text);
+                 showToast('Unexpected response from server.', 'error');
             }
         } else {
             const errorData = await response.json().catch(() => ({ detail: 'An unknown error occurred during export.' }));
             showToast(errorData.detail || 'Failed to export clients.', 'error');
         }
     } catch (error) {
-        console.error('Error exporting clients:', error);
+        console.error('Error exporting clients to VCF:', error);
         showToast('A network error occurred. Please try again.', 'error');
     }
 }
