@@ -212,6 +212,19 @@
     </div>
 </div>
 
+<!-- Items Modal Template -->
+<div id="items-modal-template" class="hidden absolute z-50 bg-white rounded-lg shadow-xl border border-gray-200 p-4 w-80">
+    <div class="flex justify-between items-center mb-2">
+        <h3 class="items-modal-title text-sm font-semibold text-gray-800">Order Items</h3>
+        <button class="items-modal-close-btn text-gray-400 hover:text-gray-600">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <ul class="items-modal-list space-y-2">
+        <!-- Items will be populated here -->
+    </ul>
+</div>
+
 <!-- Delete Confirmation Modal -->
 <div id="delete-confirmation-modal" class="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50 hidden">
     <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
@@ -423,6 +436,7 @@ let currentPage = 1;
 let totalPages = 1;
 let isLoading = false;
 let allOrders = [];
+let currentItemModalCell = null; // Keep track of which cell the modal is in
 
 function showOrderLoadingIndicator(rows = 5) {
     const tableBody = document.querySelector('#orders-table-body');
@@ -634,11 +648,13 @@ function displayOrders(orders, total = 0, page = 1, totalPages = 1) {
                 </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
-                <div class="flex items-center">
-                    <div class="w-6 h-6 bg-gray-100 rounded-md flex items-center justify-center mr-2">
-                        <i class="fas fa-box text-gray-600 text-xs"></i>
-                    </div>
-                    <span class="text-sm font-medium text-gray-900">${order.items.length} item${order.items.length !== 1 ? 's' : ''}</span>
+                <div class="relative">
+                    <button onclick="showItemsModal(event, '${order.id}')" class="flex items-center cursor-pointer hover:bg-gray-100 p-2 rounded-lg">
+                        <div class="w-6 h-6 bg-gray-100 rounded-md flex items-center justify-center mr-2">
+                            <i class="fas fa-box text-gray-600 text-xs"></i>
+                        </div>
+                        <span class="text-sm font-medium text-gray-900">${order.items.length} item${order.items.length !== 1 ? 's' : ''}</span>
+                    </button>
                 </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
@@ -705,6 +721,89 @@ function displayOrders(orders, total = 0, page = 1, totalPages = 1) {
         </tr>
         `;
     }).join('');
+}
+
+function clickOutsideHandler(event) {
+    const modal = document.getElementById('items-modal-instance');
+    // If the modal exists and the click was outside of it
+    if (modal && !modal.contains(event.target)) {
+        hideItemsModal();
+    }
+}
+
+function showItemsModal(event, orderId) {
+    event.stopPropagation();
+
+    // Hide any existing modal first
+    hideItemsModal();
+
+    const order = allOrders.find(o => o.id === orderId);
+    if (!order) return;
+    const items = order.items;
+
+    const template = document.getElementById('items-modal-template');
+    if (!template) return;
+
+    const modal = template.cloneNode(true);
+    modal.id = 'items-modal-instance'; // Give it a unique ID
+    modal.classList.remove('hidden');
+
+    // Update modal title
+    const titleElement = modal.querySelector('.items-modal-title');
+    if (titleElement) {
+        titleElement.textContent = `Order #${order.order_number}`;
+    }
+
+    const cell = event.currentTarget.closest('td');
+    if (!cell) return;
+
+    // Keep track of the cell and set its position
+    currentItemModalCell = cell;
+    cell.style.position = 'relative';
+    cell.appendChild(modal);
+
+    // Populate list
+    const list = modal.querySelector('.items-modal-list'); // Select within the clone
+    if (list) {
+        list.innerHTML = '';
+        if (items && items.length > 0) {
+            items.forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'flex justify-between items-center text-sm';
+                const productName = item.product_name.length > 35 ? item.product_name.substring(0, 35) + '...' : item.product_name;
+                li.innerHTML = `
+                    <span class="text-gray-700" title="${item.product_name}">${productName}</span>
+                    <span class="font-semibold text-gray-900">Qty: ${item.quantity}</span>
+                `;
+                list.appendChild(li);
+            });
+        } else {
+            list.innerHTML = '<li class="text-gray-500 text-sm">No items in this order.</li>';
+        }
+    }
+
+    // Position it
+    modal.style.left = '100%';
+    modal.style.top = '0';
+    modal.style.marginLeft = '5px';
+
+    // Add listeners
+    modal.querySelector('.items-modal-close-btn').addEventListener('click', hideItemsModal);
+    setTimeout(() => {
+        document.addEventListener('click', clickOutsideHandler);
+    }, 0);
+}
+
+function hideItemsModal() {
+    const modal = document.getElementById('items-modal-instance');
+    if (modal) {
+        modal.remove();
+    }
+    if (currentItemModalCell) {
+        currentItemModalCell.style.position = '';
+        currentItemModalCell = null;
+    }
+    document.removeEventListener('click', clickOutsideHandler);
 }
 
 function getStatusClass(status) {
