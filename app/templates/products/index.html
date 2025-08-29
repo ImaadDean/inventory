@@ -1697,6 +1697,7 @@ function loadProducts(page = 1, append = false) {
         return response.json();
     })
     .then(data => {
+        console.log('Received data from API:', data);
         hideLoadingIndicator(); // Hide skeleton before adding new content
 
         totalProducts = data.total || 0;
@@ -1724,7 +1725,7 @@ function loadProducts(page = 1, append = false) {
         }
     })
     .catch(error => {
-        console.error('Error loading products:', error);
+        console.error('Error in loadProducts:', error);
         showToast('Failed to load products. Please check your connection.', 'error');
         hideLoadingIndicator(); // Also hide on error
         if (!append) {
@@ -1778,7 +1779,21 @@ function appendProducts(products) {
 
 // Generate HTML for product rows
 function generateProductRows(products) {
-    return products.map(product => `
+    return products.map(product => {
+        if (product.error) {
+            return `
+                <tr class="bg-red-50">
+                    <td colspan="7" class="px-3 py-3 text-center text-red-700">
+                        <div class="flex flex-col items-center">
+                            <i class="fas fa-exclamation-triangle text-red-500 text-2xl mb-2"></i>
+                            <p>Error loading product: ${product.name}</p>
+                            <p class="text-sm text-red-600">${product.error}</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+        return `
         <tr class="hover:bg-gray-50">
             <td class="px-3 py-3 whitespace-nowrap">
                 <div class="flex items-center">
@@ -1813,11 +1828,11 @@ function generateProductRows(products) {
             </td>
 
             <td class="px-3 py-3 whitespace-nowrap">
-                <div class="text-sm text-gray-900 font-medium">UGX ${product.price.toLocaleString('en-UG')}</div>
+                <div class="text-sm text-gray-900 font-medium">UGX ${product.price ? product.price.toLocaleString('en-UG') : '0.00'}</div>
                 ${product.is_perfume_with_decants && product.decant ? `
                     <div class="text-xs text-purple-600 mt-1">
                         <i class="fas fa-vial text-purple-400 mr-1"></i>
-                        ${product.decant.decant_size_ml}ml UGX ${product.decant.decant_price.toLocaleString()}
+                        ${product.decant.decant_size_ml}ml UGX ${product.decant.decant_price ? product.decant.decant_price.toLocaleString() : '0.00'}
                     </div>
                 ` : ''}
             </td>
@@ -1868,7 +1883,7 @@ function generateProductRows(products) {
                 </div>
             </td>
         </tr>
-    `).join('');
+    `}).join('');
 }
 
 function getStockStatusClass(status) {

@@ -182,7 +182,7 @@ def calculate_decant_availability(product: Dict[str, Any]) -> Dict[str, Any]:
 
     bottle_size_ml = product.get("bottle_size_ml", 0)
     stock_quantity = product.get("stock_quantity", 0)
-    decant_size_ml = decant_info.get("decant_size_ml", 0)
+    decant_size_ml = decant_info.get("decant_size_ml") or 0
     opened_bottle_ml_left = decant_info.get("opened_bottle_ml_left", 0)
 
     # Calculate total ml available
@@ -209,7 +209,7 @@ def calculate_decant_availability(product: Dict[str, Any]) -> Dict[str, Any]:
         "has_opened_bottle": has_opened_bottle,
         "can_open_new_bottle": can_open_new_bottle,
         "decant_size_ml": decant_size_ml,
-        "decant_price": decant_info.get("decant_price", 0),
+        "decant_price": decant_info.get("decant_price") or 0,
         "bottle_size_ml": bottle_size_ml,
         "stock_quantity": stock_quantity
     }
