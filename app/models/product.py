@@ -106,8 +106,8 @@ class Product(BaseModel):
     def stock_display(self) -> str:
         """Display stock in appropriate format for perfume vs regular products"""
         if self.is_perfume_with_decants:
-            opened_ml = self.decant.opened_bottle_ml_left if self.decant.opened_bottle_ml_left else 0
-            return f"{self.stock_quantity} pcs & {opened_ml}mls"
+            opened_ml = self.decant.opened_bottle_ml_left if self.decant and self.decant.opened_bottle_ml_left is not None else 0
+            return f"{self.stock_quantity} pcs & {opened_ml:.0f}mls"
         return f"{self.stock_quantity} {self.unit}"
 
     class Config:
