@@ -228,11 +228,24 @@
                 </div>
             </div>
             <form id="add-product-form" method="POST" action="/products/" class="p-4 space-y-3">
+                <input type="hidden" name="force" value="false">
                 <div>
                     <label class="block text-xs font-semibold text-gray-700 mb-1">
                         <i class="fas fa-tag text-gray-400 mr-1"></i>Product Name
                     </label>
-                    <input type="text" name="name" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Enter product name">
+                    <div class="relative">
+                        <input type="text" name="name" id="add-product-name" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Enter product name">
+                        <div id="name-validation-indicator" class="absolute inset-y-0 right-0 flex items-center pr-3 hidden">
+                            <i id="name-loading-spinner" class="fas fa-spinner fa-spin text-gray-400"></i>
+                            <i id="name-valid-tick" class="fas fa-check-circle text-green-500 hidden"></i>
+                        </div>
+                    </div>
+                </div>
+                <div id="form-disabled-message" class="hidden p-4 text-center bg-blue-50 border border-blue-200 rounded-lg">
+                    <p class="text-sm font-medium text-blue-700">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Please enter a product name to enable the rest of the form.
+                    </p>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-gray-700 mb-1">
@@ -341,6 +354,13 @@
                             Refresh
                         </button>
                     </div>
+                </div>
+                <!-- Brand -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                        <i class="fas fa-star text-gray-400 mr-1"></i>Brand
+                    </label>
+                    <input type="text" name="brand" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Enter brand name (optional)">
                 </div>
                 <!-- Barcode -->
                 <div>
@@ -479,6 +499,38 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- Confirm Product Name Modal -->
+<div id="confirm-product-name-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all duration-300">
+            <div class="px-4 py-3 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-t-xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                            <i class="fas fa-exclamation-triangle text-white text-xs"></i>
+                        </div>
+                        <h3 class="text-base font-semibold text-white">Confirm Product Name</h3>
+                    </div>
+                    <button type="button" onclick="closeConfirmProductNameModal()" class="text-white hover:text-gray-200 transition-colors duration-200">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-4">
+                <p class="text-sm text-gray-700">A product with this name already exists. Are you sure you want to create it anyway?</p>
+            </div>
+            <div class="flex justify-end space-x-2 p-4 bg-gray-50 rounded-b-xl">
+                <button type="button" onclick="cancelNameConfirmation()" class="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200">
+                    Cancel
+                </button>
+                <button type="button" onclick="forceCreateProduct()" class="px-3 py-2 text-xs font-medium text-white bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
+                    <i class="fas fa-plus mr-1"></i>Create Anyway
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -662,6 +714,14 @@
                             </button>
                         </div>
                     </div>
+                </div>
+
+                <!-- Brand -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                        <i class="fas fa-star text-gray-400 mr-1"></i>Brand
+                    </label>
+                    <input type="text" id="edit-brand" name="brand" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Enter brand name (optional)">
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
@@ -1052,17 +1112,175 @@
 </div>
 
 <script>
+// Debounce function
+function debounce(func, delay) {
+    let timeout;
+    return function(...args) {
+        const context = this;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), delay);
+    };
+}
+
+function setAddFormFieldsDisabled(disabled) {
+    const form = document.getElementById('add-product-form');
+    const disabledMessage = document.getElementById('form-disabled-message');
+
+    Array.from(form.children).forEach(container => {
+        // Skip hidden input, name container, and message
+        if ((container.tagName === 'INPUT' && container.type === 'hidden') ||
+            container.id === 'form-disabled-message' ||
+            container.querySelector('#add-product-name')) {
+            return;
+        }
+
+        // Special handling for the button container at the end
+        if (container.querySelector('button[type="submit"]')) {
+            const submitButton = container.querySelector('button[type="submit"]');
+            submitButton.disabled = disabled;
+            if (disabled) {
+                submitButton.classList.add('opacity-50');
+            } else {
+                submitButton.classList.remove('opacity-50');
+            }
+            return; // Don't fade the whole container because of the cancel button
+        }
+
+        // For all other containers, disable inputs and fade the whole container
+        container.querySelectorAll('input, textarea, select, button').forEach(el => {
+            el.disabled = disabled;
+        });
+
+        if (disabled) {
+            container.classList.add('opacity-50');
+        } else {
+            container.classList.remove('opacity-50');
+        }
+    });
+
+    if (disabledMessage) {
+        if (disabled) {
+            disabledMessage.classList.remove('hidden');
+        } else {
+            disabledMessage.classList.add('hidden');
+        }
+    }
+}
+
+// Check product name
+const checkProductName = debounce(async function(name) {
+    const nameValidationIndicator = document.getElementById('name-validation-indicator');
+    const nameLoadingSpinner = document.getElementById('name-loading-spinner');
+    const nameValidTick = document.getElementById('name-valid-tick');
+    
+    if (name.length < 2) {
+        setAddFormFieldsDisabled(true);
+        if(nameValidationIndicator) nameValidationIndicator.classList.add('hidden');
+        return;
+    }
+
+    if(nameValidationIndicator) nameValidationIndicator.classList.remove('hidden');
+    if(nameLoadingSpinner) nameLoadingSpinner.classList.remove('hidden');
+    if(nameValidTick) nameValidTick.classList.add('hidden');
+    setAddFormFieldsDisabled(true);
+
+    try {
+        const response = await fetch(`/api/products/check-name/${name}`);
+        const data = await response.json();
+        
+        if(nameLoadingSpinner) nameLoadingSpinner.classList.add('hidden');
+
+        if (data.exists) {
+            if(nameValidTick) nameValidTick.classList.add('hidden');
+            openConfirmProductNameModal();
+        } else {
+            if(nameValidTick) nameValidTick.classList.remove('hidden');
+            setAddFormFieldsDisabled(false);
+        }
+    } catch (error) {
+        console.error('Error checking product name:', error);
+        if(nameLoadingSpinner) nameLoadingSpinner.classList.add('hidden');
+        if(nameValidTick) nameValidTick.classList.add('hidden');
+        // Keep form disabled
+    }
+}, 500);
+
+// Confirmation modal
+function openConfirmProductNameModal() {
+    document.getElementById('confirm-product-name-modal').classList.remove('hidden');
+}
+
+function closeConfirmProductNameModal() {
+    document.getElementById('confirm-product-name-modal').classList.add('hidden');
+}
+
+function cancelNameConfirmation() {
+    const nameInput = document.getElementById('add-product-name');
+    if (nameInput) {
+        nameInput.value = '';
+        nameInput.focus();
+    }
+    const nameValidationIndicator = document.getElementById('name-validation-indicator');
+    if(nameValidationIndicator) {
+        nameValidationIndicator.classList.add('hidden');
+    }
+    closeConfirmProductNameModal();
+}
+
+// Force create product
+function forceCreateProduct() {
+    document.querySelector('#add-product-form input[name="force"]').value = 'true';
+    closeConfirmProductNameModal();
+    setAddFormFieldsDisabled(false); // Enable the form
+    const nameValidTick = document.getElementById('name-valid-tick');
+    if(nameValidTick) nameValidTick.classList.remove('hidden');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const nameInput = document.getElementById('add-product-name');
+    if (nameInput) {
+        nameInput.addEventListener('blur', (e) => {
+            checkProductName(e.target.value);
+        });
+    }
+});
+
 // Product management functionality
 function openAddProductModal() {
     loadCategories();
     loadSuppliers();
     loadScents(); // Load scents for the add product form
     document.getElementById('add-product-modal').classList.remove('hidden');
+    
+    // Reset form and UI state
+    document.getElementById('add-product-form').reset();
+    document.getElementById('add-product-name').value = '';
+    const nameValidationIndicator = document.getElementById('name-validation-indicator');
+    if(nameValidationIndicator) nameValidationIndicator.classList.add('hidden');
+    const profitMarginDisplay = document.getElementById('profit-margin-display');
+    if(profitMarginDisplay) profitMarginDisplay.classList.add('hidden');
+    const perfumeSettings = document.getElementById('perfume-settings');
+    if(perfumeSettings) perfumeSettings.classList.add('hidden');
+    const perfumeToggleIcon = document.getElementById('perfume-toggle-icon');
+    if(perfumeToggleIcon) {
+        perfumeToggleIcon.classList.remove('fa-chevron-up');
+        perfumeToggleIcon.classList.add('fa-chevron-down');
+    }
+    const decantFields = document.getElementById('decant-fields');
+    if(decantFields) decantFields.classList.add('hidden');
+    const isDecantable = document.getElementById('is-decantable');
+    if(isDecantable) isDecantable.checked = false;
+
+    // Disable fields and focus on name input
+    setAddFormFieldsDisabled(true);
+    document.getElementById('add-product-name').focus();
 }
 
 function closeAddProductModal() {
     document.getElementById('add-product-modal').classList.add('hidden');
     document.getElementById('add-product-form').reset();
+    document.getElementById('add-product-name').value = '';
+    document.getElementById('name-validation-indicator').classList.add('hidden');
     // Hide profit margin display
     document.getElementById('profit-margin-display').classList.add('hidden');
     // Hide perfume settings
@@ -1923,6 +2141,9 @@ function showLoadingIndicator(rows = 5, append = false) {
                 <div class="h-4 bg-gray-300 rounded w-20"></div>
             </td>
             <td class="px-3 py-3 whitespace-nowrap">
+                <div class="h-4 bg-gray-300 rounded w-20"></div>
+            </td>
+            <td class="px-3 py-3 whitespace-nowrap">
                 <div class="h-4 bg-gray-300 rounded w-24"></div>
             </td>
             <td class="px-3 py-3 whitespace-nowrap">
@@ -2200,6 +2421,7 @@ function editProduct(productId) {
 
         document.getElementById('edit-unit').value = product.unit || 'pcs';
         document.getElementById('edit-supplier').value = product.supplier || '';
+        document.getElementById('edit-brand').value = product.brand || '';
         document.getElementById('edit-barcode').value = product.barcode || '';
 
         document.getElementById('edit-payment-method').value = product.payment_method || '';
@@ -2910,6 +3132,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const supplier = formData.get('supplier');
             if (supplier && supplier.trim()) updateData.supplier = supplier.trim();
 
+            const brand = formData.get('brand');
+            if (brand && brand.trim()) updateData.brand = brand.trim();
+
             const barcode = formData.get('barcode');
             if (barcode && barcode.trim()) updateData.barcode = barcode.trim();
 
@@ -3039,21 +3264,64 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Handle add product form submission
+    // Handle add product form submission with validation
     const addForm = document.getElementById('add-product-form');
     if (addForm) {
-        addForm.addEventListener('submit', function(e) {
-            e.preventDefault();
+        addForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const form = event.target;
 
-            const formData = new FormData(addForm);
-            const submitButton = addForm.querySelector('button[type="submit"]');
+            function showError(field, message) {
+                showToast(message, 'error');
+                if (field) {
+                    field.focus();
+                    field.classList.add('border-red-500', 'ring-red-500');
+                    setTimeout(() => {
+                        field.classList.remove('border-red-500', 'ring-red-500');
+                    }, 3000);
+                }
+            }
+
+            const categorySelect = document.getElementById('category-select');
+            const selectedOption = categorySelect.options[categorySelect.selectedIndex];
+            const categoryName = selectedOption ? selectedOption.text.toLowerCase() : '';
+            const isPerfumeCategory = categoryName.includes('perfume');
+
+            const bottleSizeInput = form.querySelector('input[name="bottle_size_ml"]');
+            const bottleSize = bottleSizeInput.value;
+
+            const isDecantable = document.getElementById('is-decantable').checked;
+            const decantSizeInput = form.querySelector('input[name="decant_size_ml"]');
+            const decantSize = decantSizeInput.value;
+            const decantPriceInput = form.querySelector('input[name="decant_price"]');
+            const decantPrice = decantPriceInput.value;
+
+            if (isPerfumeCategory) {
+                if (!bottleSize || parseFloat(bottleSize) <= 0) {
+                    showError(bottleSizeInput, 'For perfume products, a valid Bottle Size (ml) is required.');
+                    return;
+                }
+            }
+
+            if (isDecantable) {
+                if (!decantSize || parseFloat(decantSize) <= 0) {
+                    showError(decantSizeInput, 'When decants are enabled, a valid Decant Size (ml) is required.');
+                    return;
+                }
+                if (!decantPrice || parseFloat(decantPrice) <= 0) {
+                    showError(decantPriceInput, 'When decants are enabled, a valid Decant Price (UGX) is required.');
+                    return;
+                }
+            }
+
+            // If validation passes, continue with submission
+            const formData = new FormData(form);
+            const submitButton = form.querySelector('button[type="submit"]');
             const originalText = submitButton.innerHTML;
 
-            // Disable submit button and show loading
             submitButton.disabled = true;
             submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Creating...';
 
-            // Build product data
             const productData = {
                 name: formData.get('name').trim(),
                 description: formData.get('description')?.trim() || null,
@@ -3065,17 +3333,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 min_stock_level: parseInt(formData.get('min_stock_level')),
                 unit: formData.get('unit').trim(),
                 supplier: formData.get('supplier')?.trim() || null,
+                brand: formData.get('brand')?.trim() || null,
                 payment_method: formData.get('payment_method') || null,
                 is_active: true
             };
 
-            // Handle perfume-specific fields
-            const bottleSizeMl = formData.get('bottle_size_ml');
-            if (bottleSizeMl) {
-                productData.bottle_size_ml = parseFloat(bottleSizeMl);
+            if (isPerfumeCategory) {
+                productData.bottle_size_ml = parseFloat(bottleSize);
             }
 
-            // Handle scent selection
             const scentSelect = document.getElementById('scent-select');
             if (scentSelect) {
                 const selectedScents = Array.from(scentSelect.selectedOptions).map(option => option.value);
@@ -3084,43 +3350,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
 
-            // Handle decant information
-            const isDecantable = formData.get('is_decantable') === 'on';
             if (isDecantable) {
-                const decantSizeMl = formData.get('decant_size_ml');
-                const decantPrice = formData.get('decant_price');
-
                 productData.decant = {
                     is_decantable: true,
-                    decant_size_ml: decantSizeMl ? parseFloat(decantSizeMl) : null,
-                    decant_price: decantPrice ? parseFloat(decantPrice) : null,
-                    opened_bottle_ml_left: 0.0  // Start with no opened bottles
+                    decant_size_ml: parseFloat(decantSize),
+                    decant_price: parseFloat(decantPrice),
+                    opened_bottle_ml_left: 0.0
                 };
             }
 
             console.log('Creating product with data:', productData);
 
-            // Send create request
             fetch('/api/products/', {
                 method: 'POST',
                 credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(productData)
             })
             .then(response => {
                 if (!response.ok) {
-                    return response.json().then(err => {
-                        throw new Error(err.detail || 'Failed to create product');
-                    });
+                    return response.json().then(err => { throw new Error(err.detail || 'Failed to create product'); });
                 }
                 return response.json();
             })
             .then(async (data) => {
                 console.log('Product created successfully:', data);
-
-                // Check if image was selected for upload
                 const imageFile = document.getElementById('product-image').files[0];
                 if (imageFile && data.product_id) {
                     try {
@@ -3134,13 +3388,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     showToast('Product created successfully!', 'success');
                 }
-
-                // Reset form and close modal
-                addForm.reset();
+                form.reset();
                 clearImagePreview('product-image', 'add-image-preview');
                 closeAddProductModal();
-
-                // Refresh data
                 loadProductStats();
                 loadProducts();
             })
@@ -3149,7 +3399,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 showToast(error.message || 'Failed to create product', 'error');
             })
             .finally(() => {
-                // Restore button state
                 submitButton.innerHTML = originalText;
                 submitButton.disabled = false;
             });

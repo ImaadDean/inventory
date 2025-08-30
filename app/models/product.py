@@ -56,6 +56,7 @@ class Product(BaseModel):
     min_stock_level: int = Field(default=4, ge=0)  # For restock alerts
     unit: str = Field(default="pcs", max_length=20)  # pieces, kg, liters, etc.
     supplier: Optional[str] = Field(None, max_length=200)
+    brand: Optional[str] = Field(None, max_length=200)
     is_active: bool = True
     created_at: datetime = Field(default_factory=lambda: kampala_to_utc(now_kampala()))
     updated_at: Optional[datetime] = None

@@ -184,6 +184,14 @@ async def update_supplier_on_restock(db, supplier_name: str, product_id: str, pr
         return None
 
 
+@router.get("/check-name/{name}", response_model=dict)
+async def check_product_name(name: str):
+    """Check if a product name already exists"""
+    db = await get_database()
+    product = await db.products.find_one({"name": {"$regex": f"^{name}$", "$options": "i"}})
+    return {"exists": product is not None}
+
+
 @router.post("/", response_model=dict)
 async def create_product_api(
     product_data: ProductCreate,
@@ -193,6 +201,15 @@ async def create_product_api(
     """Create a new product via API"""
     try:
         db = await get_database()
+
+        # Check if product with the same name already exists
+        if not product_data.force:
+            existing_product = await db.products.find_one({"name": {"$regex": f"^{product_data.name}$", "$options": "i"}})
+            if existing_product:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"Product with name '{product_data.name}' already exists. Do you want to create it anyway?"
+                )
 
         # Validate category exists if provided
         if product_data.category_id:
@@ -223,6 +240,7 @@ async def create_product_api(
             "min_stock_level": product_data.min_stock_level,
             "unit": product_data.unit,
             "supplier": product_data.supplier,
+            "brand": product_data.brand,
             "is_active": True,
             "created_at": now_kampala(),
             "updated_at": None
@@ -686,6 +704,7 @@ async def get_products(
                     "min_stock_level": product.get("min_stock_level"),
                     "unit": product.get("unit", "pcs"),
                     "supplier": product.get("supplier", ""),
+                    "brand": product.get("brand", ""),
                     "is_active": product.get("is_active", True),
                     "is_low_stock": is_low_stock,
                     "stock_status": stock_status,
@@ -1129,6 +1148,7 @@ async def get_product(
             "category_id": str(product["category_id"]) if product.get("category_id") else None,
             "category_name": category_name,
             "supplier": product.get("supplier"),
+            "brand": product.get("brand"),
             "is_active": product.get("is_active", True),
             "created_at": product["created_at"].isoformat() if product.get("created_at") else None,
             "updated_at": product["updated_at"].isoformat() if product.get("updated_at") else None,
@@ -1246,6 +1266,9 @@ async def update_product(
 
         if product_data.supplier is not None:
             update_doc["supplier"] = product_data.supplier.strip() if product_data.supplier else None
+
+        if product_data.brand is not None:
+            update_doc["brand"] = product_data.brand.strip() if product_data.brand else None
 
         if product_data.is_active is not None:
             update_doc["is_active"] = product_data.is_active

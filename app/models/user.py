@@ -47,6 +47,7 @@ class User(BaseModel):
     updated_at: Optional[datetime] = None
     last_login: Optional[datetime] = None
     last_activity: Optional[datetime] = None
+    last_client_export: Optional[datetime] = None
 
     class Config:
         populate_by_name = True

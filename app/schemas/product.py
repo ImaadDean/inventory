@@ -96,6 +96,7 @@ class ProductCreate(BaseModel):
     min_stock_level: int = Field(default=4, ge=0)
     unit: str = Field(default="pcs", max_length=20)
     supplier: Optional[str] = Field(None, max_length=200)
+    brand: Optional[str] = Field(None, max_length=200)
     payment_method: Optional[str] = Field(None, max_length=50, description="Payment method for expense")
 
     # Image fields
@@ -106,6 +107,7 @@ class ProductCreate(BaseModel):
     bottle_size_ml: Optional[float] = Field(None, gt=0, description="Size of each bottle in ml")
     decant: Optional[DecantCreate] = Field(None, description="Decant information for perfume products")
     scent_ids: Optional[List[str]] = Field(None, description="List of scent IDs associated with this product")
+    force: Optional[bool] = Field(False, description="Force create product even if name exists")
 
     class Config:
         json_schema_extra = {
@@ -134,6 +136,7 @@ class ProductUpdate(BaseModel):
     min_stock_level: Optional[int] = Field(None, ge=0)
     unit: Optional[str] = Field(None, max_length=20)
     supplier: Optional[str] = Field(None, max_length=200)
+    brand: Optional[str] = Field(None, max_length=200)
     is_active: Optional[bool] = None
 
     # Image fields
@@ -169,6 +172,7 @@ class ProductResponse(BaseModel):
     min_stock_level: int
     unit: str
     supplier: Optional[str] = None
+    brand: Optional[str] = None
     is_active: bool
     is_low_stock: bool
     profit_margin: Optional[float] = None
