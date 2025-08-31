@@ -4,6 +4,7 @@ from ...config.database import get_database
 from ...models.user import User
 from ...schemas.payment import PaymentUpdate
 from ...utils.auth import get_current_user_hybrid_dependency
+from datetime import datetime
 
 router = APIRouter(
     prefix="/api/orders/{order_id}/payment",
@@ -25,14 +26,46 @@ async def update_payment(order_id: str, payment_data: PaymentUpdate):
     if balance < 0:
         balance = 0
 
+    order_update_data = {
+        "paid_amount": paid_amount,
+        "balance": balance,
+        "updated_at": datetime.utcnow()
+    }
+
     if balance == 0:
-        payment_status = "paid"
+        order_update_data["payment_status"] = "paid"
+        order_update_data["status"] = "completed"
     else:
-        payment_status = "partially_paid"
+        order_update_data["payment_status"] = "partially_paid"
 
     await db.orders.update_one(
         {"_id": ObjectId(order_id)},
-        {"$set": {"payment_status": payment_status, "paid_amount": paid_amount, "balance": balance}}
+        {"$set": order_update_data}
     )
+
+    # Update the corresponding sale record
+    if order.get("sale_id"):
+        sale_update_data = {
+            "payment_received": paid_amount,
+            "updated_at": datetime.utcnow()
+        }
+
+        # Update status based on payment
+        if balance == 0:
+            sale_update_data["status"] = "completed"
+            # Also update payment method on full payment
+            if payment_data.method:
+                sale_update_data["payment_method"] = payment_data.method
+            else:
+                sale = await db.sales.find_one({"_id": order["sale_id"]})
+                if sale and sale.get("payment_method") == "not_paid":
+                    sale_update_data["payment_method"] = "cash"
+        elif paid_amount > 0:
+            sale_update_data["status"] = "partially_paid"
+
+        await db.sales.update_one(
+            {"_id": order["sale_id"]},
+            {"$set": sale_update_data}
+        )
 
     return {"success": True, "message": "Payment status updated successfully"}

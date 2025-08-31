@@ -3,4 +3,5 @@ from typing import Optional
 
 class PaymentUpdate(BaseModel):
     amount: float
-    payment_type: str # "full" or "partial"
+    method: Optional[str] = None
+    payment_type: Optional[str] = None # "full" or "partial"

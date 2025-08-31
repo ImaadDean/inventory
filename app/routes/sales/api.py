@@ -18,7 +18,9 @@ async def get_sales(
     status: Optional[str] = Query(None),
     client_id: Optional[str] = Query(None),
     date_from: Optional[date] = Query(None),
-    date_to: Optional[date] = Query(None)
+    date_to: Optional[date] = Query(None),
+    cashier_id: Optional[str] = Query(None),
+    payment_method: Optional[str] = Query(None)
 ):
     """Get all sales with pagination and filtering"""
     try:
@@ -48,6 +50,15 @@ async def get_sales(
                 filter_query["created_at"]["$lte"] = datetime.combine(date_to, datetime.max.time())
             else:
                 filter_query["created_at"] = {"$lte": datetime.combine(date_to, datetime.max.time())}
+
+        if cashier_id:
+            try:
+                filter_query["cashier_id"] = ObjectId(cashier_id)
+            except Exception:
+                pass  # Ignore invalid ObjectId
+        
+        if payment_method:
+            filter_query["payment_method"] = payment_method
 
         # Get total count
         total = await db.sales.count_documents(filter_query)
@@ -138,8 +149,13 @@ async def get_sales(
 
 @router.get("/stats")
 async def get_sales_stats(
+    search: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    client_id: Optional[str] = Query(None),
     date_from: Optional[date] = Query(None),
-    date_to: Optional[date] = Query(None)
+    date_to: Optional[date] = Query(None),
+    cashier_id: Optional[str] = Query(None),
+    payment_method: Optional[str] = Query(None)
 ):
     """Get sales statistics"""
     try:
@@ -147,6 +163,19 @@ async def get_sales_stats(
 
         # Build filter query
         filter_query = {}
+        if search:
+            filter_query["$or"] = [
+                {"sale_number": {"$regex": search, "$options": "i"}},
+                {"customer_name": {"$regex": search, "$options": "i"}},
+                {"notes": {"$regex": search, "$options": "i"}}
+            ]
+        if status:
+            filter_query["status"] = status
+        if client_id:
+            try:
+                filter_query["customer_id"] = ObjectId(client_id)
+            except Exception:
+                pass
         if date_from:
             filter_query["created_at"] = {"$gte": datetime.combine(date_from, datetime.min.time())}
         if date_to:
@@ -154,6 +183,13 @@ async def get_sales_stats(
                 filter_query["created_at"]["$lte"] = datetime.combine(date_to, datetime.max.time())
             else:
                 filter_query["created_at"] = {"$lte": datetime.combine(date_to, datetime.max.time())}
+        if cashier_id:
+            try:
+                filter_query["cashier_id"] = ObjectId(cashier_id)
+            except Exception:
+                pass
+        if payment_method:
+            filter_query["payment_method"] = payment_method
 
         # Count sales using aggregation
         pipeline = [

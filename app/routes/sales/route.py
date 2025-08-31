@@ -42,9 +42,13 @@ async def sales_page(request: Request):
     if not current_user:
         return RedirectResponse(url="/auth/login", status_code=302)
 
+    db = await get_database()
+    users_cursor = db.users.find()
+    users = await users_cursor.to_list(length=None)
+
     return templates.TemplateResponse(
         "sales/index.html",
-        {"request": request, "user": current_user}
+        {"request": request, "user": current_user, "users": users}
     )
 
 

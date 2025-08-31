@@ -499,7 +499,7 @@ async def create_sale(sale_data: SaleCreate, current_user: User = Depends(get_cu
             "payment_method": sale_data.payment_method,
             "payment_received": sale_data.payment_received,
             "change_given": change_given,
-            "status": "completed",
+            "status": "completed" if sale_data.payment_method != "not_paid" else "active",
             "notes": sale_data.notes,
             "created_at": kampala_to_utc(now_kampala()),
             "updated_at": kampala_to_utc(now_kampala())
@@ -537,7 +537,7 @@ async def create_sale(sale_data: SaleCreate, current_user: User = Depends(get_cu
             "tax": tax_amount,
             "discount": total_discount,
             "total": total_amount,
-            "status": "completed",  # Regular sales are completed immediately
+            "status": "completed" if sale_data.payment_method != "not_paid" else "active",
             "payment_method": sale_data.payment_method,
             "payment_status": OrderPaymentStatus.PAID if sale_data.payment_method != "not_paid" else OrderPaymentStatus.PENDING,
             "notes": sale_data.notes or "",
@@ -661,7 +661,7 @@ async def create_order(order_data: dict, current_user: User = Depends(get_curren
             "tax": order_data["tax"],
             "discount": order_data.get("discount", 0),
             "total": order_data["total"],
-            "status": "completed" if order_data.get("payment_method") != "not_paid" else "pending",
+            "status": "completed" if order_data.get("payment_method") != "not_paid" else "active",
             "payment_method": order_data.get("payment_method", "cash"),
             "payment_status": "paid" if order_data.get("payment_method") != "not_paid" else "pending",
             "notes": order_data.get("notes", ""),

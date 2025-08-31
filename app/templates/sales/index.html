@@ -122,18 +122,32 @@
                 </div>
 
                 <!-- Compact Search & Filter Controls -->
-                <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                <div class="flex flex-col sm:flex-row flex-wrap gap-2">
                     <div class="relative">
                         <input type="text" id="search-input" placeholder="Search sales..."
                                class="pl-7 pr-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-40 text-xs transition-all duration-200">
                         <i class="fas fa-search absolute left-2 top-2 text-gray-400 text-xs"></i>
                     </div>
                     <select id="status-filter" class="px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xs transition-all duration-200">
-                        <option value="">All Statuses</option>
+                        <option value="">Statuses</option>
                         <option value="completed">Completed</option>
                         <option value="pending">Pending</option>
                         <option value="cancelled">Cancelled</option>
                         <option value="refunded">Refunded</option>
+                    </select>
+                    <select id="cashier-filter" class="px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xs transition-all duration-200">
+                        <option value="">Users</option>
+                        {% if users %}
+                            {% for u in users %}
+                            <option value="{{ u._id }}">{{ u.full_name }}</option>
+                            {% endfor %}
+                        {% endif %}
+                    </select>
+                    <select id="payment-method-filter" class="px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xs transition-all duration-200">
+                        <option value="">Payments</option>
+                        <option value="not_paid">Not Paid</option>
+                        <option value="cash">Cash</option>
+                        <option value="mobile_money">Mobile Money</option>
                     </select>
                     <select id="period-filter" class="px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xs transition-all duration-200">
                         <option value="today">Today</option>
@@ -210,6 +224,19 @@
     </div>
 </div>
 
+<!-- Items Modal Template -->
+<div id="sale-items-modal-template" class="hidden absolute z-50 bg-white rounded-lg shadow-xl border border-gray-200 p-4 w-80">
+    <div class="flex justify-between items-center mb-2">
+        <h3 class="items-modal-title text-sm font-semibold text-gray-800">Sale Items</h3>
+        <button class="items-modal-close-btn text-gray-400 hover:text-gray-600">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <ul class="items-modal-list space-y-2">
+        <!-- Items will be populated here -->
+    </ul>
+</div>
+
 <!-- Sales Detail Modal -->
 <div id="saleDetailModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50">
     <div class="flex items-center justify-center min-h-screen p-4">
@@ -253,6 +280,82 @@
     let loadedSalesCount = 0;
     let isLoading = false;
     let hasMoreSales = true;
+    let allSales = [];
+    let currentItemModalCell = null;
+
+    function clickOutsideSaleItemsHandler(event) {
+        const modal = document.getElementById('sale-items-modal-instance');
+        if (modal && !modal.contains(event.target)) {
+            hideSaleItemsModal();
+        }
+    }
+
+    function showSaleItemsModal(event, saleId) {
+        event.stopPropagation();
+        hideSaleItemsModal(); // Hide any existing modal
+
+        const sale = allSales.find(s => s.id === saleId);
+        if (!sale) return;
+
+        const template = document.getElementById('sale-items-modal-template');
+        if (!template) return;
+
+        const modal = template.cloneNode(true);
+        modal.id = 'sale-items-modal-instance';
+        modal.classList.remove('hidden');
+
+        const titleElement = modal.querySelector('.items-modal-title');
+        if (titleElement) {
+            titleElement.textContent = `Items for Sale #${sale.sale_number}`;
+        }
+
+        const list = modal.querySelector('.items-modal-list');
+        if (list) {
+            list.innerHTML = '';
+            if (sale.items && sale.items.length > 0) {
+                sale.items.forEach(item => {
+                    const li = document.createElement('li');
+                    li.className = 'flex justify-between items-center text-sm';
+                    const productName = item.product_name.length > 35 ? item.product_name.substring(0, 35) + '...' : item.product_name;
+                    li.innerHTML = `
+                        <span class="text-gray-700" title="${item.product_name}">${productName}</span>
+                        <span class="font-semibold text-gray-900">Qty: ${item.quantity}</span>
+                    `;
+                    list.appendChild(li);
+                });
+            } else {
+                list.innerHTML = '<li class="text-gray-500 text-sm">No items in this sale.</li>';
+            }
+        }
+
+        const cell = event.currentTarget.closest('td');
+        if (!cell) return;
+
+        currentItemModalCell = cell;
+        cell.style.position = 'relative';
+        cell.appendChild(modal);
+
+        modal.style.left = '100%';
+        modal.style.top = '0';
+        modal.style.marginLeft = '5px';
+
+        modal.querySelector('.items-modal-close-btn').addEventListener('click', hideSaleItemsModal);
+        setTimeout(() => {
+            document.addEventListener('click', clickOutsideSaleItemsHandler);
+        }, 0);
+    }
+
+    function hideSaleItemsModal() {
+        const modal = document.getElementById('sale-items-modal-instance');
+        if (modal) {
+            modal.remove();
+        }
+        if (currentItemModalCell) {
+            currentItemModalCell.style.position = '';
+            currentItemModalCell = null;
+        }
+        document.removeEventListener('click', clickOutsideSaleItemsHandler);
+    }
 
     function initializeSalesManagement() {
         // Set up event listeners for filters
@@ -264,6 +367,16 @@
         document.getElementById('search-input').addEventListener('input', debouncedSearch);
         
         document.getElementById('status-filter').addEventListener('change', () => {
+            loadSales(1, false);
+            loadSalesStats();
+        });
+
+        document.getElementById('cashier-filter').addEventListener('change', () => {
+            loadSales(1, false);
+            loadSalesStats();
+        });
+
+        document.getElementById('payment-method-filter').addEventListener('change', () => {
             loadSales(1, false);
             loadSalesStats();
         });
@@ -291,6 +404,7 @@
         document.querySelector('#sales-table tbody').addEventListener('click', function(event) {
             const viewButton = event.target.closest('.view-sale');
             if (viewButton) {
+                event.preventDefault();
                 const saleId = viewButton.getAttribute('data-sale-id');
                 viewSaleDetails(saleId);
             }
@@ -341,12 +455,34 @@
     }
 
     function loadSalesStats() {
+        // Show skeleton loaders
+        const statElements = [
+            'total-sales-count', 
+            'completed-sales-count', 
+            'total-revenue', 
+            'total-profit'
+        ];
+        statElements.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.innerHTML = '<div class="h-5 bg-gray-200 rounded w-20 animate-pulse"></div>';
+            }
+        });
+
+        const search = document.getElementById('search-input').value;
+        const status = document.getElementById('status-filter').value;
         const dateFrom = document.getElementById('date-from').value;
         const dateTo = document.getElementById('date-to').value;
+        const cashierId = document.getElementById('cashier-filter').value;
+        const paymentMethod = document.getElementById('payment-method-filter').value;
 
         const params = new URLSearchParams();
+        if (search) params.append('search', search);
+        if (status) params.append('status', status);
         if (dateFrom) params.append('date_from', dateFrom);
         if (dateTo) params.append('date_to', dateTo);
+        if (cashierId) params.append('cashier_id', cashierId);
+        if (paymentMethod) params.append('payment_method', paymentMethod);
         
         fetch(`/api/sales/stats?${params.toString()}`)
             .then(response => response.json())
@@ -356,7 +492,13 @@
                 document.getElementById('total-revenue').textContent = `UGX ${(data.total_revenue || 0).toLocaleString()}`;
                 document.getElementById('total-profit').textContent = `UGX ${(data.total_profit || 0).toLocaleString()}`;
             })
-            .catch(error => console.error('Error loading sales stats:', error));
+            .catch(error => {
+                console.error('Error loading sales stats:', error);
+                document.getElementById('total-sales-count').textContent = 'Error';
+                document.getElementById('completed-sales-count').textContent = 'Error';
+                document.getElementById('total-revenue').textContent = 'Error';
+                document.getElementById('total-profit').textContent = 'Error';
+            });
     }
 
     function loadSales(page = 1, append = false) {
@@ -377,12 +519,16 @@
         const status = document.getElementById('status-filter').value;
         const dateFrom = document.getElementById('date-from').value;
         const dateTo = document.getElementById('date-to').value;
+        const cashierId = document.getElementById('cashier-filter').value;
+        const paymentMethod = document.getElementById('payment-method-filter').value;
 
         const params = new URLSearchParams({ page, size: 10 });
         if (search) params.append('search', search);
         if (status) params.append('status', status);
         if (dateFrom) params.append('date_from', dateFrom);
         if (dateTo) params.append('date_to', dateTo);
+        if (cashierId) params.append('cashier_id', cashierId);
+        if (paymentMethod) params.append('payment_method', paymentMethod);
 
         fetch(`/api/sales/?${params.toString()}`)
             .then(response => response.json())
@@ -394,9 +540,11 @@
                 currentPage = data.page;
 
                 if (append) {
+                    allSales.push(...sales);
                     appendSales(sales);
                     loadedSalesCount += sales.length;
                 } else {
+                    allSales = sales;
                     displaySales(sales);
                     loadedSalesCount = sales.length;
                 }
@@ -430,12 +578,24 @@
     }
 
     function generateSaleRows(sales) {
-        return sales.map(sale => `
+        return sales.map(sale => {
+            const saleDate = new Date(sale.created_at);
+            const formattedDate = `${(saleDate.getMonth() + 1).toString().padStart(2, '0')}/${saleDate.getDate().toString().padStart(2, '0')}`;
+            return `
             <tr class="hover:bg-gray-50 transition-colors duration-200">
                 <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-900 font-medium">${sale.sale_number}</td>
                 <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-900">${sale.customer_name}</td>
-                <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-900">${new Date(sale.created_at).toLocaleDateString()}</td>
-                <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-900">${sale.items.length} items</td>
+                <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-900">${formattedDate}</td>
+                                <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-900">
+                    <div class="relative">
+                        <button onclick="showSaleItemsModal(event, '${sale.id}')" class="flex items-center cursor-pointer hover:bg-gray-100 p-2 rounded-lg">
+                            <div class="w-6 h-6 bg-gray-100 rounded-md flex items-center justify-center mr-2">
+                                <i class="fas fa-box text-gray-600 text-xs"></i>
+                            </div>
+                            <span class="text-sm font-medium text-gray-900">${sale.items.length} item${sale.items.length !== 1 ? 's' : ''}</span>
+                        </button>
+                    </div>
+                </td>
                 <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-900 font-semibold">UGX ${sale.total_amount.toLocaleString()}</td>
                 <td class="px-3 py-3 whitespace-nowrap text-sm text-green-600 font-semibold">UGX ${(sale.total_profit || 0).toLocaleString()}</td>
                 <td class="px-3 py-3 whitespace-nowrap text-sm">
@@ -450,7 +610,7 @@
                     </button>
                 </td>
             </tr>
-        `).join('');
+        `}).join('');
     }
     
     function formatPaymentMethod(method) {
@@ -688,9 +848,15 @@
     function clearFilters() {
         document.getElementById('search-input').value = '';
         document.getElementById('status-filter').value = '';
-        document.getElementById('date-from').value = '';
-        document.getElementById('date-to').value = '';
-        document.getElementById('period-filter').value = 'custom';
+        document.getElementById('cashier-filter').value = '';
+        document.getElementById('payment-method-filter').value = '';
+        
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        document.getElementById('date-from').value = todayStr;
+        document.getElementById('date-to').value = todayStr;
+        document.getElementById('period-filter').value = 'today';
+
         loadSales(1, false);
         loadSalesStats();
     }

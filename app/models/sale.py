@@ -18,6 +18,8 @@ class PaymentMethod(str, Enum):
 
 class SaleStatus(str, Enum):
     PENDING = "pending"
+    ACTIVE = "active"
+    PARTIALLY_PAID = "partially_paid"
     COMPLETED = "completed"
     CANCELLED = "cancelled"
     REFUNDED = "refunded"
