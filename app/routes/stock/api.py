@@ -14,8 +14,8 @@ async def restock_products(
     restock_data: RestockCreate,
     current_user: User = Depends(require_admin_or_inventory)
 ):
-    client = db.client
     db = await get_database()
+    client = db.client
     
     async with await client.start_session() as session:
         async with session.start_transaction():
@@ -38,7 +38,7 @@ async def restock_products(
                     "description": restock_data.description,
                     "category": restock_data.category,
                     "amount": restock_data.amount,
-                    "expense_date": restock_data.expense_date,
+                    "expense_date": datetime.strptime(str(restock_data.expense_date), '%Y-%m-%d'),
                     "payment_method": restock_data.payment_method,
                     "vendor": restock_data.vendor,
                     "notes": restock_data.notes,

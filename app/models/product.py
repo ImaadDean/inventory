@@ -61,6 +61,10 @@ class Product(BaseModel):
     created_at: datetime = Field(default_factory=lambda: kampala_to_utc(now_kampala()))
     updated_at: Optional[datetime] = None
 
+    @property
+    def sku(self) -> Optional[str]:
+        return self.brand
+
     # Perfume-specific fields
     bottle_size_ml: Optional[float] = Field(None, gt=0, description="Size of each bottle in ml (e.g., 100ml)")
     decant: Optional[Decant] = Field(None, description="Decant information for perfume products")
