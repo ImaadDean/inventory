@@ -338,7 +338,7 @@ document.addEventListener('DOMContentLoaded', function() {
         searchResultsContainer.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-blue-500"></i><span class="ml-2 text-gray-600">Searching...</span></div>';
 
         try {
-            const response = await fetch(`/api/products?search=${query}&size=10`);
+            const response = await fetch(`/api/products/?search=${query}&size=10`);
             const data = await response.json();
             displaySearchResults(data.products);
         } catch (error) {
@@ -420,7 +420,7 @@ document.addEventListener('DOMContentLoaded', function() {
         supplierList.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-blue-500"></i><span class="ml-2 text-gray-600">Loading suppliers...</span></div>';
         
         try {
-            const response = await fetch('/api/suppliers?size=50');
+            const response = await fetch('/api/suppliers/?size=50');
             const data = await response.json();
             displaySuppliersInModal(data.suppliers || []);
         } catch (error) {
@@ -449,7 +449,7 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
 
         try {
-            const response = await fetch(`/api/suppliers?search=${query}&size=20`);
+            const response = await fetch(`/api/suppliers/?search=${query}&size=20`);
             const data = await response.json();
             displaySuppliersInModal(data.suppliers || []);
         } catch (error) {
@@ -550,7 +550,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         try {
-            const response = await fetch('/api/suppliers', {
+            const response = await fetch('/api/suppliers/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(supplierData)
