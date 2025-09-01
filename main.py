@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, Request, Cookie
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.proxiedheader import ProxyHeadersMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -135,6 +136,9 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # Add activity tracking middleware
 app.add_middleware(ActivityTrackingMiddleware)
+
+# Add proxy headers middleware
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
 # Add CORS middleware
 app.add_middleware(
