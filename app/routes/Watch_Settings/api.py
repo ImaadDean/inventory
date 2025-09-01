@@ -10,6 +10,11 @@ router = APIRouter(prefix="/api/watch-settings", tags=["Watch Settings API"])
 class NameRequest(BaseModel):
     name: str
 
+class SettingWithCount(BaseModel):
+    id: str
+    name: str
+    product_count: int
+
 # --- Materials ---
 
 @router.post("/materials", response_model=Material)
@@ -19,10 +24,30 @@ async def create_material(data: NameRequest, db=Depends(get_database)):
     created_material = await db.watch_materials.find_one({"_id": result.inserted_id})
     return created_material
 
-@router.get("/materials", response_model=List[Material])
+@router.get("/materials", response_model=List[SettingWithCount])
 async def get_materials(db=Depends(get_database)):
     materials = await db.watch_materials.find().to_list(100)
-    return materials
+    result = []
+    for material in materials:
+        count = await db.products.count_documents({"material_id": material["_id"]})
+        result.append({
+            "id": str(material["_id"]),
+            "name": material["name"],
+            "product_count": count
+        })
+    return result
+
+@router.put("/materials/{material_id}")
+async def update_material(material_id: str, data: NameRequest, db=Depends(get_database)):
+    if not ObjectId.is_valid(material_id):
+        raise HTTPException(status_code=400, detail="Invalid material ID")
+    result = await db.watch_materials.update_one(
+        {"_id": ObjectId(material_id)}, 
+        {"$set": {"name": data.name}}
+    )
+    if result.matched_count == 1:
+        return {"status": "success", "message": "Material updated"}
+    raise HTTPException(status_code=404, detail="Material not found")
 
 @router.delete("/materials/{material_id}")
 async def delete_material(material_id: str, db=Depends(get_database)):
@@ -42,10 +67,30 @@ async def create_movement_type(data: NameRequest, db=Depends(get_database)):
     created_movement_type = await db.watch_movement_types.find_one({"_id": result.inserted_id})
     return created_movement_type
 
-@router.get("/movement-types", response_model=List[MovementType])
+@router.get("/movement-types", response_model=List[SettingWithCount])
 async def get_movement_types(db=Depends(get_database)):
     movement_types = await db.watch_movement_types.find().to_list(100)
-    return movement_types
+    result = []
+    for movement_type in movement_types:
+        count = await db.products.count_documents({"movement_type_id": movement_type["_id"]})
+        result.append({
+            "id": str(movement_type["_id"]),
+            "name": movement_type["name"],
+            "product_count": count
+        })
+    return result
+
+@router.put("/movement-types/{movement_type_id}")
+async def update_movement_type(movement_type_id: str, data: NameRequest, db=Depends(get_database)):
+    if not ObjectId.is_valid(movement_type_id):
+        raise HTTPException(status_code=400, detail="Invalid movement type ID")
+    result = await db.watch_movement_types.update_one(
+        {"_id": ObjectId(movement_type_id)}, 
+        {"$set": {"name": data.name}}
+    )
+    if result.matched_count == 1:
+        return {"status": "success", "message": "Movement type updated"}
+    raise HTTPException(status_code=404, detail="Movement type not found")
 
 @router.delete("/movement-types/{movement_type_id}")
 async def delete_movement_type(movement_type_id: str, db=Depends(get_database)):
@@ -65,10 +110,30 @@ async def create_gender(data: NameRequest, db=Depends(get_database)):
     created_gender = await db.watch_genders.find_one({"_id": result.inserted_id})
     return created_gender
 
-@router.get("/genders", response_model=List[Gender])
+@router.get("/genders", response_model=List[SettingWithCount])
 async def get_genders(db=Depends(get_database)):
     genders = await db.watch_genders.find().to_list(100)
-    return genders
+    result = []
+    for gender in genders:
+        count = await db.products.count_documents({"gender_id": gender["_id"]})
+        result.append({
+            "id": str(gender["_id"]),
+            "name": gender["name"],
+            "product_count": count
+        })
+    return result
+
+@router.put("/genders/{gender_id}")
+async def update_gender(gender_id: str, data: NameRequest, db=Depends(get_database)):
+    if not ObjectId.is_valid(gender_id):
+        raise HTTPException(status_code=400, detail="Invalid gender ID")
+    result = await db.watch_genders.update_one(
+        {"_id": ObjectId(gender_id)}, 
+        {"$set": {"name": data.name}}
+    )
+    if result.matched_count == 1:
+        return {"status": "success", "message": "Gender updated"}
+    raise HTTPException(status_code=404, detail="Gender not found")
 
 @router.delete("/genders/{gender_id}")
 async def delete_gender(gender_id: str, db=Depends(get_database)):
@@ -88,10 +153,30 @@ async def create_color(data: NameRequest, db=Depends(get_database)):
     created_color = await db.watch_colors.find_one({"_id": result.inserted_id})
     return created_color
 
-@router.get("/colors", response_model=List[Color])
+@router.get("/colors", response_model=List[SettingWithCount])
 async def get_colors(db=Depends(get_database)):
     colors = await db.watch_colors.find().to_list(100)
-    return colors
+    result = []
+    for color in colors:
+        count = await db.products.count_documents({"color_id": color["_id"]})
+        result.append({
+            "id": str(color["_id"]),
+            "name": color["name"],
+            "product_count": count
+        })
+    return result
+
+@router.put("/colors/{color_id}")
+async def update_color(color_id: str, data: NameRequest, db=Depends(get_database)):
+    if not ObjectId.is_valid(color_id):
+        raise HTTPException(status_code=400, detail="Invalid color ID")
+    result = await db.watch_colors.update_one(
+        {"_id": ObjectId(color_id)}, 
+        {"$set": {"name": data.name}}
+    )
+    if result.matched_count == 1:
+        return {"status": "success", "message": "Color updated"}
+    raise HTTPException(status_code=404, detail="Color not found")
 
 @router.delete("/colors/{color_id}")
 async def delete_color(color_id: str, db=Depends(get_database)):

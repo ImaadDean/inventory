@@ -107,6 +107,13 @@ class ProductCreate(BaseModel):
     bottle_size_ml: Optional[float] = Field(None, gt=0, description="Size of each bottle in ml")
     decant: Optional[DecantCreate] = Field(None, description="Decant information for perfume products")
     scent_ids: Optional[List[str]] = Field(None, description="List of scent IDs associated with this product")
+    
+    # Watch settings fields
+    material_id: Optional[str] = Field(None, description="Material ID for watch products")
+    movement_type_id: Optional[str] = Field(None, description="Movement type ID for watch products")
+    gender_id: Optional[str] = Field(None, description="Gender ID for watch products")
+    color_id: Optional[str] = Field(None, description="Color ID for watch products")
+    
     force: Optional[bool] = Field(False, description="Force create product even if name exists")
 
     class Config:

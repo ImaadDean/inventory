@@ -276,6 +276,53 @@ async def create_product_api(
                     # For backward compatibility, also store the first scent as scent_id
                     product_doc["scent_id"] = scent_object_ids[0]
 
+        # Handle watch settings
+        if any([product_data.material_id, product_data.movement_type_id, product_data.gender_id, product_data.color_id]):
+            watch_data = {}
+            
+            # Handle material
+            if product_data.material_id:
+                if ObjectId.is_valid(product_data.material_id):
+                    material = await db.watch_materials.find_one({"_id": ObjectId(product_data.material_id)})
+                    if material:
+                        watch_data["material"] = {
+                            "_id": ObjectId(product_data.material_id),
+                            "name": material["name"]
+                        }
+            
+            # Handle movement type
+            if product_data.movement_type_id:
+                if ObjectId.is_valid(product_data.movement_type_id):
+                    movement_type = await db.watch_movement_types.find_one({"_id": ObjectId(product_data.movement_type_id)})
+                    if movement_type:
+                        watch_data["movement_type"] = {
+                            "_id": ObjectId(product_data.movement_type_id),
+                            "name": movement_type["name"]
+                        }
+            
+            # Handle gender
+            if product_data.gender_id:
+                if ObjectId.is_valid(product_data.gender_id):
+                    gender = await db.watch_genders.find_one({"_id": ObjectId(product_data.gender_id)})
+                    if gender:
+                        watch_data["gender"] = {
+                            "_id": ObjectId(product_data.gender_id),
+                            "name": gender["name"]
+                        }
+            
+            # Handle color
+            if product_data.color_id:
+                if ObjectId.is_valid(product_data.color_id):
+                    color = await db.watch_colors.find_one({"_id": ObjectId(product_data.color_id)})
+                    if color:
+                        watch_data["color"] = {
+                            "_id": ObjectId(product_data.color_id),
+                            "name": color["name"]
+                        }
+            
+            if watch_data:
+                product_doc["watch"] = watch_data
+
         # Insert product
         result = await db.products.insert_one(product_doc)
 

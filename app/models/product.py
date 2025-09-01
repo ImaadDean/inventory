@@ -25,20 +25,25 @@ class Decant(BaseModel):
         }
 
 
+class WatchSetting(BaseModel):
+    """Model for individual watch setting with ID and name"""
+    _id: Optional[PyObjectId] = None
+    name: Optional[str] = None
+
 class Watch(BaseModel):
     """Model for watch-specific information"""
-    case_material: Optional[str] = Field(None, max_length=100, description="Case material (e.g., Stainless Steel, Gold, Titanium)")
-    movement_type: Optional[str] = Field(None, max_length=50, description="Movement type (e.g., Quartz, Automatic, Manual)")
-    gender_category: Optional[str] = Field(None, max_length=20, description="Gender category (e.g., Men's, Women's, Unisex)")
-    color: Optional[str] = Field(None, max_length=50, description="Watch color (e.g., Black, Silver, Gold, Blue)")
+    material: Optional[WatchSetting] = Field(None, description="Material information")
+    movement_type: Optional[WatchSetting] = Field(None, description="Movement type information")
+    gender: Optional[WatchSetting] = Field(None, description="Gender information")
+    color: Optional[WatchSetting] = Field(None, description="Color information")
 
     class Config:
         json_schema_extra = {
             "example": {
-                "case_material": "Stainless Steel",
-                "movement_type": "Automatic",
-                "gender_category": "Men's",
-                "color": "Black"
+                "material": {"_id": "507f1f77bcf86cd799439011", "name": "Stainless Steel"},
+                "movement_type": {"_id": "507f1f77bcf86cd799439012", "name": "Automatic"},
+                "gender": {"_id": "507f1f77bcf86cd799439013", "name": "Men's"},
+                "color": {"_id": "507f1f77bcf86cd799439014", "name": "Black"}
             }
         }
 
