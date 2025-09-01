@@ -34,6 +34,10 @@ async def restock_products(
                         "cost_price": item.cost_price
                     })
 
+                # Determine status based on payment method
+                is_paid = restock_data.payment_method in ['cash', 'mobile_money']
+                status = 'paid' if is_paid else 'not_paid'
+
                 expense_doc = {
                     "description": restock_data.description,
                     "category": restock_data.category,
@@ -44,7 +48,8 @@ async def restock_products(
                     "notes": restock_data.notes,
                     "products": expense_products,
                     "created_by": str(current_user.id),
-                    "status": "paid",
+                    "status": status,
+                    "is_paid": is_paid,
                     "created_at": kampala_to_utc(now_kampala()),
                     "updated_at": kampala_to_utc(now_kampala())
                 }

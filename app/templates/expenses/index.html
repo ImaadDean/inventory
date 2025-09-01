@@ -301,7 +301,7 @@
                     <button type="button" onclick="closeAddExpenseModal()" class="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200">
                         Cancel
                     </button>
-                    <button type="submit" class="px-3 py-2 text-xs font-medium text-white bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
+                    <button type="submit" id="add-expense-btn" class="px-3 py-2 text-xs font-medium text-white bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
                         <i class="fas fa-plus mr-1"></i>Add Expense
                     </button>
                 </div>
@@ -626,6 +626,17 @@
                             </div>
                         </div>
 
+                        <!-- Products Section (for restock expenses) -->
+                        <div class="bg-blue-50 rounded-lg p-4 hidden" id="view-expense-products-section">
+                            <h4 class="text-sm font-semibold text-gray-900 mb-2 flex items-center">
+                                <i class="fas fa-boxes text-blue-500 mr-2"></i>
+                                Products Restocked
+                            </h4>
+                            <div id="view-expense-products" class="space-y-2">
+                                <!-- Products will be populated here -->
+                            </div>
+                        </div>
+
                         <!-- Notes -->
                         <div class="bg-gray-50 rounded-lg p-4" id="view-expense-notes-section">
                             <h4 class="text-sm font-semibold text-gray-900 mb-2 flex items-center">
@@ -849,7 +860,7 @@
                 <td class="px-3 py-3 whitespace-nowrap">
                     <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(expense.status)}">
                         <i class="fas fa-circle text-xs mr-1"></i>
-                        ${expense.status || 'pending'}
+                        ${expense.status === 'not_paid' ? 'Pending' : expense.status === 'pending' ? 'Pending' : (expense.status || 'Pending')}
                     </span>
                 </td>
                 <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
@@ -1020,12 +1031,12 @@
             document.getElementById('view-expense-category-name').textContent = expense.category || 'Uncategorized';
             document.getElementById('view-expense-vendor').textContent = expense.vendor || 'No vendor';
             document.getElementById('view-expense-payment-method').textContent = expense.payment_method || 'Not specified';
-            document.getElementById('view-expense-payment-status').textContent = expense.status || 'Unknown';
+            document.getElementById('view-expense-payment-status').textContent = expense.status === 'not_paid' || expense.status === 'pending' ? 'Pending' : expense.status === 'paid' ? 'Paid' : (expense.status || 'Unknown');
 
             // System information
             document.getElementById('view-expense-created').textContent = expense.created_at ? new Date(expense.created_at).toLocaleDateString() : 'Unknown';
             document.getElementById('view-expense-updated').textContent = expense.updated_at ? new Date(expense.updated_at).toLocaleDateString() : 'Unknown';
-            document.getElementById('view-expense-created-by').textContent = expense.created_by || 'Unknown';
+            document.getElementById('view-expense-created-by').textContent = expense.created_by_name || expense.created_by || 'Unknown';
             document.getElementById('view-expense-auto-generated').textContent = expense.is_auto_generated ? 'Yes' : 'No';
 
             // Status with color coding
@@ -1061,6 +1072,34 @@
                 notesElement.textContent = expense.notes;
             } else {
                 notesElement.textContent = 'No additional notes available.';
+            }
+
+            // Products section (for restock expenses)
+            const productsSection = document.getElementById('view-expense-products-section');
+            const productsContainer = document.getElementById('view-expense-products');
+            
+            if (expense.products && expense.products.length > 0) {
+                productsSection.classList.remove('hidden');
+                productsContainer.innerHTML = expense.products.map(product => `
+                    <div class="bg-white border border-blue-200 rounded-lg p-3">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="w-4 h-4 bg-blue-500 rounded-md flex items-center justify-center mr-2">
+                                    <i class="fas fa-box text-white text-xs"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">${product.name || product.product_name || 'Unknown Product'}</p>
+                                    <p class="text-xs text-gray-500">Qty: ${product.quantity} | Cost: UGX ${(product.cost_price || 0).toLocaleString()}</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-bold text-blue-600">UGX ${((product.quantity || 0) * (product.cost_price || 0)).toLocaleString()}</p>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                productsSection.classList.add('hidden');
             }
 
             // Store expense ID for edit button
@@ -1119,6 +1158,11 @@
     document.getElementById('add-expense-form').addEventListener('submit', async function(e) {
         e.preventDefault();
         
+        const submitBtn = document.getElementById('add-expense-btn');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Adding...';
+        
         const formData = new FormData(e.target);
         const expenseData = {
             description: formData.get('description'),
@@ -1153,6 +1197,9 @@
         } catch (error) {
             console.error('Error adding expense:', error);
             showToast('Failed to add expense', 'error');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
         }
     });
 
