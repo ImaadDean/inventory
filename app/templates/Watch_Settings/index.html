@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Watch Settings - Inventory Management System{% endblock %}
+
+{% block content %}
+<div class="space-y-4 animate-fade-in">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-gray-700 to-gray-800 shadow-lg rounded-xl p-4 text-white">
+        <div class="flex items-center">
+            <div class="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-3">
+                <i class="fas fa-cogs text-white text-sm"></i>
+            </div>
+            <div>
+                <h1 class="text-xl md:text-2xl font-bold">Manage Watch Settings</h1>
+                <p class="text-gray-300 text-sm">Add, edit, or remove options for watch attributes.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <!-- Materials -->
+        <div class="bg-white shadow-md rounded-xl">
+            <div class="px-4 py-3 bg-gray-100 rounded-t-xl flex justify-between items-center">
+                <h3 class="text-base font-semibold text-gray-800">Materials</h3>
+                <button onclick="openModal('add-material-modal')" class="px-3 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg">Add New</button>
+            </div>
+            <div class="p-4">
+                <table class="min-w-full">
+                    <thead>
+                        <tr>
+                            <th class="text-left text-xs font-semibold text-gray-600 uppercase">Name</th>
+                            <th class="text-right text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="materials-table-body">
+                        <!-- Rows will be loaded dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Movement Types -->
+        <div class="bg-white shadow-md rounded-xl">
+            <div class="px-4 py-3 bg-gray-100 rounded-t-xl flex justify-between items-center">
+                <h3 class="text-base font-semibold text-gray-800">Movement Types</h3>
+                <button onclick="openModal('add-movement-type-modal')" class="px-3 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg">Add New</button>
+            </div>
+            <div class="p-4">
+                <table class="min-w-full">
+                    <thead>
+                        <tr>
+                            <th class="text-left text-xs font-semibold text-gray-600 uppercase">Name</th>
+                            <th class="text-right text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="movement-types-table-body">
+                        <!-- Rows will be loaded dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Genders -->
+        <div class="bg-white shadow-md rounded-xl">
+            <div class="px-4 py-3 bg-gray-100 rounded-t-xl flex justify-between items-center">
+                <h3 class="text-base font-semibold text-gray-800">Genders</h3>
+                <button onclick="openModal('add-gender-modal')" class="px-3 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg">Add New</button>
+            </div>
+            <div class="p-4">
+                <table class="min-w-full">
+                    <thead>
+                        <tr>
+                            <th class="text-left text-xs font-semibold text-gray-600 uppercase">Name</th>
+                            <th class="text-right text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="genders-table-body">
+                        <!-- Rows will be loaded dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Colors -->
+        <div class="bg-white shadow-md rounded-xl">
+            <div class="px-4 py-3 bg-gray-100 rounded-t-xl flex justify-between items-center">
+                <h3 class="text-base font-semibold text-gray-800">Colors</h3>
+                <button onclick="openModal('add-color-modal')" class="px-3 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg">Add New</button>
+            </div>
+            <div class="p-4">
+                <table class="min-w-full">
+                    <thead>
+                        <tr>
+                            <th class="text-left text-xs font-semibold text-gray-600 uppercase">Name</th>
+                            <th class="text-right text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="colors-table-body">
+                        <!-- Rows will be loaded dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Material Modal -->
+<div id="add-material-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full">
+            <div class="px-4 py-3 bg-gradient-to-r from-gray-700 to-gray-800 rounded-t-xl flex justify-between items-center">
+                <h3 class="text-base font-semibold text-white">Add New Material</h3>
+                <button onclick="closeModal('add-material-modal')" class="text-white hover:text-gray-200">&times;</button>
+            </div>
+            <form id="add-material-form" class="p-4">
+                <input type="text" name="name" placeholder="e.g., Stainless Steel" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg" required>
+                <div class="flex justify-end mt-4">
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg">Add Material</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Movement Type Modal -->
+<div id="add-movement-type-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full">
+            <div class="px-4 py-3 bg-gradient-to-r from-gray-700 to-gray-800 rounded-t-xl flex justify-between items-center">
+                <h3 class="text-base font-semibold text-white">Add New Movement Type</h3>
+                <button onclick="closeModal('add-movement-type-modal')" class="text-white hover:text-gray-200">&times;</button>
+            </div>
+            <form id="add-movement-type-form" class="p-4">
+                <input type="text" name="name" placeholder="e.g., Automatic" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg" required>
+                <div class="flex justify-end mt-4">
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg">Add Movement Type</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Gender Modal -->
+<div id="add-gender-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full">
+            <div class="px-4 py-3 bg-gradient-to-r from-gray-700 to-gray-800 rounded-t-xl flex justify-between items-center">
+                <h3 class="text-base font-semibold text-white">Add New Gender</h3>
+                <button onclick="closeModal('add-gender-modal')" class="text-white hover:text-gray-200">&times;</button>
+            </div>
+            <form id="add-gender-form" class="p-4">
+                <input type="text" name="name" placeholder="e.g., Men's" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg" required>
+                <div class="flex justify-end mt-4">
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg">Add Gender</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Color Modal -->
+<div id="add-color-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full">
+            <div class="px-4 py-3 bg-gradient-to-r from-gray-700 to-gray-800 rounded-t-xl flex justify-between items-center">
+                <h3 class="text-base font-semibold text-white">Add New Color</h3>
+                <button onclick="closeModal('add-color-modal')" class="text-white hover:text-gray-200">&times;</button>
+            </div>
+            <form id="add-color-form" class="p-4">
+                <input type="text" name="name" placeholder="e.g., Black" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg" required>
+                <div class="flex justify-end mt-4">
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg">Add Color</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadAllWatchSettings();
+
+    document.getElementById('add-material-form').addEventListener('submit', (e) => handleAddSubmit(e, 'material'));
+    document.getElementById('add-movement-type-form').addEventListener('submit', (e) => handleAddSubmit(e, 'movement-type'));
+    document.getElementById('add-gender-form').addEventListener('submit', (e) => handleAddSubmit(e, 'gender'));
+    document.getElementById('add-color-form').addEventListener('submit', (e) => handleAddSubmit(e, 'color'));
+});
+
+function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) modal.classList.remove('hidden');
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) modal.classList.add('hidden');
+}
+
+function loadAllWatchSettings() {
+    loadSettingType('material');
+    loadSettingType('movement-type');
+    loadSettingType('gender');
+    loadSettingType('color');
+}
+
+async function loadSettingType(type) {
+    try {
+        const response = await fetch(`/api/watch-settings/${type}s`);
+        const items = await response.json();
+        const tbody = document.getElementById(`${type}s-table-body`);
+        tbody.innerHTML = '';
+        if (items.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="2" class="text-center text-gray-500 py-4">No ${type.replace('-', ' ')}s found.</td></tr>`;
+        } else {
+            items.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="py-2 px-4">${item.name}</td>
+                    <td class="text-right py-2 px-4">
+                        <button onclick="deleteSetting('${type}', '${item.id}')" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+    } catch (error) {
+        console.error(`Error loading ${type}s:`, error);
+    }
+}
+
+async function handleAddSubmit(event, type) {
+    event.preventDefault();
+    const form = event.target;
+    const input = form.querySelector('input');
+    const name = input.value.trim();
+    if (!name) return;
+
+    try {
+        const response = await fetch(`/api/watch-settings/${type}s`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name })
+        });
+        if (response.ok) {
+            form.reset();
+            loadSettingType(type);
+            closeModal(`add-${type}-modal`);
+        } else {
+            console.error(`Failed to add ${type}`);
+        }
+    } catch (error) {
+        console.error(`Error adding ${type}:`, error);
+    }
+}
+
+async function deleteSetting(type, id) {
+    if (!confirm(`Are you sure you want to delete this ${type.replace('-', ' ')}?`)) return;
+    try {
+        const response = await fetch(`/api/watch-settings/${type}s/${id}`, { method: 'DELETE' });
+        if (response.ok) {
+            loadSettingType(type);
+        } else {
+            console.error(`Failed to delete ${type}`);
+        }
+    } catch (error) {
+        console.error(`Error deleting ${type}:`, error);
+    }
+}
+</script>
+{% endblock %}

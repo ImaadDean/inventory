@@ -31,6 +31,7 @@ from app.routes.installments.api import router as installments_api_router
 from app.routes.sales.api import router as sales_api_router
 from app.routes.orders.payment_api import router as payment_api_router
 from app.routes.stock.api import router as stock_api_router
+from app.routes.Watch_Settings.api import router as watch_settings_api_router
 
 # Import HTML route routers
 from app.routes.auth.route import auth_routes
@@ -49,6 +50,7 @@ from app.routes.installments.route import router as installments_routes
 from app.routes.reports.api import reports_api_router
 from app.routes.sales.route import sales_routes
 from app.routes.stock.route import stock_routes
+from app.routes.Watch_Settings.routes import watch_settings_routes
 
 # Import authentication utilities
 from app.utils.auth import verify_token, get_user_by_username
@@ -220,6 +222,7 @@ app.include_router(installments_api_router)
 app.include_router(sales_api_router)
 app.include_router(payment_api_router)
 app.include_router(stock_api_router)
+app.include_router(watch_settings_api_router)
 
 # Include HTML route routers
 app.include_router(auth_routes)
@@ -238,6 +241,7 @@ app.include_router(installments_routes)
 app.include_router(reports_routes, prefix="/reports")
 app.include_router(sales_routes)
 app.include_router(stock_routes)
+app.include_router(watch_settings_routes)
 
 
 # Root endpoint - redirect based on authentication status and role

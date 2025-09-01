@@ -25,6 +25,24 @@ class Decant(BaseModel):
         }
 
 
+class Watch(BaseModel):
+    """Model for watch-specific information"""
+    case_material: Optional[str] = Field(None, max_length=100, description="Case material (e.g., Stainless Steel, Gold, Titanium)")
+    movement_type: Optional[str] = Field(None, max_length=50, description="Movement type (e.g., Quartz, Automatic, Manual)")
+    gender_category: Optional[str] = Field(None, max_length=20, description="Gender category (e.g., Men's, Women's, Unisex)")
+    color: Optional[str] = Field(None, max_length=50, description="Watch color (e.g., Black, Silver, Gold, Blue)")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "case_material": "Stainless Steel",
+                "movement_type": "Automatic",
+                "gender_category": "Men's",
+                "color": "Black"
+            }
+        }
+
+
 class Category(BaseModel):
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
     name: str = Field(..., min_length=2, max_length=100)
@@ -69,6 +87,8 @@ class Product(BaseModel):
     bottle_size_ml: Optional[float] = Field(None, gt=0, description="Size of each bottle in ml (e.g., 100ml)")
     decant: Optional[Decant] = Field(None, description="Decant information for perfume products")
 
+    watch: Optional[Watch] = Field(None, description="Watch information for watch products")
+
     @property
     def is_low_stock(self) -> bool:
         return self.stock_quantity <= self.min_stock_level
@@ -83,6 +103,11 @@ class Product(BaseModel):
     def is_perfume_with_decants(self) -> bool:
         """Check if this is a perfume product with decant capability"""
         return self.decant is not None and self.decant.is_decantable
+
+    @property
+    def is_watch_product(self) -> bool:
+        """Check if this is a watch product"""
+        return self.watch is not None
 
     @property
     def total_ml_available(self) -> Optional[float]:
@@ -147,6 +172,23 @@ class Product(BaseModel):
                         "decant_size_ml": 10.0,
                         "decant_price": 30000.0,
                         "opened_bottle_ml_left": 90.0
+                    }
+                },
+                {
+                    "name": "Rolex Submariner",
+                    "description": "Luxury diving watch with automatic movement",
+                    "barcode": "7610301080267",
+                    "price": 8500000.0,
+                    "cost_price": 6000000.0,
+                    "stock_quantity": 2,
+                    "min_stock_level": 1,
+                    "unit": "pcs",
+                    "supplier": "Rolex",
+                    "watch": {
+                        "case_material": "Stainless Steel",
+                        "movement_type": "Automatic",
+                        "gender_category": "Men's",
+                        "color": "Black"
                     }
                 }
             ]

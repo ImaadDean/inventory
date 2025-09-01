@@ -251,7 +251,7 @@
                     <label class="block text-xs font-semibold text-gray-700 mb-1">
                         <i class="fas fa-folder text-gray-400 mr-1"></i>Category
                     </label>
-                    <select name="category_id" id="category-select" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" onchange="togglePerfumeSettings()">
+                    <select name="category_id" id="category-select" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" onchange="toggleCategorySpecificSettings()">
                         <option value="">Select Category</option>
                         <!-- Categories will be loaded here -->
                     </select>
@@ -439,6 +439,62 @@
                                         <strong>Decant Info:</strong> When enabled, you can sell smaller portions (decants) from opened bottles. The system will track ml remaining in opened bottles and automatically open new bottles when needed.
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Watch Toggle Button -->
+                    <button type="button" id="watch-toggle-button" onclick="manualToggleWatchSettings()" class="flex items-center justify-between w-full p-3 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition-all duration-200 mt-3" style="display: none;">
+                        <div class="flex items-center">
+                            <i class="fas fa-watch text-gray-600 mr-2"></i>
+                            <span class="text-sm font-semibold text-gray-700">Watch Product Settings</span>
+                        </div>
+                        <i id="watch-toggle-icon" class="fas fa-chevron-down text-gray-600 transition-transform duration-200"></i>
+                    </button>
+
+                    <!-- Watch-Specific Fields (Hidden by default) -->
+                    <div id="watch-settings" class="hidden mt-3 p-4 bg-white rounded-lg border border-gray-300">
+                        <div class="grid grid-cols-2 gap-3 mb-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">
+                                    <i class="fas fa-gem text-gray-400 mr-1"></i>Material
+                                </label>
+                                <div class="flex items-center gap-2">
+                                    <select name="watch.material" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                        <option value="">Select Material</option>
+                                        <option value="Leather">Leather</option>
+                                        <option value="Metal">Metal</option>
+                                        <option value="Rubber">Rubber</option>
+                                    </select>
+                                    <button type="button" onclick="openModal('manage-watch-settings-modal')" class="p-2 text-sm text-white bg-blue-500 hover:bg-blue-600 rounded-lg" title="Manage Materials">
+                                        <i class="fas fa-cog"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">
+                                    <i class="fas fa-cogs text-gray-400 mr-1"></i>Movement Type
+                                </label>
+                                <input type="text" name="watch.movement_type" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="e.g., Automatic">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 mb-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">
+                                    <i class="fas fa-venus-mars text-gray-400 mr-1"></i>Gender
+                                </label>
+                                <select name="watch.gender_category" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Select Gender</option>
+                                    <option value="Men's">Men's</option>
+                                    <option value="Women's">Women's</option>
+                                    <option value="Unisex">Unisex</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">
+                                    <i class="fas fa-palette text-gray-400 mr-1"></i>Color
+                                </label>
+                                <input type="text" name="watch.color" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="e.g., Black, Silver">
                             </div>
                         </div>
                     </div>
@@ -1111,7 +1167,43 @@
     </div>
 </div>
 
+
+
 <script>
+// Modal utility functions
+function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) modal.classList.remove('hidden');
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) modal.classList.add('hidden');
+}
+
+function switchWatchSettingsTab(event, tabId) {
+    event.preventDefault();
+    
+    // Hide all tab contents
+    document.querySelectorAll('.watch-settings-tab-content').forEach(tabContent => {
+        tabContent.classList.add('hidden');
+    });
+
+    // Deactivate all tabs
+    document.querySelectorAll('.watch-settings-tab').forEach(tab => {
+        tab.classList.remove('border-blue-500', 'text-blue-600');
+        tab.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+    });
+
+    // Show the selected tab content
+    const newActiveTabContent = document.getElementById(tabId + '-tab');
+    if (newActiveTabContent) newActiveTabContent.classList.remove('hidden');
+
+    // Activate the selected tab link
+    const newActiveTab = event.currentTarget;
+    newActiveTab.classList.add('border-blue-500', 'text-blue-600');
+    newActiveTab.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+}
 // Debounce function
 function debounce(func, delay) {
     let timeout;
@@ -1292,49 +1384,65 @@ function closeAddProductModal() {
     document.getElementById('is-decantable').checked = false;
 }
 
-// Toggle perfume settings section visibility based on category selection
-function togglePerfumeSettings() {
+// Toggle category-specific settings sections visibility based on category selection
+function toggleCategorySpecificSettings() {
     const categorySelect = document.getElementById('category-select');
     const perfumeSettings = document.getElementById('perfume-settings');
-    const toggleIcon = document.getElementById('perfume-toggle-icon');
-    const perfumeToggleButton = perfumeSettings.parentElement.querySelector('button');
+    const perfumeToggleButton = document.querySelector('button[onclick="manualTogglePerfumeSettings()"]');
+    const watchSettings = document.getElementById('watch-settings');
+    const watchToggleButton = document.getElementById('watch-toggle-button');
 
-    if (!categorySelect || !perfumeSettings) return;
+    if (!categorySelect) return;
 
-    // Get selected category name
     const selectedOption = categorySelect.options[categorySelect.selectedIndex];
     const categoryName = selectedOption ? selectedOption.text.toLowerCase() : '';
 
-    // Check if category contains "perfume" (case-insensitive)
     const isPerfumeCategory = categoryName.includes('perfume');
+    const isWatchCategory = categoryName.includes('watch');
 
-    console.log('Category detection:', { categoryName, isPerfumeCategory });
-
-    if (isPerfumeCategory) {
-        // Show perfume settings automatically for perfume category
-        perfumeSettings.classList.remove('hidden');
-        toggleIcon.classList.remove('fa-chevron-down');
-        toggleIcon.classList.add('fa-chevron-up');
-        perfumeToggleButton.style.display = 'flex';
-
-        // Load scents when perfume settings are opened
-        loadScents();
-    } else {
-        // Hide perfume settings for non-perfume categories
-        perfumeSettings.classList.add('hidden');
-        toggleIcon.classList.remove('fa-chevron-up');
-        toggleIcon.classList.add('fa-chevron-down');
-        perfumeToggleButton.style.display = 'none';
-
-        // Reset perfume fields when hiding
-        document.querySelector('input[name="bottle_size_ml"]').value = '';
-        const scentSelect = document.getElementById('scent-select');
-        if (scentSelect) {
-            Array.from(scentSelect.options).forEach(option => option.selected = false);
+    // Handle Perfume Settings
+    if (perfumeSettings && perfumeToggleButton) {
+        if (isPerfumeCategory) {
+            perfumeToggleButton.style.display = 'flex';
+        } else {
+            perfumeToggleButton.style.display = 'none';
+            perfumeSettings.classList.add('hidden');
+            // Reset perfume fields
+            const bottleSizeInput = document.querySelector('input[name="bottle_size_ml"]');
+            if(bottleSizeInput) bottleSizeInput.value = '';
+            const scentSelect = document.getElementById('scent-select');
+            if (scentSelect) Array.from(scentSelect.options).forEach(option => option.selected = false);
+            const isDecantableCheckbox = document.getElementById('is-decantable');
+            if(isDecantableCheckbox) isDecantableCheckbox.checked = false;
+            toggleDecantFields();
         }
-        document.getElementById('is-decantable').checked = false;
-        toggleDecantFields(); // This will hide decant fields and clear them
     }
+
+    // Handle Watch Settings
+    if (watchSettings && watchToggleButton) {
+        if (isWatchCategory) {
+            watchToggleButton.style.display = 'flex';
+            watchSettings.classList.remove('hidden');
+            // Set watch fields as required
+            watchSettings.querySelectorAll('input, select').forEach(el => el.required = true);
+        } else {
+            watchToggleButton.style.display = 'none';
+            watchSettings.classList.add('hidden');
+            // Unset required and clear fields
+            watchSettings.querySelectorAll('input, select').forEach(el => {
+                el.required = false;
+                el.value = '';
+            });
+        }
+    }
+}
+
+function manualToggleWatchSettings() {
+    const watchSettings = document.getElementById('watch-settings');
+    const toggleIcon = document.getElementById('watch-toggle-icon');
+    watchSettings.classList.toggle('hidden');
+    toggleIcon.classList.toggle('fa-chevron-down');
+    toggleIcon.classList.toggle('fa-chevron-up');
 }
 
 // Manual toggle function for the button click
