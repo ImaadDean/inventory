@@ -28,6 +28,7 @@ async def get_suppliers(
         db = await get_database()
         suppliers_collection = db.suppliers
         products_collection = db.products
+        expenses_collection = db.expenses
         
         # Build query
         query = {}
@@ -85,6 +86,15 @@ async def get_suppliers(
                     last_order_date = last_restock.get("restocked_at")
 
             supplier["last_order_date"] = last_order_date
+
+            # Calculate unpaid balance
+            unpaid_expenses = await expenses_collection.find({
+                "vendor": supplier_name,
+                "status": "not_paid"
+            }).to_list(length=None)
+            
+            unpaid_balance = sum(expense.get("amount", 0) for expense in unpaid_expenses)
+            supplier["unpaid_balance"] = unpaid_balance
         
         # Calculate stats
         products_collection = db.products

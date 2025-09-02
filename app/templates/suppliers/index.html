@@ -153,6 +153,7 @@
                         <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Supplier</th>
                         <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Contact</th>
                         <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Products</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Unpaid Balance</th>
                         <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
                         <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Last Order</th>
                         <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
@@ -759,7 +760,7 @@ function displaySuppliers(suppliers) {
     if (suppliers.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                <td colspan="7" class="px-6 py-8 text-center text-gray-500">
                     <div class="flex flex-col items-center">
                         <i class="fas fa-truck text-4xl text-gray-300 mb-4"></i>
                         <p class="text-lg font-medium">No suppliers found</p>
@@ -792,6 +793,9 @@ function displaySuppliers(suppliers) {
                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
                     ${supplier.products_count || 0} products
                 </span>
+            </td>
+            <td class="px-3 py-3 whitespace-nowrap text-sm text-red-600 font-semibold">
+                UGX ${supplier.unpaid_balance ? supplier.unpaid_balance.toLocaleString() : '0'}
             </td>
             <td class="px-3 py-3 whitespace-nowrap">
                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${supplier.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
@@ -1214,3 +1218,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
+
