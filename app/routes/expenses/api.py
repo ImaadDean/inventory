@@ -166,21 +166,31 @@ async def get_expenses(
                     # Convert datetime to string
                     expense["expense_date"] = expense["expense_date"].isoformat()
         
-        # Calculate stats for the filtered query
-        total_amount = 0
-        async for expense in expenses_collection.find(query):
-            total_amount += expense.get('amount', 0)
-
-        # This month stats
-        current_month = get_month_start()
-        month_amount = 0
-        async for expense in expenses_collection.find({"expense_date": {"$gte": current_month}}):
-            month_amount += expense.get('amount', 0)
-
-        # Pending expenses
-        pending_amount = 0
-        async for expense in expenses_collection.find({"status": {"$in": ["pending", "not_paid", "partially_paid"]}}):
-            pending_amount += expense.get('amount', 0)
+        # Optimized stats calculation using aggregation
+        stats_pipeline = [
+            {
+                "$facet": {
+                    "total_amount": [
+                        {"$match": query},
+                        {"$group": {"_id": None, "total": {"$sum": "$amount"}}}
+                    ],
+                    "month_amount": [
+                        {"$match": {"expense_date": {"$gte": get_month_start()}}},
+                        {"$group": {"_id": None, "total": {"$sum": "$amount"}}}
+                    ],
+                    "pending_amount": [
+                        {"$match": {"status": {"$in": ["pending", "not_paid", "partially_paid"]}}},
+                        {"$group": {"_id": None, "total": {"$sum": "$amount"}}}
+                    ]
+                }
+            }
+        ]
+        
+        stats_result = await expenses_collection.aggregate(stats_pipeline).to_list(length=1)
+        
+        total_amount = stats_result[0]['total_amount'][0]['total'] if stats_result and stats_result[0]['total_amount'] else 0
+        month_amount = stats_result[0]['month_amount'][0]['total'] if stats_result and stats_result[0]['month_amount'] else 0
+        pending_amount = stats_result[0]['pending_amount'][0]['total'] if stats_result and stats_result[0]['pending_amount'] else 0
         
         # Categories count
         categories_count = len(await expenses_collection.distinct("category"))
