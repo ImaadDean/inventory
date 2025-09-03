@@ -7,7 +7,7 @@ import urllib.parse
 MONGO_USERNAME = "imaad"
 MONGO_PASSWORD = "Ertdfgxc"
 MONGO_CLUSTER = "cluster0.n5vfpbr.mongodb.net"
-MONGO_DATABASE = "perfumesandmore"
+MONGO_DATABASE = "perfumesandmorebytuta"
 MONGO_POOL_SIZE = 20
 
 encoded_password = urllib.parse.quote_plus(MONGO_PASSWORD)
