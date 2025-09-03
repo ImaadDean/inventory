@@ -142,6 +142,7 @@
                         <option value="">All Status</option>
                         <option value="paid">Paid</option>
                         <option value="pending">Pending</option>
+                        <option value="partially_paid">Partially Paid</option>
                         <option value="overdue">Overdue</option>
                     </select>
                     <div class="flex items-center space-x-1">
@@ -169,6 +170,7 @@
                         <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Description</th>
                         <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Category</th>
                         <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Amount</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Amount Paid</th>
                         <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
                         <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
                         <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Payment Method</th>
@@ -439,7 +441,7 @@
 
                 <!-- Payment Method -->
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    <label class="block text-xs font-semibold text-gray-700 mb-2">
                         <i class="fas fa-credit-card text-gray-400 mr-1"></i>Payment Method
                     </label>
                     <select id="quick-update-payment-method" name="payment_method" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
@@ -455,7 +457,7 @@
 
                 <!-- Update Notes -->
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    <label class="block text-xs font-semibold text-gray-700 mb-2">
                         <i class="fas fa-sticky-note text-gray-400 mr-1"></i>Update Notes (Optional)
                     </label>
                     <textarea id="quick-update-notes" name="update_notes" rows="2" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none" placeholder="Add notes about this update..."></textarea>
@@ -649,6 +651,17 @@
                     </div>
                 </div>
 
+                <!-- Payment History Section -->
+                <div id="view-expense-payments-section" class="pt-4 border-t border-gray-200">
+                    <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+                        <i class="fas fa-history text-gray-500 mr-2"></i>
+                        Payment History
+                    </h4>
+                    <div id="view-expense-payments-list" class="space-y-2">
+                        <!-- Payments will be loaded here -->
+                    </div>
+                </div>
+
                 <!-- Action Buttons -->
                 <div class="flex justify-end space-x-2 pt-3 border-t border-gray-200">
                     <button onclick="closeViewExpenseModal()" class="px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200">
@@ -821,7 +834,7 @@
         if (expenses.length === 0 && currentPage === 1) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+                    <td colspan="8" class="px-6 py-8 text-center text-gray-500">
                         <div class="flex flex-col items-center">
                             <i class="fas fa-receipt text-4xl text-gray-300 mb-4"></i>
                             <p class="text-lg font-medium">No expenses found</p>
@@ -854,13 +867,16 @@
                 <td class="px-3 py-3 whitespace-nowrap">
                     <div class="text-sm font-bold text-gray-900">UGX ${(expense.amount || 0).toLocaleString()}</div>
                 </td>
+                <td class="px-3 py-3 whitespace-nowrap">
+                    <div class="text-sm font-bold text-green-600">UGX ${(expense.amount_paid || 0).toLocaleString()}</div>
+                </td>
                 <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
                     ${expense.expense_date ? new Date(expense.expense_date).toLocaleDateString() : 'N/A'}
                 </td>
                 <td class="px-3 py-3 whitespace-nowrap">
                     <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(expense.status)}">
                         <i class="fas fa-circle text-xs mr-1"></i>
-                        ${expense.status === 'not_paid' ? 'Pending' : expense.status === 'pending' ? 'Pending' : (expense.status || 'Pending')}
+                        ${expense.status.replace('_', ' ')}
                     </span>
                 </td>
                 <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
@@ -991,6 +1007,7 @@
         switch(status) {
             case 'paid': return 'bg-green-100 text-green-800';
             case 'pending': return 'bg-yellow-100 text-yellow-800';
+            case 'partially_paid': return 'bg-blue-100 text-blue-800';
             case 'overdue': return 'bg-red-100 text-red-800';
             default: return 'bg-gray-100 text-gray-800';
         }
@@ -1107,11 +1124,75 @@
 
             // Show the modal
             document.getElementById('view-expense-modal').classList.remove('hidden');
+            loadExpensePayments(id);
         })
         .catch(error => {
             console.error('Error fetching expense:', error);
             showToast('Failed to load expense details', 'error');
         });
+    }
+
+    function loadExpensePayments(expenseId) {
+        const paymentsList = document.getElementById('view-expense-payments-list');
+        
+        // 1. Show skeleton loader
+        let skeletonHTML = '';
+        for (let i = 0; i < 2; i++) {
+            skeletonHTML += `
+            <div class="bg-gray-50 rounded-lg p-3 animate-pulse">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <div class="h-4 bg-gray-200 rounded w-24 mb-2"></div>
+                        <div class="h-3 bg-gray-200 rounded w-32"></div>
+                    </div>
+                    <div class="h-5 bg-gray-200 rounded w-20"></div>
+                </div>
+            </div>
+            `;
+        }
+        paymentsList.innerHTML = skeletonHTML;
+
+        // 2. Fetch payments
+        fetch(`/api/expenses/${expenseId}/payments`)
+            .then(response => {
+                if (!response.ok) throw new Error('Failed to load payments');
+                return response.json();
+            })
+            .then(payments => {
+                // 3. Display payments or 'no payments' message
+                if (payments && payments.length > 0) {
+                    paymentsList.innerHTML = payments.map(payment => {
+                        const paymentDate = new Date(payment.payment_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+                        const paymentAmount = (payment.amount || 0).toLocaleString();
+                        return `
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-3 transition-all duration-300 hover:bg-green-100">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <p class="text-sm font-medium text-green-800 capitalize">${(payment.payment_method || 'Payment').replace('_', ' ')}</p>
+                                    <p class="text-xs text-gray-500">${paymentDate}</p>
+                                </div>
+                                <p class="text-sm font-bold text-green-900">UGX ${paymentAmount}</p>
+                            </div>
+                            ${payment.notes ? `<p class="text-xs text-gray-600 mt-2 pt-2 border-t border-green-200">${payment.notes}</p>` : ''}
+                        </div>
+                        `;
+                    }).join('');
+                } else {
+                    paymentsList.innerHTML = `
+                    <div class="text-center py-4 px-3 bg-gray-50 border rounded-lg">
+                        <p class="text-sm text-gray-500">No payment history recorded for this expense.</p>
+                    </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching payments:', error);
+                paymentsList.innerHTML = `
+                <div class="text-center py-4 px-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p class="text-sm text-red-600">Could not load payment history.</p>
+                </div>
+                `;
+            });
     }
 
     function closeViewExpenseModal() {
@@ -1415,14 +1496,22 @@
     });
 
     // Infinite scroll
-    window.addEventListener('scroll', () => {
-        if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 500) {
-            const searchTerm = document.getElementById('search-expenses').value;
-            const categoryFilter = document.getElementById('category-filter').value;
-            const statusFilter = document.getElementById('status-filter').value;
-            const dateFrom = document.getElementById('date-from').value;
-            const dateTo = document.getElementById('date-to').value;
-            loadExpenses(searchTerm, categoryFilter, statusFilter, dateFrom, dateTo);
+    const tableContainer = document.querySelector('.overflow-x-auto');
+    tableContainer.addEventListener('scroll', () => {
+        const {
+            scrollTop,
+            scrollHeight,
+            clientHeight
+        } = tableContainer;
+        if (scrollTop + clientHeight >= scrollHeight - 5) { // Check if near bottom
+            if (!isLoading && !allExpensesLoaded) {
+                const searchTerm = document.getElementById('search-expenses').value;
+                const categoryFilter = document.getElementById('category-filter').value;
+                const statusFilter = document.getElementById('status-filter').value;
+                const dateFrom = document.getElementById('date-from').value;
+                const dateTo = document.getElementById('date-to').value;
+                loadExpenses(searchTerm, categoryFilter, statusFilter, dateFrom, dateTo);
+            }
         }
     });
 

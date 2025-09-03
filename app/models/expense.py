@@ -16,11 +16,12 @@ class Expense(BaseModel):
     description: str = Field(..., min_length=1, max_length=500)
     category: str = Field(..., min_length=1, max_length=50)
     amount: float = Field(..., gt=0)
+    amount_paid: float = Field(default=0, description="Amount paid so far")
     expense_date: date = Field(...)
     payment_method: str = Field(default="pending payment", min_length=1, max_length=50)
     vendor: Optional[str] = Field(None, max_length=200)
     notes: Optional[str] = Field(None, max_length=1000)
-    status: str = Field(default="not_paid")  # paid, not_paid
+    status: str = Field(default="not_paid")  # paid, not_paid, partially_paid
     products: Optional[List[RestockedProduct]] = Field(default=None)
     created_at: datetime = Field(default_factory=lambda: kampala_to_utc(now_kampala()))
     updated_at: datetime = Field(default_factory=lambda: kampala_to_utc(now_kampala()))

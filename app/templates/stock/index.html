@@ -121,7 +121,8 @@
                         Payment Method
                     </label>
                     <div class="relative">
-                        <select id="payment-method" class="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white shadow-sm transition-all duration-200 appearance-none">
+                        <select id="payment-method" class="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white shadow-sm transition-all duration-200 appearance-none" required>
+                            <option value="" disabled selected>Select a payment method</option>
                             <option value="cash">💵 Cash</option>
                             <option value="mobile_money">📱 Mobile Money</option>
                             <option value="not_paid">❌ Not Paid</option>
@@ -717,6 +718,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     form.addEventListener('submit', async function(event) {
         event.preventDefault();
+        if (!form.reportValidity()) {
+            return;
+        }
+
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Submitting...';
 

@@ -36,3 +36,8 @@ class SupplierResponse(SupplierBase):
     
     class Config:
         from_attributes = True
+
+class SupplierPayment(BaseModel):
+    """Schema for making a payment to a supplier"""
+    amount: float = Field(..., gt=0, description="Payment amount")
+    payment_method: str = Field(..., description="Payment method")

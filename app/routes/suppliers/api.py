@@ -3,7 +3,7 @@ from typing import List, Optional
 from app.utils.auth import get_current_user, get_current_user_hybrid, get_current_user_hybrid_dependency, verify_token, get_user_by_username
 from app.models.user import User
 from app.models.supplier import Supplier
-from app.schemas.supplier import SupplierCreate, SupplierUpdate, SupplierResponse
+from app.schemas.supplier import SupplierCreate, SupplierUpdate, SupplierResponse, SupplierPayment
 from app.config.database import get_database
 from app.utils.timezone import now_kampala, kampala_to_utc
 from bson import ObjectId
@@ -90,10 +90,10 @@ async def get_suppliers(
             # Calculate unpaid balance
             unpaid_expenses = await expenses_collection.find({
                 "vendor": supplier_name,
-                "status": "not_paid"
+                "status": {"$in": ["not_paid", "partially_paid"]}
             }).to_list(length=None)
             
-            unpaid_balance = sum(expense.get("amount", 0) for expense in unpaid_expenses)
+            unpaid_balance = sum(expense.get("amount", 0) - expense.get("amount_paid", 0) for expense in unpaid_expenses)
             supplier["unpaid_balance"] = unpaid_balance
         
         # Calculate stats
@@ -119,6 +119,80 @@ async def get_suppliers(
     except Exception as e:
         logger.error(f"Error fetching suppliers: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch suppliers")
+
+@router.post("/api/suppliers/{supplier_name}/pay", response_model=dict)
+async def pay_supplier_expenses(
+    supplier_name: str,
+    payment: SupplierPayment,
+    user: User = Depends(get_current_user_hybrid_dependency())
+):
+    """Pay off unpaid expenses for a supplier"""
+    try:
+        db = await get_database()
+        expenses_collection = db.expenses
+        
+        # Get all unpaid expenses for the supplier, oldest first
+        unpaid_expenses = await expenses_collection.find({
+            "vendor": supplier_name,
+            "status": {"$in": ["not_paid", "partially_paid"]}
+        }).sort("expense_date", 1).to_list(length=None)
+        
+        if not unpaid_expenses:
+            raise HTTPException(status_code=404, detail="No unpaid expenses found for this supplier.")
+
+        payment_amount = payment.amount
+        paid_expenses_ids = []
+        partially_paid_expense_id = None
+        
+        for expense in unpaid_expenses:
+            if payment_amount <= 0:
+                break
+
+            expense_id = expense["_id"]
+            expense_amount = expense["amount"]
+            amount_paid = expense.get("amount_paid", 0)
+
+            if payment_amount >= (expense_amount - amount_paid):
+                # Pay the full remaining amount of the expense
+                await expenses_collection.update_one(
+                    {"_id": expense_id},
+                    {"$set": {
+                        "status": "paid",
+                        "amount_paid": expense_amount,
+                        "payment_method": payment.payment_method,
+                        "updated_at": kampala_to_utc(now_kampala()),
+                        "updated_by": user.username
+                    }}
+                )
+                payment_amount -= (expense_amount - amount_paid)
+                paid_expenses_ids.append(str(expense_id))
+            else:
+                # Partially pay the expense
+                new_amount_paid = amount_paid + payment_amount
+                await expenses_collection.update_one(
+                    {"_id": expense_id},
+                    {"$set": {
+                        "amount_paid": new_amount_paid,
+                        "status": "partially_paid",
+                        "notes": f"Partially paid {payment.amount}. Original amount: {expense_amount}. Total paid: {new_amount_paid}. Remaining: {expense_amount - new_amount_paid}",
+                        "updated_at": kampala_to_utc(now_kampala()),
+                        "updated_by": user.username
+                    }}
+                )
+                partially_paid_expense_id = str(expense_id)
+                payment_amount = 0
+
+        return {
+            "message": "Payment processed successfully.",
+            "paid_expenses": paid_expenses_ids,
+            "partially_paid_expense": partially_paid_expense_id
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error paying supplier expenses: {e}")
+        raise HTTPException(status_code=500, detail="Failed to pay supplier expenses")
 
 @router.post("/api/suppliers/", response_model=dict)
 async def create_supplier(

@@ -50,7 +50,10 @@ async def get_expenses(
             query["category"] = category
             
         if status:
-            query["status"] = status
+            if status == "pending":
+                query["status"] = {"$in": ["not_paid", "pending", "partially_paid"]}
+            else:
+                query["status"] = status
             
         # Enhanced date filtering to handle different date storage formats
         if date_from or date_to:
@@ -176,7 +179,7 @@ async def get_expenses(
 
         # Pending expenses
         pending_amount = 0
-        async for expense in expenses_collection.find({"status": "pending"}):
+        async for expense in expenses_collection.find({"status": {"$in": ["pending", "not_paid", "partially_paid"]}}):
             pending_amount += expense.get('amount', 0)
         
         # Categories count
@@ -219,6 +222,7 @@ async def create_expense(
             "description": expense_data.description,
             "category": expense_data.category,
             "amount": expense_data.amount,
+            "amount_paid": 0,
             "expense_date": expense_data.expense_date,
             "payment_method": expense_data.payment_method,
             "vendor": expense_data.vendor,
@@ -280,6 +284,35 @@ async def get_expense(
     except Exception as e:
         logger.error(f"Error fetching expense: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch expense")
+
+@router.get("/api/expenses/{expense_id}/payments", response_model=List[dict])
+async def get_expense_payments(
+    expense_id: str,
+    user: User = Depends(get_current_user_hybrid)
+):
+    """Get all payments for a specific expense"""
+    try:
+        db = await get_database()
+        installments_collection = db.installments
+        
+        payments_cursor = installments_collection.find({"expense_id": ObjectId(expense_id)}).sort("payment_date", 1)
+        payments = await payments_cursor.to_list(length=None)
+        
+        for payment in payments:
+            payment["id"] = str(payment["_id"])
+            del payment["_id"]
+            if payment.get("expense_id"):
+                payment["expense_id"] = str(payment["expense_id"])
+            if payment.get("order_id") and payment.get("order_id") is not None:
+                payment["order_id"] = str(payment["order_id"])
+            if payment.get("payment_date"):
+                payment["payment_date"] = payment["payment_date"].isoformat()
+
+        return payments
+        
+    except Exception as e:
+        logger.error(f"Error fetching payments for expense {expense_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch expense payments")
 
 @router.put("/api/expenses/{expense_id}", response_model=dict)
 async def update_expense(
