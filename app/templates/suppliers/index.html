@@ -715,6 +715,13 @@ document.getElementById('pay-supplier-form').addEventListener('submit', async fu
         payment_method: paymentMethod
     };
 
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalBtnHTML = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `
+        <i class="fas fa-spinner fa-spin mr-1"></i>Processing...
+    `;
+
     try {
         const response = await fetch(`/api/suppliers/${supplierName}/pay`, {
             method: 'POST',
@@ -737,6 +744,9 @@ document.getElementById('pay-supplier-form').addEventListener('submit', async fu
     } catch (error) {
         console.error('Error processing payment:', error);
         showToast('Failed to process payment', 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnHTML;
     }
 });
 
