@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     MONGO_DATABASE: str = "perfumesandmorebytuta"
     MONGO_POOL_SIZE: int = 20
 
+
+
     # JWT Configuration
     SECRET_KEY: str = "your-secret-key-change-this-in-production"
     ALGORITHM: str = "HS256"
