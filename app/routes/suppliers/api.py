@@ -55,54 +55,86 @@ async def get_suppliers(
         cursor = suppliers_collection.find(query).skip(skip).limit(size).sort("name", 1)
         suppliers = await cursor.to_list(length=size)
         
+        # --- Optimizations: Fetch aggregated data in bulk ---
+
+        # 1. Get product counts for all suppliers (case-insensitive)
+        product_count_pipeline = [
+            {"$group": {"_id": {"$toLower": "$supplier"}, "count": {"$sum": 1}}}
+        ]
+        product_counts_cursor = products_collection.aggregate(product_count_pipeline)
+        product_counts = {item["_id"]: item["count"] async for item in product_counts_cursor}
+
+        # 2. Get last order dates from restock history for all suppliers (case-insensitive)
+        restock_history_collection = db.restock_history
+        last_restock_pipeline = [
+            {"$sort": {"restocked_at": -1}},
+            {"$group": {
+                "_id": {"$toLower": "$supplier_name"},
+                "last_restock_date": {"$first": "$restocked_at"}
+            }}
+        ]
+        last_restocks_cursor = restock_history_collection.aggregate(last_restock_pipeline)
+        last_restocks = {item["_id"]: item["last_restock_date"] async for item in last_restocks_cursor}
+
+        # 3. Get unpaid balances for all suppliers (case-insensitive on vendor)
+        unpaid_balance_pipeline = [
+            {"$match": {"status": {"$in": ["not_paid", "partially_paid"]}}},
+            {"$group": {
+                "_id": {"$toLower": "$vendor"},
+                "total_due": {"$sum": "$amount"},
+                "total_paid": {"$sum": "$amount_paid"}
+            }},
+            {"$project": {
+                "unpaid_balance": {"$subtract": ["$total_due", "$total_paid"]}
+            }}
+        ]
+        unpaid_balances_cursor = expenses_collection.aggregate(unpaid_balance_pipeline)
+        unpaid_balances = {item["_id"]: item["unpaid_balance"] async for item in unpaid_balances_cursor}
+
+        # --- End Optimizations ---
+        
         # Convert ObjectId to string and format data
         for supplier in suppliers:
             supplier["id"] = str(supplier["_id"])
             del supplier["_id"]
             
-            # Add computed fields
             supplier_name = supplier.get("name", "")
-
-            # Get product count from both old method (supplier field) and new method (products array)
-            # Use case-insensitive matching for supplier name
-            product_count_old = await products_collection.count_documents({
-                "supplier": {"$regex": f"^{supplier_name}$", "$options": "i"}
-            })
+            supplier_name_lower = supplier_name.lower()
+            
+            # Add computed fields using pre-fetched data
+            
+            # Product count
+            product_count_old = product_counts.get(supplier_name_lower, 0)
             product_count_new = len(supplier.get("products", []))
-
-            # Use the higher count (for backward compatibility)
             supplier["products_count"] = max(product_count_old, product_count_new)
 
-            # Get last order date from supplier record or restock history
+            # Last order date
             last_order_date = supplier.get("last_order_date")
             if not last_order_date:
-                # Fallback: check restock history for this supplier
-                restock_history = db.restock_history
-                last_restock = await restock_history.find_one(
-                    {"supplier_name": {"$regex": f"^{supplier_name}$", "$options": "i"}},
-                    sort=[("restocked_at", -1)]
-                )
-                if last_restock:
-                    last_order_date = last_restock.get("restocked_at")
-
+                last_order_date = last_restocks.get(supplier_name_lower)
             supplier["last_order_date"] = last_order_date
 
-            # Calculate unpaid balance
-            unpaid_expenses = await expenses_collection.find({
-                "vendor": supplier_name,
-                "status": {"$in": ["not_paid", "partially_paid"]}
-            }).to_list(length=None)
-            
-            unpaid_balance = sum(expense.get("amount", 0) - expense.get("amount_paid", 0) for expense in unpaid_expenses)
-            supplier["unpaid_balance"] = unpaid_balance
+            # Unpaid balance
+            supplier["unpaid_balance"] = unpaid_balances.get(supplier_name_lower, 0)
         
-        # Calculate stats
-        products_collection = db.products
+        # Calculate stats efficiently
+        stats_pipeline = [
+            {"$facet": {
+                "total": [{"$count": "count"}],
+                "active": [{"$match": {"is_active": True}}, {"$count": "count"}]
+            }}
+        ]
+        stats_result_cursor = suppliers_collection.aggregate(stats_pipeline)
+        stats_result = await stats_result_cursor.to_list(length=1)
+        
+        total_suppliers = stats_result[0]['total'][0]['count'] if stats_result and stats_result[0]['total'] else 0
+        active_suppliers = stats_result[0]['active'][0]['count'] if stats_result and stats_result[0]['active'] else 0
+
         total_products = await products_collection.count_documents({})
 
         stats = {
-            "total": await suppliers_collection.count_documents({}),
-            "active": await suppliers_collection.count_documents({"is_active": True}),
+            "total": total_suppliers,
+            "active": active_suppliers,
             "products": total_products,
             "total_value": 0  # TODO: Calculate total inventory value
         }
