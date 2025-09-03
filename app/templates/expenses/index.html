@@ -191,12 +191,7 @@
                     <span id="pagination-info">Page 1 of 1</span>
                 </div>
 
-                <div id="loading-message" class="text-center text-gray-500 py-1" style="display: none;">
-                    <div class="flex items-center justify-center space-x-2">
-                        <div class="animate-spin rounded-full h-3 w-3 border-b-2 border-red-500"></div>
-                        <span class="text-xs">Loading more expenses...</span>
-                    </div>
-                </div>
+                
 
                 <div id="end-message" class="text-center text-gray-500 py-2" style="display: none;">
                     <div class="flex flex-col items-center">
@@ -724,7 +719,7 @@
         tbody.innerHTML = ''; // Clear existing content
         for (let i = 0; i < 10; i++) {
             tbody.innerHTML += `
-                <tr class="animate-pulse">
+                <tr class="animate-pulse skeleton-row">
                     <td class="px-3 py-3 whitespace-nowrap">
                         <div class="h-8 w-full bg-gray-200 rounded"></div>
                     </td>
@@ -756,6 +751,57 @@
         }
     }
 
+    function appendSkeleton(count = 3) {
+        const tbody = document.getElementById('expenses-table-body');
+        let skeletonHtml = '';
+        for (let i = 0; i < count; i++) {
+            skeletonHtml += `
+            <tr class="animate-pulse skeleton-row">
+                <td class="px-3 py-3 whitespace-nowrap">
+                    <div class="h-8 w-full bg-gray-200 rounded"></div>
+                </td>
+                <td class="px-3 py-3 whitespace-nowrap">
+                    <div class="h-6 w-24 bg-gray-200 rounded-full"></div>
+                </td>
+                <td class="px-3 py-3 whitespace-nowrap">
+                    <div class="h-6 w-20 bg-gray-200 rounded"></div>
+                </td>
+                <td class="px-3 py-3 whitespace-nowrap">
+                    <div class="h-6 w-24 bg-gray-200 rounded"></div>
+                </td>
+                <td class="px-3 py-3 whitespace-nowrap">
+                    <div class="h-6 w-20 bg-gray-200 rounded-full"></div>
+                </td>
+                <td class="px-3 py-3 whitespace-nowrap">
+                    <div class="h-6 w-24 bg-gray-200 rounded"></div>
+                </td>
+                <td class="px-3 py-3 whitespace-nowrap">
+                    <div class="flex items-center space-x-2">
+                        <div class="h-6 w-6 bg-gray-200 rounded-full"></div>
+                        <div class="h-6 w-6 bg-gray-200 rounded-full"></div>
+                        <div class="h-6 w-6 bg-gray-200 rounded-full"></div>
+                        <div class="h-6 w-6 bg-gray-200 rounded-full"></div>
+                    </div>
+                </td>
+            </tr>
+            `;
+        }
+        tbody.innerHTML += skeletonHtml;
+    }
+
+    function checkAndLoadMore() {
+        const isScrollable = document.documentElement.scrollHeight > document.documentElement.clientHeight;
+        if (!isScrollable && !isLoading && !allExpensesLoaded) {
+            loadExpenses(
+                document.getElementById('search-expenses').value,
+                document.getElementById('category-filter').value,
+                document.getElementById('status-filter').value,
+                document.getElementById('date-from').value,
+                document.getElementById('date-to').value
+            );
+        }
+    }
+
     function loadExpenses(search = '', category = '', status = '', dateFrom = '', dateTo = '') {
         if (isLoading || allExpensesLoaded) return;
 
@@ -763,7 +809,7 @@
         if (currentPage === 1) {
             displaySkeleton();
         } else {
-            document.getElementById('loading-message').style.display = 'block';
+            appendSkeleton();
         }
 
         const params = new URLSearchParams({
@@ -803,13 +849,18 @@
         })
         .finally(() => {
             isLoading = false;
-            document.getElementById('loading-message').style.display = 'none';
+            // After each load, check if we need to fill the screen
+            checkAndLoadMore();
         });
     }
 
     function handleSuccessfulLoad(data) {
         const expenses = data.expenses || [];
         const tbody = document.getElementById('expenses-table-body');
+        
+        const skeletonRows = tbody.querySelectorAll('.skeleton-row');
+        skeletonRows.forEach(row => row.remove());
+
         if (currentPage === 1) {
             tbody.innerHTML = '';
         }
@@ -868,7 +919,7 @@
                     <div class="text-sm font-bold text-gray-900">UGX ${(expense.amount || 0).toLocaleString()}</div>
                 </td>
                 <td class="px-3 py-3 whitespace-nowrap">
-                    <div class="text-sm font-bold text-green-600">UGX ${(expense.amount_paid || 0).toLocaleString()}</div>
+                    <div class="text-sm font-bold text-green-600">UGX ${(expense.status === 'paid' ? expense.amount : (expense.amount_paid || 0)).toLocaleString()}</div>
                 </td>
                 <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
                     ${expense.expense_date ? new Date(expense.expense_date).toLocaleDateString() : 'N/A'}
@@ -1496,14 +1547,15 @@
     });
 
     // Infinite scroll
-    const tableContainer = document.querySelector('.overflow-x-auto');
-    tableContainer.addEventListener('scroll', () => {
+    window.addEventListener('scroll', () => {
         const {
             scrollTop,
             scrollHeight,
             clientHeight
-        } = tableContainer;
-        if (scrollTop + clientHeight >= scrollHeight - 5) { // Check if near bottom
+        } = document.documentElement;
+
+        // Check if the user has scrolled to near the bottom of the page
+        if (scrollTop + clientHeight >= scrollHeight - 100) { // 100px threshold from bottom
             if (!isLoading && !allExpensesLoaded) {
                 const searchTerm = document.getElementById('search-expenses').value;
                 const categoryFilter = document.getElementById('category-filter').value;

@@ -130,6 +130,7 @@ async def pay_supplier_expenses(
     try:
         db = await get_database()
         expenses_collection = db.expenses
+        installments_collection = db.installments
         
         # Get all unpaid expenses for the supplier, oldest first
         unpaid_expenses = await expenses_collection.find({
@@ -143,7 +144,7 @@ async def pay_supplier_expenses(
         payment_amount = payment.amount
         paid_expenses_ids = []
         partially_paid_expense_id = None
-        
+
         for expense in unpaid_expenses:
             if payment_amount <= 0:
                 break
@@ -151,37 +152,45 @@ async def pay_supplier_expenses(
             expense_id = expense["_id"]
             expense_amount = expense["amount"]
             amount_paid = expense.get("amount_paid", 0)
+            remaining_due = expense_amount - amount_paid
+            
+            amount_to_pay_for_this_expense = min(payment_amount, remaining_due)
 
-            if payment_amount >= (expense_amount - amount_paid):
-                # Pay the full remaining amount of the expense
-                await expenses_collection.update_one(
-                    {"_id": expense_id},
-                    {"$set": {
-                        "status": "paid",
-                        "amount_paid": expense_amount,
-                        "payment_method": payment.payment_method,
-                        "updated_at": kampala_to_utc(now_kampala()),
-                        "updated_by": user.username
-                    }}
-                )
-                payment_amount -= (expense_amount - amount_paid)
+            if amount_to_pay_for_this_expense <= 0:
+                continue
+
+            # Update expense
+            new_amount_paid = amount_paid + amount_to_pay_for_this_expense
+            new_status = "paid" if new_amount_paid >= expense_amount else "partially_paid"
+
+            await expenses_collection.update_one(
+                {"_id": expense_id},
+                {"$set": {
+                    "status": new_status,
+                    "amount_paid": new_amount_paid,
+                    "payment_method": payment.payment_method,
+                    "updated_at": kampala_to_utc(now_kampala()),
+                    "updated_by": user.username
+                }}
+            )
+
+            # Create installment record
+            await installments_collection.insert_one({
+                "expense_id": expense_id,
+                "amount": amount_to_pay_for_this_expense,
+                "payment_date": kampala_to_utc(now_kampala()),
+                "payment_method": payment.payment_method,
+                "notes": f"Paid via supplier payment page.",
+                "created_by": user.username
+            })
+
+            if new_status == "paid":
                 paid_expenses_ids.append(str(expense_id))
             else:
-                # Partially pay the expense
-                new_amount_paid = amount_paid + payment_amount
-                await expenses_collection.update_one(
-                    {"_id": expense_id},
-                    {"$set": {
-                        "amount_paid": new_amount_paid,
-                        "status": "partially_paid",
-                        "notes": f"Partially paid {payment.amount}. Original amount: {expense_amount}. Total paid: {new_amount_paid}. Remaining: {expense_amount - new_amount_paid}",
-                        "updated_at": kampala_to_utc(now_kampala()),
-                        "updated_by": user.username
-                    }}
-                )
                 partially_paid_expense_id = str(expense_id)
-                payment_amount = 0
 
+            payment_amount -= amount_to_pay_for_this_expense
+        
         return {
             "message": "Payment processed successfully.",
             "paid_expenses": paid_expenses_ids,

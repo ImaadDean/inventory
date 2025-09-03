@@ -60,6 +60,17 @@ async def restock_products(
                 result = await db.expenses.insert_one(expense_doc, session=session)
                 expense_id = result.inserted_id
 
+                # If the expense is paid, create a corresponding installment record
+                if is_paid:
+                    await db.installments.insert_one({
+                        "expense_id": expense_id,
+                        "amount": restock_data.amount,
+                        "payment_date": kampala_to_utc(now_kampala()),
+                        "payment_method": restock_data.payment_method,
+                        "notes": "Payment made during restock.",
+                        "created_by": str(current_user.id)
+                    }, session=session)
+
                 # 2. Update stock and supplier for each product
                 for item in restock_data.products:
                     # Get product again to have the full document
