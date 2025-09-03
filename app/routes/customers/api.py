@@ -804,9 +804,9 @@ async def export_customers_vcf(
                 adr = card.add("adr")
                 adr.type_param = "WORK" # Assuming work address or general address
                 adr.value = vobject.vcard.Address(
-                    street=customer.get("address", ""),
-                    city=customer.get("city", ""),
-                    country=customer.get("country", "")
+                    street=customer.get("address") or "",
+                    city=customer.get("city") or "",
+                    country=customer.get("country") or ""
                 )
             
             # Notes/Description
