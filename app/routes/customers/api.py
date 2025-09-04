@@ -768,11 +768,54 @@ async def update_customer(
 
 @router.get("/export/vcf", response_class=StreamingResponse)
 async def export_customers_vcf(
+    start_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
     current_user: User = Depends(get_current_user_hybrid_dependency()),
     db: AsyncIOMotorClient = Depends(get_database)
 ):
-    """Export all customers as a VCF file"""
-    customers = await db.customers.find({}).to_list(length=None)
+    """Export customers as a VCF file with optional date range filtering"""
+    
+    # Build query filter
+    query_filter = {}
+    
+    if start_date or end_date:
+        date_filter = {}
+        
+        if start_date:
+            try:
+                start_datetime = datetime.strptime(start_date, "%Y-%m-%d")
+                date_filter["$gte"] = start_datetime
+            except ValueError:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid start_date format. Use YYYY-MM-DD"
+                )
+        
+        if end_date:
+            try:
+                end_datetime = datetime.strptime(end_date, "%Y-%m-%d")
+                # Add 23:59:59 to include the entire end date
+                end_datetime = end_datetime.replace(hour=23, minute=59, second=59)
+                date_filter["$lte"] = end_datetime
+            except ValueError:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid end_date format. Use YYYY-MM-DD"
+                )
+        
+        query_filter["created_at"] = date_filter
+    
+    customers = await db.customers.find(query_filter).to_list(length=None)
+    
+    # Generate filename with date range
+    filename = "customers"
+    if start_date and end_date:
+        filename = f"customers_{start_date}_to_{end_date}"
+    elif start_date:
+        filename = f"customers_from_{start_date}"
+    elif end_date:
+        filename = f"customers_until_{end_date}"
+    filename += ".vcf"
 
     def generate_vcf():
         for customer in customers:
@@ -817,8 +860,7 @@ async def export_customers_vcf(
             yield card.serialize().encode('utf-8') # Encode to bytes for StreamingResponse
 
     headers = {
-        "Content-Disposition": "attachment; filename=\"customers.vcf\"",
-
+        "Content-Disposition": f"attachment; filename=\"{filename}\"",
         "Content-Type": "text/vcard; charset=utf-8"
     }
     return StreamingResponse(generate_vcf(), headers=headers)
