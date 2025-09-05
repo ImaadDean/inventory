@@ -33,7 +33,8 @@ async def get_sales(
             filter_query["$or"] = [
                 {"sale_number": {"$regex": search, "$options": "i"}},
                 {"customer_name": {"$regex": search, "$options": "i"}},
-                {"notes": {"$regex": search, "$options": "i"}}
+                {"notes": {"$regex": search, "$options": "i"}},
+                {"items.product_name": {"$regex": search, "$options": "i"}}
             ]
         
         if status:
@@ -167,7 +168,8 @@ async def get_sales_stats(
             filter_query["$or"] = [
                 {"sale_number": {"$regex": search, "$options": "i"}},
                 {"customer_name": {"$regex": search, "$options": "i"}},
-                {"notes": {"$regex": search, "$options": "i"}}
+                {"notes": {"$regex": search, "$options": "i"}},
+                {"items.product_name": {"$regex": search, "$options": "i"}}
             ]
         if status:
             filter_query["status"] = status

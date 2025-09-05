@@ -184,7 +184,8 @@ async def get_orders(
             filter_query["$or"] = [
                 {"order_number": {"$regex": search, "$options": "i"}},
                 {"client_name": {"$regex": search, "$options": "i"}},
-                {"notes": {"$regex": search, "$options": "i"}}
+                {"notes": {"$regex": search, "$options": "i"}},
+                {"items.product_name": {"$regex": search, "$options": "i"}}
             ]
         
         if status:
