@@ -324,6 +324,79 @@ async def get_expense_payments(
         logger.error(f"Error fetching payments for expense {expense_id}: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch expense payments")
 
+@router.post("/api/expenses/{expense_id}/payment", response_model=dict)
+async def record_expense_payment(
+    expense_id: str,
+    payment_data: dict,
+    user: User = Depends(get_current_user_hybrid)
+):
+    """Record a payment for an expense"""
+    try:
+        db = await get_database()
+        expenses_collection = db.expenses
+        installments_collection = db.installments
+        
+        # Get the expense
+        expense = await expenses_collection.find_one({"_id": ObjectId(expense_id)})
+        if not expense:
+            raise HTTPException(status_code=404, detail="Expense not found")
+        
+        amount = float(payment_data.get("amount", 0))
+        payment_method = payment_data.get("payment_method", "cash")
+        notes = payment_data.get("notes", "")
+        
+        if amount <= 0:
+            raise HTTPException(status_code=400, detail="Payment amount must be greater than 0")
+        
+        # Calculate current amount paid
+        current_paid = expense.get("amount_paid", 0)
+        total_amount = expense.get("amount", 0)
+        
+        if current_paid + amount > total_amount:
+            raise HTTPException(status_code=400, detail="Payment amount exceeds remaining balance")
+        
+        # Record the payment in installments collection
+        payment_doc = {
+            "expense_id": ObjectId(expense_id),
+            "amount": amount,
+            "payment_date": kampala_to_utc(now_kampala()),
+            "payment_method": payment_method,
+            "notes": notes,
+            "created_by": user.username
+        }
+        
+        await installments_collection.insert_one(payment_doc)
+        
+        # Update expense with new amount paid and status
+        new_amount_paid = current_paid + amount
+        new_status = "paid" if new_amount_paid >= total_amount else "partially_paid"
+        
+        await expenses_collection.update_one(
+            {"_id": ObjectId(expense_id)},
+            {
+                "$set": {
+                    "amount_paid": new_amount_paid,
+                    "status": new_status,
+                    "updated_at": kampala_to_utc(now_kampala()),
+                    "updated_by": user.username
+                }
+            }
+        )
+        
+        return {
+            "message": "Payment recorded successfully",
+            "amount_paid": amount,
+            "total_paid": new_amount_paid,
+            "remaining": total_amount - new_amount_paid,
+            "status": new_status
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error recording payment for expense {expense_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to record payment")
+
 @router.put("/api/expenses/{expense_id}", response_model=dict)
 async def update_expense(
     request: Request,

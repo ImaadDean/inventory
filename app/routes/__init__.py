@@ -6,11 +6,13 @@ from .customers.api import router as customers_api_router
 from .pos.api import router as pos_api_router
 from .dashboard.api import router as dashboard_api_router
 from .scents.api import router as scents_api_router
+from .product_requests.api import router as product_requests_api_router
 
 # HTML Route Routers
 from .auth.route import auth_routes
 from .dashboard.route import dashboard_routes
 from .scents.route import scents_routes
+from .product_requests.routes import router as product_requests_routes
 
 __all__ = [
     # API routers
@@ -21,9 +23,11 @@ __all__ = [
     "pos_api_router",
     "dashboard_api_router",
     "scents_api_router",
+    "product_requests_api_router",
 
     # HTML route routers
     "auth_routes",
     "dashboard_routes",
-    "scents_routes"
+    "scents_routes",
+    "product_requests_routes"
 ]

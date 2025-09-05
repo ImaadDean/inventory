@@ -171,6 +171,13 @@
                         Products
                     </a>
 
+                    <a href="/product-requests" class="group flex items-center px-2 py-2 text-sm font-medium rounded-lg transition-all duration-200 {% if request.url.path.startswith('/product-requests') %}text-white bg-gradient-to-r from-blue-500 to-indigo-600 shadow-md{% else %}text-gray-700 hover:bg-blue-50 hover:text-blue-700{% endif %}">
+                        <div class="w-7 h-7 rounded-md flex items-center justify-center mr-2 transition-colors duration-200 {% if request.url.path.startswith('/product-requests') %}bg-white bg-opacity-20{% else %}bg-gray-100 group-hover:bg-blue-100{% endif %}">
+                            <i class="fas fa-clipboard-list text-xs {% if request.url.path.startswith('/product-requests') %}text-white{% else %}text-gray-500 group-hover:text-blue-600{% endif %}"></i>
+                        </div>
+                        Product Requests
+                    </a>
+
                     <a href="/products/watch-settings" class="group flex items-center px-2 py-2 text-sm font-medium rounded-lg transition-all duration-200 {% if request.url.path.startswith('/products/watch-settings') %}text-white bg-gradient-to-r from-blue-500 to-indigo-600 shadow-md{% else %}text-gray-700 hover:bg-blue-50 hover:text-blue-700{% endif %}">
                         <div class="w-7 h-7 rounded-md flex items-center justify-center mr-2 transition-colors duration-200 {% if request.url.path.startswith('/products/watch-settings') %}bg-white bg-opacity-20{% else %}bg-gray-100 group-hover:bg-blue-100{% endif %}">
                             <i class="fas fa-cogs text-xs {% if request.url.path.startswith('/products/watch-settings') %}text-white{% else %}text-gray-500 group-hover:text-blue-600{% endif %}"></i>
@@ -401,6 +408,14 @@
                                     <i class="fas fa-box text-xs {% if request.url.path.startswith('/products') and not request.url.path.startswith('/products/watch-settings') %}text-white{% else %}text-gray-500 group-hover:text-blue-600{% endif %}"></i>
                                 </div>
                                 Products
+                            </a>
+
+                            <a href="/product-requests" @click="sidebarOpen = false"
+                               class="group flex items-center px-2 py-2 text-sm font-medium rounded-lg transition-all duration-200 {% if request.url.path.startswith('/product-requests') %}text-white bg-gradient-to-r from-blue-500 to-indigo-600 shadow-md{% else %}text-gray-700 hover:bg-blue-50 hover:text-blue-700{% endif %}">
+                                <div class="w-7 h-7 rounded-md flex items-center justify-center mr-2 transition-colors duration-200 {% if request.url.path.startswith('/product-requests') %}bg-white bg-opacity-20{% else %}bg-gray-100 group-hover:bg-blue-100{% endif %}">
+                                    <i class="fas fa-clipboard-list text-xs {% if request.url.path.startswith('/product-requests') %}text-white{% else %}text-gray-500 group-hover:text-blue-600{% endif %}"></i>
+                                </div>
+                                Product Requests
                             </a>
 
                             <a href="/products/watch-settings" @click="sidebarOpen = false"
