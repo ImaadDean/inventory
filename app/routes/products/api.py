@@ -1514,7 +1514,66 @@ async def open_new_bottle(
         )
 
 
-@router.get("/{product_id}/decant-info", response_model=dict)
+@router.post("/{product_id}/reset-decants", response_model=dict)
+async def reset_decants(
+    product_id: str,
+    request: Request,
+    current_user: User = Depends(get_current_user_hybrid_dependency())
+):
+    """Reset opened bottle ml to 0 for decant products (for testing purposes)"""
+    try:
+        db = await get_database()
+        
+        # Validate product exists
+        product = await db.products.find_one({"_id": ObjectId(product_id)})
+        if not product:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Product not found"
+            )
+        
+        # Check if product has decant capability
+        decant_info = product.get("decant")
+        if not decant_info or not decant_info.get("is_decantable"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="This product is not decantable"
+            )
+        
+        # Reset opened bottle ml to 0
+        result = await db.products.update_one(
+            {"_id": ObjectId(product_id)},
+            {"$set": {"decant.opened_bottle_ml_left": 0}}
+        )
+        
+        if result.modified_count == 0:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to reset decants"
+            )
+        
+        # Get updated product
+        updated_product = await db.products.find_one({"_id": ObjectId(product_id)})
+        
+        return {
+            "success": True,
+            "message": "Decants reset successfully. Opened bottle ml set to 0.",
+            "product": {
+                "id": str(updated_product["_id"]),
+                "name": updated_product["name"],
+                "opened_bottle_ml_left": updated_product.get("decant", {}).get("opened_bottle_ml_left", 0)
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to reset decants: {str(e)}"
+        )
+
+
 async def get_decant_info(
     product_id: str,
     request: Request,
