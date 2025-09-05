@@ -66,10 +66,13 @@ async def get_product_requests(
             "as": "creator_info"
         }},
         {"$addFields": {
-            "created_by_username": {"$arrayElemAt": ["$creator_info.username", 0]}
+            "created_by_username": {"$arrayElemAt": ["$creator_info.username", 0]},
+            "id": {"$toString": "$_id"},
+            "created_by": {"$toString": "$created_by"}
         }},
         {"$project": {
-            "creator_info": 0 # Exclude the temporary creator_info field
+            "creator_info": 0,
+            "_id": 0
         }}
     ]
 
@@ -77,8 +80,12 @@ async def get_product_requests(
 
     processed_requests = []
     for req in requests_data:
-        req["id"] = str(req["_id"])
-        req["created_by"] = str(req["created_by"])
+        # Ensure created_by is a string
+        if "created_by" in req and isinstance(req["created_by"], ObjectId):
+            req["created_by"] = str(req["created_by"])
+        # Ensure id is a string (already handled by aggregation, but for safety)
+        if "_id" in req and "id" not in req:
+            req["id"] = str(req["_id"])
         processed_requests.append(req)
     
     return {
@@ -87,3 +94,47 @@ async def get_product_requests(
         "page": page,
         "items": [ProductRequestResponse.model_validate(req) for req in processed_requests]
     }
+
+@router.get("/{request_id}", response_model=ProductRequestResponse)
+async def get_product_request(
+    request_id: str,
+    current_user: User = Depends(get_current_user_hybrid_dependency())
+):
+    """Get a single product request by ID"""
+    db = await get_database()
+
+    if not ObjectId.is_valid(request_id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid request ID"
+        )
+
+    pipeline = [
+        {"$match": {"_id": ObjectId(request_id)}},
+        {"$lookup": {
+            "from": "users",
+            "localField": "created_by",
+            "foreignField": "_id",
+            "as": "creator_info"
+        }},
+        {"$addFields": {
+            "created_by_username": {"$arrayElemAt": ["$creator_info.username", 0]},
+            "id": {"$toString": "$_id"},
+            "created_by": {"$toString": "$created_by"}
+        }},
+        {"$project": {
+            "creator_info": 0,
+            "_id": 0
+        }}
+    ]
+
+    request_data = await db.product_requests.aggregate(pipeline).to_list(length=1)
+
+    if not request_data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Product request not found"
+        )
+
+    # The aggregation pipeline already ensures 'id' and 'created_by' are strings
+    return ProductRequestResponse.model_validate(request_data[0])

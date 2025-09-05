@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Request, Cookie
+from fastapi import FastAPI, HTTPException, Request, Cookie, status
 from fastapi.middleware.cors import CORSMiddleware
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -176,6 +176,19 @@ async def get_current_user_from_cookie(request: Request):
 
     user = await get_user_by_username(username)
     return user
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    if exc.status_code == status.HTTP_401_UNAUTHORIZED:
+        # Redirect to login page for unauthorized access
+        return RedirectResponse(url="/auth/login", status_code=status.HTTP_302_FOUND)
+    
+    # For other HTTP exceptions, return a JSON response
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail}
+    )
 
 
 # Global exception handler
