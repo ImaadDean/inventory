@@ -6,6 +6,7 @@ from .sale import Sale, SaleItem, PaymentMethod, SaleStatus
 from .scent import Scent
 from .installment import Installment, InstallmentPayment, InstallmentPaymentRecord, InstallmentStatus, PaymentStatus
 from .order import Order, OrderItem, OrderStatus, OrderPaymentStatus
+from .product_request import ProductRequest, ProductRequestStatus
 
 __all__ = [
     "User",
@@ -27,5 +28,7 @@ __all__ = [
     "Order",
     "OrderItem",
     "OrderStatus",
-    "OrderPaymentStatus"
+    "OrderPaymentStatus",
+    "ProductRequest",
+    "ProductRequestStatus"
 ]

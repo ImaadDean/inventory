@@ -1,190 +1,89 @@
-from fastapi import APIRouter, HTTPException, Depends, Query
-from typing import List, Optional
-from app.utils.auth import get_current_user_hybrid_dependency
-from app.models.user import User
-from app.config.database import get_database
-from app.utils.timezone import now_kampala, kampala_to_utc
+from fastapi import APIRouter, HTTPException, status, Depends, Query, Request
+from typing import Optional, List
 from bson import ObjectId
-from datetime import datetime
-import logging
+from ...config.database import get_database
+from ...schemas.product_request import ProductRequestCreate, ProductRequestUpdate, ProductRequestResponse, ProductRequestListResponse
+from ...models.product_request import ProductRequest, ProductRequestStatus
+from ...models.user import User
+from ...utils.auth import get_current_user_hybrid_dependency
+from ...utils.timezone import now_kampala, kampala_to_utc
 
-logger = logging.getLogger(__name__)
-router = APIRouter()
+router = APIRouter(prefix="/api/product-requests", tags=["Product Request Management API"])
 
-@router.get("/api/product-requests/", response_model=dict)
-async def get_product_requests(
-    page: int = Query(1, ge=1),
-    size: int = Query(10, ge=1, le=100),
-    search: Optional[str] = Query(None),
-    status: Optional[str] = Query(None),
-    user: User = Depends(get_current_user_hybrid_dependency())
-):
-    """Get product requests with pagination and filtering"""
-    try:
-        db = await get_database()
-        requests_collection = db.product_requests
-        
-        query = {}
-        
-        if search:
-            query["$or"] = [
-                {"product_name": {"$regex": search, "$options": "i"}},
-                {"customer_name": {"$regex": search, "$options": "i"}},
-                {"notes": {"$regex": search, "$options": "i"}}
-            ]
-        
-        if status:
-            query["status"] = status
-            
-        total = await requests_collection.count_documents(query)
-        
-        skip = (page - 1) * size
-        cursor = requests_collection.find(query).skip(skip).limit(size).sort("created_at", -1)
-        requests = await cursor.to_list(length=size)
-        
-        for request in requests:
-            request["id"] = str(request["_id"])
-            del request["_id"]
-            
-        return {
-            "requests": requests,
-            "total": total,
-            "page": page,
-            "size": size,
-            "total_pages": (total + size - 1) // size
-        }
-        
-    except Exception as e:
-        logger.error(f"Error fetching product requests: {e}")
-        raise HTTPException(status_code=500, detail="Failed to fetch product requests")
-
-@router.post("/api/product-requests/", response_model=dict)
+@router.post("/", response_model=ProductRequestResponse)
 async def create_product_request(
-    request_data: dict,
-    user: User = Depends(get_current_user_hybrid_dependency())
+    request_data: ProductRequestCreate,
+    current_user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Create a new product request"""
-    try:
-        db = await get_database()
-        requests_collection = db.product_requests
-        
-        request_doc = {
-            "product_name": request_data.get("product_name"),
-            "customer_name": request_data.get("customer_name"),
-            "customer_contact": request_data.get("customer_contact"),
-            "quantity": request_data.get("quantity", 1),
-            "notes": request_data.get("notes"),
-            "status": "pending",
-            "created_at": kampala_to_utc(now_kampala()),
-            "updated_at": kampala_to_utc(now_kampala()),
-            "created_by": user.username
-        }
-        
-        result = await requests_collection.insert_one(request_doc)
-        
-        if result.inserted_id:
-            return {
-                "message": "Product request created successfully",
-                "request_id": str(result.inserted_id)
-            }
-        else:
-            raise HTTPException(status_code=500, detail="Failed to create product request")
-            
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error creating product request: {e}")
-        raise HTTPException(status_code=500, detail="Failed to create product request")
+    db = await get_database()
 
-@router.get("/api/product-requests/{request_id}", response_model=dict)
-async def get_product_request(
-    request_id: str,
-    user: User = Depends(get_current_user_hybrid_dependency())
-):
-    """Get a specific product request by ID"""
-    try:
-        db = await get_database()
-        requests_collection = db.product_requests
-        
-        request = await requests_collection.find_one({"_id": ObjectId(request_id)})
-        
-        if not request:
-            raise HTTPException(status_code=404, detail="Product request not found")
-        
-        request["id"] = str(request["_id"])
-        del request["_id"]
-        
-        return request
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error fetching product request: {e}")
-        raise HTTPException(status_code=500, detail="Failed to fetch product request")
+    request_doc = {
+        "product_name": request_data.product_name,
+        "customer_name": request_data.customer_name,
+        "customer_contact": request_data.customer_contact,
+        "status": ProductRequestStatus.PENDING,
+        "notes": request_data.notes,
+        "created_at": kampala_to_utc(now_kampala()),
+        "created_by": current_user.id
+    }
 
-@router.put("/api/product-requests/{request_id}", response_model=dict)
-async def update_product_request(
-    request_id: str,
-    request_data: dict,
-    user: User = Depends(get_current_user_hybrid_dependency())
-):
-    """Update a product request"""
-    try:
-        db = await get_database()
-        requests_collection = db.product_requests
-        
-        existing = await requests_collection.find_one({"_id": ObjectId(request_id)})
-        if not existing:
-            raise HTTPException(status_code=404, detail="Product request not found")
-        
-        update_doc = {
-            "updated_at": kampala_to_utc(now_kampala()),
-            "updated_by": user.username
-        }
-        
-        for key, value in request_data.items():
-            if key not in ["id", "_id"]:
-                update_doc[key] = value
-        
-        result = await requests_collection.update_one(
-            {"_id": ObjectId(request_id)},
-            {"$set": update_doc}
+    result = await db.product_requests.insert_one(request_doc)
+
+    if not result.inserted_id:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create product request"
         )
-        
-        if result.modified_count > 0:
-            return {"message": "Product request updated successfully"}
-        else:
-            return {"message": "No changes made to product request"}
-            
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error updating product request: {e}")
-        raise HTTPException(status_code=500, detail="Failed to update product request")
 
-@router.delete("/api/product-requests/{request_id}", response_model=dict)
-async def delete_product_request(
-    request_id: str,
-    user: User = Depends(get_current_user_hybrid_dependency())
+    created_request = await db.product_requests.find_one({"_id": result.inserted_id})
+
+    if created_request:
+        created_request["id"] = str(created_request["_id"])
+
+    return ProductRequestResponse.model_validate(created_request)
+
+@router.get("/", response_model=ProductRequestListResponse)
+async def get_product_requests(
+    page: int = Query(1, ge=1),
+    size: int = Query(10, ge=1, le=100)
 ):
-    """Delete a product request"""
-    try:
-        db = await get_database()
-        requests_collection = db.product_requests
-        
-        existing = await requests_collection.find_one({"_id": ObjectId(request_id)})
-        if not existing:
-            raise HTTPException(status_code=404, detail="Product request not found")
-        
-        result = await requests_collection.delete_one({"_id": ObjectId(request_id)})
-        
-        if result.deleted_count > 0:
-            return {"message": "Product request deleted successfully"}
-        else:
-            raise HTTPException(status_code=500, detail="Failed to delete product request")
-            
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error deleting product request: {e}")
-        raise HTTPException(status_code=500, detail="Failed to delete product request")
+    """Get a paginated list of product requests"""
+    db = await get_database()
+    
+    skip = (page - 1) * size
+    
+    total_requests = await db.product_requests.count_documents({})
+    total_pages = (total_requests + size - 1) // size
+
+    pipeline = [
+        {"$skip": skip},
+        {"$limit": size},
+        {"$lookup": {
+            "from": "users",
+            "localField": "created_by",
+            "foreignField": "_id",
+            "as": "creator_info"
+        }},
+        {"$addFields": {
+            "created_by_username": {"$arrayElemAt": ["$creator_info.username", 0]}
+        }},
+        {"$project": {
+            "creator_info": 0 # Exclude the temporary creator_info field
+        }}
+    ]
+
+    requests_data = await db.product_requests.aggregate(pipeline).to_list(length=None)
+
+    processed_requests = []
+    for req in requests_data:
+        req["id"] = str(req["_id"])
+        req["created_by"] = str(req["created_by"])
+        processed_requests.append(req)
+    
+    return {
+        "total": total_requests,
+        "pages": total_pages,
+        "page": page,
+        "items": [ProductRequestResponse.model_validate(req) for req in processed_requests]
+    }
