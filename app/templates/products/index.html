@@ -2202,7 +2202,7 @@ function generateProductRows(products) {
                             title="Restock Product">
                         <i class="fas fa-plus-circle"></i>
                     </button>
-                    ${product.is_perfume_with_decants ? `
+                    ${product.is_perfume_with_decants && product.decant && product.decant.opened_bottle_ml_left > 0 ? `
                     <button onclick="openResetDecantsModal('${product.id}', \`${product.name}\`)"
                             class="text-orange-600 hover:text-orange-900 p-1 rounded hover:bg-orange-50 transition-colors duration-200"
                             title="Reset Decants">
