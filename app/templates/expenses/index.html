@@ -151,7 +151,7 @@
                         <input type="date" id="date-to" class="px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200" title="To Date">
                     </div>
                     <div class="flex space-x-1">
-                        <button onclick="loadExpenses()" class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1.5 rounded-lg flex items-center space-x-1 text-xs transition-all duration-200">
+                        <button onclick="applyFilters()" class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1.5 rounded-lg flex items-center space-x-1 text-xs transition-all duration-200">
                             <i class="fas fa-refresh text-xs"></i>
                             <span>Refresh</span>
                         </button>
@@ -183,23 +183,39 @@
             </table>
         </div>
 
-        <!-- Pagination Controls -->
-        <div class="px-4 py-3 border-t border-gray-200 bg-gray-50">
-            <div class="flex flex-col items-center space-y-2">
-                <!-- Pagination Info -->
-                <div class="text-xs text-gray-600 font-medium">
-                    <span id="pagination-info">Page 1 of 1</span>
+        <!-- Expenses Status Section -->
+        <div id="expenses-status-container" class="mt-4 px-4 py-3 bg-white border-t border-gray-200">
+            <div class="flex flex-col items-center space-y-3">
+                <!-- Results info -->
+                <div class="text-sm text-gray-700">
+                    Showing <span id="showing-expenses-count" class="font-medium">0</span> of <span id="total-expenses-count" class="font-medium">0</span> expenses
                 </div>
 
-                
+                <!-- Auto-loading indicator -->
+                <div id="auto-loading-expenses-indicator" class="hidden flex items-center justify-center space-x-3 py-4 text-gray-600 bg-red-50 rounded-lg border border-red-200 transition-all duration-300">
+                    <div class="animate-spin rounded-full h-5 w-5 border-2 border-red-600 border-t-transparent"></div>
+                    <span class="text-sm font-medium">Loading more expenses...</span>
+                    <div class="flex space-x-1">
+                        <div class="w-2 h-2 bg-red-600 rounded-full animate-bounce" style="animation-delay: 0ms"></div>
+                        <div class="w-2 h-2 bg-red-600 rounded-full animate-bounce" style="animation-delay: 150ms"></div>
+                        <div class="w-2 h-2 bg-red-600 rounded-full animate-bounce" style="animation-delay: 300ms"></div>
+                    </div>
+                </div>
 
-                <div id="end-message" class="text-center text-gray-500 py-2" style="display: none;">
-                    <div class="flex flex-col items-center">
-                        <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center mb-1">
-                            <i class="fas fa-check text-gray-400 text-sm"></i>
+                <!-- End of results message -->
+                <div id="end-of-expenses" class="hidden text-center py-6">
+                    <div class="inline-flex items-center justify-center space-x-3 px-6 py-3 bg-green-50 border border-green-200 rounded-lg text-green-700">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-check-circle text-green-500 text-lg"></i>
                         </div>
-                        <p class="text-xs font-medium">All expenses loaded</p>
-                        <p class="text-xs text-gray-400">You've reached the end of the list</p>
+                        <div class="text-sm font-medium">
+                            You've reached the end of all expenses
+                        </div>
+                        <div class="flex space-x-1">
+                            <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -274,9 +290,13 @@
 
                 <div>
                     <label class="block text-xs font-semibold text-gray-700 mb-1">
-                        <i class="fas fa-user text-gray-400 mr-1"></i>Vendor/Supplier (Optional)
+                        <i class="fas fa-truck text-gray-400 mr-1"></i>Vendor/Supplier (Optional)
                     </label>
-                    <input type="text" name="vendor" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200" placeholder="Vendor or supplier name">
+                    <button type="button" id="select-expense-supplier-btn" onclick="openSupplierSelectionModal()" class="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white shadow-sm transition-all duration-200 text-left flex items-center justify-between hover:border-gray-400">
+                        <span id="selected-expense-supplier-text" class="text-gray-500">Click to select supplier</span>
+                        <i class="fas fa-chevron-down text-gray-400"></i>
+                    </button>
+                    <input type="hidden" id="expense-vendor" name="vendor">
                 </div>
 
                 <div>
@@ -400,76 +420,7 @@
     </div>
 </div>
 
-<!-- Quick Update Modal for Status and Payment Method -->
-<div id="quick-update-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-semibold text-gray-900">Quick Update</h3>
-                <button onclick="closeQuickUpdateModal()" class="text-gray-400 hover:text-gray-600 transition-colors duration-200">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
 
-            <form id="quick-update-form" class="space-y-4">
-                <input type="hidden" id="quick-update-expense-id">
-
-                <!-- Expense Info -->
-                <div class="bg-gray-50 rounded-lg p-3">
-                    <div class="text-sm font-medium text-gray-700" id="quick-update-expense-info">
-                        Updating expense...
-                    </div>
-                </div>
-
-                <!-- Status -->
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">
-                        <i class="fas fa-info-circle text-gray-400 mr-1"></i>Status
-                    </label>
-                    <select id="quick-update-status" name="status" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
-                        <option value="pending">Pending</option>
-                        <option value="paid">Paid</option>
-                        <option value="overdue">Overdue</option>
-                        <option value="cancelled">Cancelled</option>
-                    </select>
-                </div>
-
-                <!-- Payment Method -->
-                <div>
-                    <label class="block text-xs font-semibold text-gray-700 mb-2">
-                        <i class="fas fa-credit-card text-gray-400 mr-1"></i>Payment Method
-                    </label>
-                    <select id="quick-update-payment-method" name="payment_method" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
-                        <option value="pending">Pending Payment</option>
-                        <option value="cash">Cash</option>
-                        <option value="bank_transfer">Bank Transfer</option>
-                        <option value="mobile_money">Mobile Money</option>
-                        <option value="credit_card">Credit Card</option>
-                        <option value="check">Check</option>
-                        <option value="other">Other</option>
-                    </select>
-                </div>
-
-                <!-- Update Notes -->
-                <div>
-                    <label class="block text-xs font-semibold text-gray-700 mb-2">
-                        <i class="fas fa-sticky-note text-gray-400 mr-1"></i>Update Notes (Optional)
-                    </label>
-                    <textarea id="quick-update-notes" name="update_notes" rows="2" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none" placeholder="Add notes about this update..."></textarea>
-                </div>
-
-                <div class="flex justify-end space-x-2 pt-3 border-t border-gray-200">
-                    <button type="button" onclick="closeQuickUpdateModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200">
-                        Cancel
-                    </button>
-                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
-                        <i class="fas fa-check mr-1"></i>Update
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 
 <!-- View Expense Modal -->
 <div id="view-expense-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50">
@@ -672,11 +623,12 @@
 </div>
 
 <script>
-    // State variables
+    // Pagination state variables
     let currentPage = 1;
+    let totalExpenses = 0;
+    let loadedExpensesCount = 0;
     let isLoading = false;
-    let allExpensesLoaded = false;
-    let currentSize = 10;
+    let hasMoreExpenses = true;
 
     // Expense management functionality
     function openAddExpenseModal() {
@@ -690,6 +642,17 @@
     function closeAddExpenseModal() {
         document.getElementById('add-expense-modal').classList.add('hidden');
         document.getElementById('add-expense-form').reset();
+
+        // Clear supplier selection
+        const expenseVendorInput = document.getElementById('expense-vendor');
+        const selectedExpenseSupplierText = document.getElementById('selected-expense-supplier-text');
+
+        if (expenseVendorInput && selectedExpenseSupplierText) {
+            expenseVendorInput.value = '';
+            selectedExpenseSupplierText.textContent = 'Click to select supplier';
+            selectedExpenseSupplierText.classList.remove('text-gray-900', 'font-medium');
+            selectedExpenseSupplierText.classList.add('text-gray-500');
+        }
     }
 
     // Categories Management
@@ -795,32 +758,93 @@
         tbody.innerHTML += skeletonHtml;
     }
 
-    function checkAndLoadMore() {
-        const isScrollable = document.documentElement.scrollHeight > document.documentElement.clientHeight;
-        if (!isScrollable && !isLoading && !allExpensesLoaded) {
-            loadExpenses(
-                document.getElementById('search-expenses').value,
-                document.getElementById('category-filter').value,
-                document.getElementById('status-filter').value,
-                document.getElementById('date-from').value,
-                document.getElementById('date-to').value
-            );
+    function hideLoadingIndicator() {
+        const tbody = document.getElementById('expenses-table-body');
+        const skeletonRows = tbody.querySelectorAll('.skeleton-row');
+        skeletonRows.forEach(row => row.remove());
+    }
+
+    // Function to append expenses for infinite scroll
+    function appendExpenses(expenses) {
+        const tableBody = document.querySelector('#expenses-table-body');
+        if (!tableBody || expenses.length === 0) return;
+
+        // Remove any existing "no expenses" message
+        const noExpensesRow = tableBody.querySelector('tr td[colspan="8"]');
+        if (noExpensesRow) {
+            noExpensesRow.closest('tr').remove();
+        }
+
+        tableBody.insertAdjacentHTML('beforeend', generateExpenseRows(expenses));
+    }
+
+    // Status update functions
+    function showAutoLoadingExpensesState() {
+        const remainingExpenses = totalExpenses - loadedExpensesCount;
+        const rowsToShow = Math.max(0, remainingExpenses);
+        if (rowsToShow > 0) {
+            appendSkeleton(Math.min(rowsToShow, 3));
         }
     }
 
-    function loadExpenses(search = '', category = '', status = '', dateFrom = '', dateTo = '') {
-        if (isLoading || allExpensesLoaded) return;
+    function hideAutoLoadingExpensesState() {
+        // Hide the old indicator if it exists
+        const indicator = document.getElementById('auto-loading-expenses-indicator');
+        if (indicator && !indicator.classList.contains('hidden')) {
+            indicator.classList.add('hidden');
+        }
+    }
 
-        isLoading = true;
-        if (currentPage === 1) {
-            displaySkeleton();
+    function updateExpensesScrollStatus() {
+        const showingCountEl = document.getElementById('showing-expenses-count');
+        const totalCountEl = document.getElementById('total-expenses-count');
+        const endOfResults = document.getElementById('end-of-expenses');
+
+        // Update counts
+        showingCountEl.textContent = loadedExpensesCount;
+        totalCountEl.textContent = totalExpenses;
+
+        // Show/hide end message with animation
+        if (hasMoreExpenses) {
+            endOfResults.classList.add('hidden');
         } else {
-            appendSkeleton();
+            endOfResults.classList.remove('hidden');
+            // Add smooth fade-in animation
+            setTimeout(() => {
+                endOfResults.style.opacity = '0';
+                endOfResults.style.transform = 'translateY(20px)';
+                endOfResults.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                setTimeout(() => {
+                    endOfResults.style.opacity = '1';
+                    endOfResults.style.transform = 'translateY(0)';
+                }, 10);
+            }, 10);
+        }
+    }
+
+    // Load expenses with filtering
+    function loadExpenses(page = 1, append = false, search = '', category = '', status = '', dateFrom = '', dateTo = '') {
+        if (isLoading) return;
+        isLoading = true;
+
+        if (append) {
+            showAutoLoadingExpensesState();
+        } else {
+            displaySkeleton();
+        }
+
+        // If not appending, get current filter values
+        if (!append) {
+            search = search || document.getElementById('search-expenses').value.trim();
+            category = category || document.getElementById('category-filter').value;
+            status = status || document.getElementById('status-filter').value;
+            dateFrom = dateFrom || document.getElementById('date-from').value;
+            dateTo = dateTo || document.getElementById('date-to').value;
         }
 
         const params = new URLSearchParams({
-            page: currentPage,
-            size: currentSize
+            page: page,
+            size: 10
         });
 
         if (search) params.append('search', search);
@@ -843,53 +867,84 @@
             throw new Error('Failed to load expenses');
         })
         .then(data => {
-            handleSuccessfulLoad(data);
+            console.log('Received data from API:', data);
+            hideLoadingIndicator(); // Hide skeleton before adding new content
+
+            totalExpenses = data.total || 0;
+            const expenses = data.expenses || [];
+            hasMoreExpenses = data.has_next || false;
+            currentPage = data.page;
+
+            if (append) {
+                appendExpenses(expenses);
+                loadedExpensesCount += expenses.length;
+            } else {
+                displayExpenses(expenses);
+                loadedExpensesCount = expenses.length;
+            }
+
+            updateExpensesScrollStatus();
+            updateExpenseStats(data.stats || {});
+
+            if (!append && !search && !category && !status && !dateFrom && !dateTo) {
+                // Only show initial toast if no filters are active
+                if (totalExpenses === 0) {
+                    showToast('No expenses found. Add your first expense!', 'info');
+                } else {
+                    showToast(`Showing ${expenses.length} of ${totalExpenses} expenses`, 'success');
+                }
+            }
         })
         .catch(error => {
-            console.error('Error loading expenses:', error);
-            showToast('Failed to load expenses', 'error');
-            const tbody = document.getElementById('expenses-table-body');
-            if(currentPage === 1) {
-                tbody.innerHTML = '';
+            console.error('Error in loadExpenses:', error);
+            showToast('Failed to load expenses. Please check your connection.', 'error');
+            hideLoadingIndicator(); // Also hide on error
+            if (!append) {
+                displayExpenses([]);
             }
         })
         .finally(() => {
             isLoading = false;
-            // After each load, check if we need to fill the screen
-            checkAndLoadMore();
+            hideAutoLoadingExpensesState();
         });
     }
 
-    function handleSuccessfulLoad(data) {
-        const expenses = data.expenses || [];
-        const tbody = document.getElementById('expenses-table-body');
-        
-        const skeletonRows = tbody.querySelectorAll('.skeleton-row');
-        skeletonRows.forEach(row => row.remove());
-
-        if (currentPage === 1) {
-            tbody.innerHTML = '';
+    // Infinite scroll functionality
+    function setupInfiniteScroll() {
+        const sentinel = document.createElement('div');
+        sentinel.id = 'scroll-sentinel';
+        sentinel.style.height = '1px';
+        const endMessage = document.querySelector('#end-of-expenses');
+        if (endMessage && endMessage.parentNode) {
+            endMessage.parentNode.insertBefore(sentinel, endMessage);
         }
 
-        if (expenses.length === 0) {
-            allExpensesLoaded = true;
-            document.getElementById('end-message').style.display = 'block';
-            if (currentPage === 1) {
-                displayExpenses([]); // Show no expenses message
-            }
-        } else {
-            displayExpenses(expenses);
-            currentPage++;
-        }
-        updateExpenseStats(data.stats || {});
-        updatePaginationInfo(data.total_pages, data.size);
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting && !isLoading && hasMoreExpenses) {
+                    const searchTerm = document.getElementById('search-expenses').value;
+                    const categoryFilter = document.getElementById('category-filter').value;
+                    const statusFilter = document.getElementById('status-filter').value;
+                    const dateFrom = document.getElementById('date-from').value;
+                    const dateTo = document.getElementById('date-to').value;
+                    loadExpenses(currentPage + 1, true, searchTerm, categoryFilter, statusFilter, dateFrom, dateTo);
+                }
+            });
+        }, {
+            root: null,
+            rootMargin: '100px',
+            threshold: 0
+        });
+
+        observer.observe(sentinel);
     }
 
     function displayExpenses(expenses) {
-        const tbody = document.getElementById('expenses-table-body');
+        const tableBody = document.querySelector('#expenses-table-body');
+        if (!tableBody) return;
 
-        if (expenses.length === 0 && currentPage === 1) {
-            tbody.innerHTML = `
+        if (expenses.length === 0) {
+            tableBody.innerHTML = `
                 <tr>
                     <td colspan="8" class="px-6 py-8 text-center text-gray-500">
                         <div class="flex flex-col items-center">
@@ -903,7 +958,11 @@
             return;
         }
 
-        const newRows = expenses.map(expense => `
+        tableBody.insertAdjacentHTML('beforeend', generateExpenseRows(expenses));
+    }
+
+    function generateExpenseRows(expenses) {
+        return expenses.map(expense => `
             <tr class="hover:bg-gray-50 transition-colors duration-200 ${expense.status === 'pending' ? 'bg-yellow-50 border-l-4 border-yellow-400' : expense.status === 'overdue' ? 'bg-red-50 border-l-4 border-red-400' : ''}">
                 <td class="px-3 py-3 whitespace-nowrap">
                     <div class="flex items-center">
@@ -949,9 +1008,6 @@
                             <i class="fas fa-credit-card text-xs"></i>
                         </button>
                         ` : ''}
-                        <button onclick="quickUpdateExpense('${expense.id}')" class="text-orange-600 hover:text-orange-900 transition-colors duration-200" title="Quick Update Status/Payment">
-                            <i class="fas fa-bolt text-xs"></i>
-                        </button>
                         <button onclick="editExpense('${expense.id}')" class="text-indigo-600 hover:text-indigo-900 transition-colors duration-200" title="Edit">
                             <i class="fas fa-edit text-xs"></i>
                         </button>
@@ -962,14 +1018,9 @@
                 </td>
             </tr>
         `).join('');
-        tbody.innerHTML += newRows;
     }
 
-    function updatePaginationInfo(totalPages, size) {
-        const paginationInfo = document.getElementById('pagination-info');
-        paginationInfo.textContent = `Page ${currentPage -1} of ${totalPages}`;
-        currentSize = size;
-    }
+
 
     function loadCategories() {
         fetch('/api/expense-categories/', {
@@ -1280,22 +1331,14 @@
     // Search and filter functionality
     function applyFilters() {
         currentPage = 1;
-        allExpensesLoaded = false;
+        hasMoreExpenses = true;
+        loadedExpensesCount = 0;
         document.getElementById('expenses-table-body').innerHTML = '';
-        document.getElementById('end-message').style.display = 'none';
-        const searchTerm = document.getElementById('search-expenses').value;
-        const categoryFilter = document.getElementById('category-filter').value;
-        const statusFilter = document.getElementById('status-filter').value;
-        const dateFrom = document.getElementById('date-from').value;
-        const dateTo = document.getElementById('date-to').value;
-        loadExpenses(searchTerm, categoryFilter, statusFilter, dateFrom, dateTo);
+        document.getElementById('end-of-expenses').classList.add('hidden');
+        loadExpenses(1, false); // Reset pagination and replace results when filtering
     }
 
-    document.getElementById('search-expenses').addEventListener('input', applyFilters);
-    document.getElementById('category-filter').addEventListener('change', applyFilters);
-    document.getElementById('status-filter').addEventListener('change', applyFilters);
-    document.getElementById('date-from').addEventListener('change', applyFilters);
-    document.getElementById('date-to').addEventListener('change', applyFilters);
+
 
     // Handle Add Expense Form Submission
     document.getElementById('add-expense-form').addEventListener('submit', async function(e) {
@@ -1455,128 +1498,11 @@
         }
     });
 
-    // Quick Update Functions
-    function quickUpdateExpense(expenseId) {
-        // First, fetch the expense details
-        fetch(`/api/expenses/${expenseId}`, {
-            method: 'GET',
-            credentials: 'include',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        })
-        .then(response => {
-            if (response.ok) {
-                return response.json();
-            }
-            throw new Error('Failed to fetch expense details');
-        })
-        .then(expense => {
-            // Populate the quick update modal
-            document.getElementById('quick-update-expense-id').value = expenseId;
-            document.getElementById('quick-update-expense-info').innerHTML = `
-                <div class="text-sm">
-                    <div class="font-medium text-gray-900">${expense.description}</div>
-                    <div class="text-gray-600">UGX ${(expense.amount || 0).toLocaleString()}</div>
-                    <div class="text-xs text-gray-500">${expense.vendor || 'No vendor'} • ${expense.expense_date ? new Date(expense.expense_date).toLocaleDateString() : 'No date'}</div>
-                </div>
-            `;
 
-            // Set current values
-            document.getElementById('quick-update-status').value = expense.status || 'pending';
-            document.getElementById('quick-update-payment-method').value = expense.payment_method || 'pending';
-            document.getElementById('quick-update-notes').value = '';
 
-            // Show the modal
-            document.getElementById('quick-update-modal').classList.remove('hidden');
-        })
-        .catch(error => {
-            console.error('Error fetching expense:', error);
-            showToast('Failed to load expense details', 'error');
-        });
-    }
 
-    function closeQuickUpdateModal() {
-        document.getElementById('quick-update-modal').classList.add('hidden');
-        document.getElementById('quick-update-form').reset();
-    }
 
-    // Handle Quick Update Form Submission
-    document.getElementById('quick-update-form').addEventListener('submit', async function(e) {
-        e.preventDefault();
 
-        const expenseId = document.getElementById('quick-update-expense-id').value;
-        const status = document.getElementById('quick-update-status').value;
-        const paymentMethod = document.getElementById('quick-update-payment-method').value;
-        const updateNotes = document.getElementById('quick-update-notes').value;
-
-        try {
-            const updateData = {
-                status: status,
-                payment_method: paymentMethod
-            };
-
-            // Add update notes to the existing notes if provided
-            if (updateNotes.trim()) {
-                const currentTime = new Date().toLocaleString();
-                const updateNote = `[${currentTime}] Status/Payment Update: ${updateNotes.trim()}`;
-
-                // We'll append to existing notes - fetch current notes first
-                const currentExpense = await fetch(`/api/expenses/${expenseId}`, {
-                    method: 'GET',
-                    credentials: 'include',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                }).then(r => r.json());
-
-                const existingNotes = currentExpense.notes || '';
-                updateData.notes = existingNotes ? `${existingNotes}\n\n${updateNote}` : updateNote;
-            }
-
-            const response = await fetch(`/api/expenses/${expenseId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'include',
-                body: JSON.stringify(updateData)
-            });
-
-            if (response.ok) {
-                showToast('Expense updated successfully', 'success');
-                closeQuickUpdateModal();
-                applyFilters(); // Reload expenses with filters
-            } else {
-                const errorData = await response.json();
-                throw new Error(errorData.detail || 'Failed to update expense');
-            }
-        } catch (error) {
-            console.error('Error updating expense:', error);
-            showToast(error.message || 'Failed to update expense', 'error');
-        }
-    });
-
-    // Infinite scroll
-    window.addEventListener('scroll', () => {
-        const {
-            scrollTop,
-            scrollHeight,
-            clientHeight
-        } = document.documentElement;
-
-        // Check if the user has scrolled to near the bottom of the page
-        if (scrollTop + clientHeight >= scrollHeight - 100) { // 100px threshold from bottom
-            if (!isLoading && !allExpensesLoaded) {
-                const searchTerm = document.getElementById('search-expenses').value;
-                const categoryFilter = document.getElementById('category-filter').value;
-                const statusFilter = document.getElementById('status-filter').value;
-                const dateFrom = document.getElementById('date-from').value;
-                const dateTo = document.getElementById('date-to').value;
-                loadExpenses(searchTerm, categoryFilter, statusFilter, dateFrom, dateTo);
-            }
-        }
-    });
 
     // Payment Modal Functions
     let currentPaymentExpense = null;
@@ -1669,10 +1595,465 @@
 
     // Initialize page
     document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM Content Loaded - initializing expenses page');
+
+        // Load initial data
         applyFilters();
         loadCategoriesForDropdown();
+
+        // Setup infinite scroll
+        setupInfiniteScroll();
+
+        // Add debounced search input
+        let searchTimeout;
+        const searchInput = document.getElementById('search-expenses');
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                applyFilters(); // Reset pagination and replace results when searching
+            }, 500); // Wait 500ms after user stops typing
+        });
+
+        // Remove the old event listeners and replace with the debounced search
+        document.getElementById('category-filter').addEventListener('change', applyFilters);
+        document.getElementById('status-filter').addEventListener('change', applyFilters);
+        document.getElementById('date-from').addEventListener('change', applyFilters);
+        document.getElementById('date-to').addEventListener('change', applyFilters);
+    });
+
+    // Global supplier selection function (needs to be accessible from onclick)
+    function openSupplierSelectionModal() {
+        console.log('Opening supplier selection modal...');
+        const supplierSelectionModal = document.getElementById('supplier-selection-modal');
+        const supplierSearchInput = document.getElementById('supplier-search');
+
+        if (supplierSelectionModal) {
+            supplierSelectionModal.classList.remove('hidden');
+            // Load suppliers when modal opens
+            loadSuppliersInModal();
+            if (supplierSearchInput) {
+                supplierSearchInput.focus();
+            }
+        } else {
+            console.error('Supplier selection modal not found!');
+        }
+    }
+
+    // Global function to load suppliers in modal
+    async function loadSuppliersInModal() {
+        const supplierList = document.getElementById('supplier-list');
+        if (!supplierList) return;
+
+        supplierList.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-blue-500"></i><span class="ml-2 text-gray-600">Loading suppliers...</span></div>';
+
+        try {
+            const response = await fetch('/api/suppliers/?size=50');
+            const data = await response.json();
+            displaySuppliersInModal(data.suppliers || []);
+        } catch (error) {
+            console.error('Error loading suppliers:', error);
+            supplierList.innerHTML = '<p class="text-red-500 text-xs p-2">Error loading suppliers</p>';
+        }
+    }
+
+    // Global function to display suppliers in modal
+    function displaySuppliersInModal(suppliers) {
+        const supplierList = document.getElementById('supplier-list');
+        if (!supplierList) return;
+
+        if (!suppliers || suppliers.length === 0) {
+            supplierList.innerHTML = `
+                <div class="text-center py-4 px-3 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-xl">
+                    <div class="w-8 h-8 bg-gray-300 rounded-lg flex items-center justify-center mx-auto mb-2">
+                        <i class="fas fa-truck text-gray-500 text-sm"></i>
+                    </div>
+                    <p class="text-gray-600 text-xs font-medium mb-1">No suppliers found</p>
+                    <p class="text-gray-500 text-xs">Try a different search term or add a new supplier</p>
+                </div>
+            `;
+            return;
+        }
+
+        supplierList.innerHTML = suppliers.map(supplier => `
+            <div class="bg-gray-50 hover:bg-blue-50 border border-gray-200 hover:border-blue-300 rounded-lg p-3 cursor-pointer transition-all duration-200" onclick="selectSupplierFromModal('${supplier.id}', '${supplier.name.replace(/'/g, "\\'")}')">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-blue-500 rounded-md flex items-center justify-center mr-2">
+                            <i class="fas fa-building text-white text-xs"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-semibold text-gray-900">${supplier.name}</div>
+                            ${supplier.contact_person ? `<div class="text-xs text-gray-600">${supplier.contact_person}</div>` : ''}
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        ${supplier.phone ? `<div class="text-xs text-gray-500">${supplier.phone}</div>` : ''}
+                        <div class="text-xs ${supplier.is_active ? 'text-green-600' : 'text-red-500'}">${supplier.is_active ? 'Active' : 'Inactive'}</div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // Global function to select supplier from modal
+    function selectSupplierFromModal(supplierId, supplierName) {
+        // Update the expense form if it exists
+        const expenseVendorInput = document.getElementById('expense-vendor');
+        const selectedExpenseSupplierText = document.getElementById('selected-expense-supplier-text');
+
+        if (expenseVendorInput && selectedExpenseSupplierText) {
+            expenseVendorInput.value = supplierName;
+            selectedExpenseSupplierText.textContent = supplierName;
+            selectedExpenseSupplierText.classList.remove('text-gray-500');
+            selectedExpenseSupplierText.classList.add('text-gray-900', 'font-medium');
+        }
+
+        console.log('Selected supplier:', supplierId, supplierName);
+        showToast(`Selected supplier: ${supplierName}`, 'success');
+
+        closeSupplierSelectionModal();
+    }
+
+    // Global function to close supplier selection modal
+    function closeSupplierSelectionModal() {
+        const supplierSelectionModal = document.getElementById('supplier-selection-modal');
+        const supplierSearchInput = document.getElementById('supplier-search');
+        const supplierList = document.getElementById('supplier-list');
+
+        if (supplierSelectionModal) {
+            supplierSelectionModal.classList.add('hidden');
+        }
+        if (supplierSearchInput) {
+            supplierSearchInput.value = '';
+        }
+        if (supplierList) {
+            supplierList.innerHTML = '';
+        }
+    }
+
+    // Global function to clear selected supplier
+    function clearSelectedSupplier() {
+        // Clear the expense form if it exists
+        const expenseVendorInput = document.getElementById('expense-vendor');
+        const selectedExpenseSupplierText = document.getElementById('selected-expense-supplier-text');
+
+        if (expenseVendorInput && selectedExpenseSupplierText) {
+            expenseVendorInput.value = '';
+            selectedExpenseSupplierText.textContent = 'Click to select supplier';
+            selectedExpenseSupplierText.classList.remove('text-gray-900', 'font-medium');
+            selectedExpenseSupplierText.classList.add('text-gray-500');
+        }
+
+        showToast('Supplier selection cleared', 'info');
+        closeSupplierSelectionModal();
+    }
+
+    // Global function to add new supplier
+    function addNewSupplier(name) {
+        const supplierNameInput = document.getElementById('supplier-name');
+        if (supplierNameInput) {
+            supplierNameInput.value = name.trim();
+        }
+        openSupplierModal();
+    }
+
+    // Global function to open supplier modal
+    function openSupplierModal() {
+        const supplierModal = document.getElementById('add-supplier-modal');
+        const supplierNameInput = document.getElementById('supplier-name');
+
+        if (supplierModal) {
+            supplierModal.classList.remove('hidden');
+            if (supplierNameInput) {
+                supplierNameInput.focus();
+            }
+        }
+    }
+
+    // Global function to close supplier modal
+    function closeSupplierModal() {
+        const supplierModal = document.getElementById('add-supplier-modal');
+        const supplierForm = document.getElementById('add-supplier-form');
+
+        if (supplierModal) {
+            supplierModal.classList.add('hidden');
+        }
+        if (supplierForm) {
+            supplierForm.reset();
+        }
+    }
+
+    // Global function to handle supplier form submission
+    async function handleSupplierFormSubmit(event) {
+        event.preventDefault();
+
+        const saveBtn = document.getElementById('save-supplier-btn');
+        if (!saveBtn) return;
+
+        const originalText = saveBtn.innerHTML;
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Saving...';
+
+        const supplierData = {
+            name: document.getElementById('supplier-name')?.value.trim() || '',
+            contact_person: document.getElementById('supplier-contact')?.value.trim() || '',
+            phone: document.getElementById('supplier-phone')?.value.trim() || '',
+            email: document.getElementById('supplier-email')?.value.trim() || null,
+            address: document.getElementById('supplier-address')?.value.trim() || null,
+            notes: document.getElementById('supplier-notes')?.value.trim() || null,
+            is_active: document.getElementById('supplier-is-active')?.checked || true
+        };
+
+        try {
+            const response = await fetch('/api/suppliers/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(supplierData)
+            });
+
+            if (response.ok) {
+                const newSupplier = await response.json();
+                closeSupplierModal();
+                showToast(`Supplier "${newSupplier.name}" added successfully!`, 'success');
+
+                // Automatically select the newly created supplier
+                selectSupplierFromModal(newSupplier.id, newSupplier.name);
+            } else {
+                const error = await response.json();
+                showToast(`Error adding supplier: ${error.detail}`, 'error');
+            }
+        } catch (error) {
+            console.error('Error adding supplier:', error);
+            showToast('Error adding supplier', 'error');
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = originalText;
+        }
+    }
+
+    // Global function to search suppliers in modal
+    async function searchSuppliersInModal() {
+        const supplierSearchInput = document.getElementById('supplier-search');
+        const supplierList = document.getElementById('supplier-list');
+
+        if (!supplierSearchInput || !supplierList) return;
+
+        const query = supplierSearchInput.value.trim();
+        if (query.length < 2) {
+            loadSuppliersInModal();
+            return;
+        }
+
+        supplierList.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-blue-500"></i><span class="ml-2 text-gray-600">Searching...</span></div>';
+
+        try {
+            const response = await fetch(`/api/suppliers/?search=${encodeURIComponent(query)}&size=50`);
+            const data = await response.json();
+            displaySuppliersInModal(data.suppliers || []);
+        } catch (error) {
+            console.error('Error searching suppliers:', error);
+            supplierList.innerHTML = '<p class="text-red-500 text-xs p-2">Error searching suppliers</p>';
+        }
+    }
+
+    // Debounce function for search inputs
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    // Add event listeners when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add New Supplier button
+        const addNewSupplierBtn = document.getElementById('add-new-supplier-btn');
+        if (addNewSupplierBtn) {
+            addNewSupplierBtn.addEventListener('click', () => {
+                closeSupplierSelectionModal();
+                addNewSupplier('');
+            });
+        }
+
+        // Clear Supplier button
+        const clearSupplierBtn = document.getElementById('clear-supplier-btn');
+        if (clearSupplierBtn) {
+            clearSupplierBtn.addEventListener('click', clearSelectedSupplier);
+        }
+
+        // Close supplier selection modal button
+        const closeSupplierSelectionBtn = document.getElementById('close-supplier-selection-modal');
+        if (closeSupplierSelectionBtn) {
+            closeSupplierSelectionBtn.addEventListener('click', closeSupplierSelectionModal);
+        }
+
+        // Supplier search input
+        const supplierSearchInput = document.getElementById('supplier-search');
+        if (supplierSearchInput) {
+            supplierSearchInput.addEventListener('input', debounce(searchSuppliersInModal, 300));
+        }
+
+        // Add New Supplier Modal event listeners
+        const closeModalBtn = document.getElementById('close-supplier-modal');
+        if (closeModalBtn) {
+            closeModalBtn.addEventListener('click', closeSupplierModal);
+        }
+
+        const cancelModalBtn = document.getElementById('cancel-supplier-btn');
+        if (cancelModalBtn) {
+            cancelModalBtn.addEventListener('click', closeSupplierModal);
+        }
+
+        const supplierForm = document.getElementById('add-supplier-form');
+        if (supplierForm) {
+            supplierForm.addEventListener('submit', handleSupplierFormSubmit);
+        }
+
+        // Close modals when clicking outside
+        const supplierSelectionModal = document.getElementById('supplier-selection-modal');
+        if (supplierSelectionModal) {
+            supplierSelectionModal.addEventListener('click', function(event) {
+                if (event.target === supplierSelectionModal) {
+                    closeSupplierSelectionModal();
+                }
+            });
+        }
+
+        const supplierModal = document.getElementById('add-supplier-modal');
+        if (supplierModal) {
+            supplierModal.addEventListener('click', function(event) {
+                if (event.target === supplierModal) {
+                    closeSupplierModal();
+                }
+            });
+        }
     });
 </script>
+
+<!-- Supplier Selection Modal -->
+<div id="supplier-selection-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all duration-300">
+            <div class="px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-t-xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                            <i class="fas fa-truck text-white text-xs"></i>
+                        </div>
+                        <h3 class="text-base font-semibold text-white">Select Supplier</h3>
+                    </div>
+                    <button id="close-supplier-selection-modal" class="text-white hover:text-gray-200 transition-colors duration-200">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-4">
+                <div class="relative mb-4">
+                    <input type="text" id="supplier-search" placeholder="Search suppliers..." class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <i class="fas fa-search text-gray-400 absolute right-3 top-1/2 -translate-y-1/2"></i>
+                </div>
+                <div id="supplier-list" class="space-y-2 max-h-64 overflow-y-auto">
+                    <!-- Suppliers will be loaded here -->
+                </div>
+                <div class="flex justify-between items-center pt-3 border-t border-gray-200 mt-4">
+                    <button type="button" id="add-new-supplier-btn" class="text-xs font-medium text-blue-600 hover:text-blue-800 flex items-center">
+                        <i class="fas fa-plus mr-1"></i>Add New Supplier
+                    </button>
+                    <button type="button" id="clear-supplier-btn" class="text-xs font-medium text-gray-600 hover:text-gray-800">
+                        Clear Selection
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add New Supplier Modal -->
+<div id="add-supplier-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full transform transition-all duration-300">
+            <div class="px-4 py-3 bg-gradient-to-r from-orange-500 to-red-600 rounded-t-xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                            <i class="fas fa-plus text-white text-xs"></i>
+                        </div>
+                        <h3 class="text-base font-semibold text-white">Add New Supplier</h3>
+                    </div>
+                    <button id="close-supplier-modal" class="text-white hover:text-gray-200 transition-colors duration-200">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
+            <form id="add-supplier-form" class="p-4 space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                        <i class="fas fa-building text-gray-400 mr-1"></i>Company Name
+                    </label>
+                    <input type="text" id="supplier-name" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200" placeholder="Enter company name">
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                            <i class="fas fa-user text-gray-400 mr-1"></i>Contact Person
+                        </label>
+                        <input type="text" id="supplier-contact" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200" placeholder="Contact person name">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                            <i class="fas fa-phone text-gray-400 mr-1"></i>Phone Number
+                        </label>
+                        <input type="tel" id="supplier-phone" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200" placeholder="Phone number">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                        <i class="fas fa-envelope text-gray-400 mr-1"></i>Email Address
+                    </label>
+                    <input type="email" id="supplier-email" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200" placeholder="Email address">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                        <i class="fas fa-map-marker-alt text-gray-400 mr-1"></i>Address
+                    </label>
+                    <textarea id="supplier-address" rows="2" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200" placeholder="Full address"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                        <i class="fas fa-sticky-note text-gray-400 mr-1"></i>Notes
+                    </label>
+                    <textarea id="supplier-notes" rows="2" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200" placeholder="Additional notes"></textarea>
+                </div>
+
+                <div class="flex items-center p-3 bg-orange-50 rounded-lg border border-orange-200">
+                    <input type="checkbox" id="supplier-is-active" checked class="h-3 w-3 text-orange-600 focus:ring-orange-500 border-gray-300 rounded">
+                    <label class="ml-2 block text-xs font-medium text-orange-900">
+                        <i class="fas fa-check-circle text-orange-600 mr-1"></i>Active Supplier
+                    </label>
+                    <span class="ml-2 text-xs text-orange-600">Supplier is available for orders</span>
+                </div>
+
+                <div class="flex justify-end space-x-2 pt-3 border-t border-gray-200">
+                    <button type="button" id="cancel-supplier-btn" class="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200">
+                        Cancel
+                    </button>
+                    <button type="submit" id="save-supplier-btn" class="px-3 py-2 text-xs font-medium text-white bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
+                        <i class="fas fa-plus mr-1"></i>Add Supplier
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 <!-- Payment Modal -->
 <div id="payment-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50">
@@ -1747,94 +2128,5 @@
     </div>
 </div>
 
-<script>
-    // Payment Modal Functions
-    let currentPaymentExpense = null;
 
-    function openPaymentModal(expenseId, expenseDescription, expenseAmount) {
-        currentPaymentExpense = {
-            id: expenseId,
-            description: expenseDescription,
-            amount: expenseAmount
-        };
-
-        // Update modal content
-        document.getElementById('payment-expense-name').textContent = expenseDescription;
-        document.getElementById('payment-expense-amount').textContent = `UGX ${expenseAmount.toLocaleString()}`;
-        document.getElementById('payment-amount-input').value = expenseAmount;
-        document.getElementById('payment-amount-input').max = expenseAmount;
-        document.getElementById('payment-method-select').value = '';
-
-        // Show modal
-        document.getElementById('payment-modal').classList.remove('hidden');
-    }
-
-    function closePaymentModal() {
-        document.getElementById('payment-modal').classList.add('hidden');
-        currentPaymentExpense = null;
-        document.getElementById('payment-form').reset();
-    }
-
-    function processPayment() {
-        if (!currentPaymentExpense) return;
-
-        const paymentAmount = parseFloat(document.getElementById('payment-amount-input').value);
-        const paymentMethod = document.getElementById('payment-method-select').value;
-
-        if (!paymentAmount || paymentAmount <= 0) {
-            showToast('Please enter a valid payment amount', 'error');
-            return;
-        }
-
-        if (paymentAmount > currentPaymentExpense.amount) {
-            showToast('Payment amount cannot exceed expense amount', 'error');
-            return;
-        }
-
-        if (!paymentMethod) {
-            showToast('Please select a payment method', 'error');
-            return;
-        }
-
-        const payButton = document.getElementById('pay-now-button');
-        const originalText = payButton.innerHTML;
-        payButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
-        payButton.disabled = true;
-
-        // Record payment using the new payment endpoint
-        const paymentData = {
-            amount: paymentAmount,
-            payment_method: paymentMethod,
-            notes: `Payment made from expenses page`
-        };
-
-        fetch(`/api/expenses/${currentPaymentExpense.id}/payment`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            credentials: 'include',
-            body: JSON.stringify(paymentData)
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Failed to process payment');
-            }
-            return response.json();
-        })
-        .then(data => {
-            showToast('Payment processed successfully', 'success');
-            closePaymentModal();
-            applyFilters(); // Reload expenses
-        })
-        .catch(error => {
-            console.error('Error processing payment:', error);
-            showToast('Failed to process payment', 'error');
-        })
-        .finally(() => {
-            payButton.innerHTML = originalText;
-            payButton.disabled = false;
-        });
-    }
-</script>
 {% endblock %}

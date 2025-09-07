@@ -49,6 +49,14 @@ class User(BaseModel):
     last_activity: Optional[datetime] = None
     last_client_export: Optional[datetime] = None
 
+    # HR-related fields
+    is_worker: bool = False
+    position: Optional[str] = None
+    department: Optional[str] = None
+    base_salary: Optional[float] = 0.0
+    hire_date: Optional[datetime] = None
+    phone: Optional[str] = None
+
     class Config:
         populate_by_name = True
         arbitrary_types_allowed = True

@@ -4,6 +4,8 @@ from ...models.Watch_Settings import Material, MovementType, Gender, Color
 from pydantic import BaseModel
 from ...config.database import get_database
 from bson import ObjectId
+from ...utils.authorization import require_roles
+from ...models import User
 
 router = APIRouter(prefix="/api/watch-settings", tags=["Watch Settings API"])
 
@@ -18,7 +20,7 @@ class SettingWithCount(BaseModel):
 # --- Materials ---
 
 @router.post("/materials", response_model=Material)
-async def create_material(data: NameRequest, db=Depends(get_database)):
+async def create_material(data: NameRequest, db=Depends(get_database), current_user: User = Depends(require_roles(["admin", "manager"]))):
     material_doc = {"name": data.name}
     result = await db.watch_materials.insert_one(material_doc)
     created_material = await db.watch_materials.find_one({"_id": result.inserted_id})
@@ -38,7 +40,7 @@ async def get_materials(db=Depends(get_database)):
     return result
 
 @router.put("/materials/{material_id}")
-async def update_material(material_id: str, data: NameRequest, db=Depends(get_database)):
+async def update_material(material_id: str, data: NameRequest, db=Depends(get_database), current_user: User = Depends(require_roles(["admin", "manager"]))):
     if not ObjectId.is_valid(material_id):
         raise HTTPException(status_code=400, detail="Invalid material ID")
     result = await db.watch_materials.update_one(
@@ -50,7 +52,7 @@ async def update_material(material_id: str, data: NameRequest, db=Depends(get_da
     raise HTTPException(status_code=404, detail="Material not found")
 
 @router.delete("/materials/{material_id}")
-async def delete_material(material_id: str, db=Depends(get_database)):
+async def delete_material(material_id: str, db=Depends(get_database), current_user: User = Depends(require_roles(["admin", "manager"]))):
     if not ObjectId.is_valid(material_id):
         raise HTTPException(status_code=400, detail="Invalid material ID")
     result = await db.watch_materials.delete_one({"_id": ObjectId(material_id)})
@@ -61,7 +63,7 @@ async def delete_material(material_id: str, db=Depends(get_database)):
 # --- Movement Types ---
 
 @router.post("/movement-types", response_model=MovementType)
-async def create_movement_type(data: NameRequest, db=Depends(get_database)):
+async def create_movement_type(data: NameRequest, db=Depends(get_database), current_user: User = Depends(require_roles(["admin", "manager"]))):
     movement_type_doc = {"name": data.name}
     result = await db.watch_movement_types.insert_one(movement_type_doc)
     created_movement_type = await db.watch_movement_types.find_one({"_id": result.inserted_id})
@@ -81,7 +83,7 @@ async def get_movement_types(db=Depends(get_database)):
     return result
 
 @router.put("/movement-types/{movement_type_id}")
-async def update_movement_type(movement_type_id: str, data: NameRequest, db=Depends(get_database)):
+async def update_movement_type(movement_type_id: str, data: NameRequest, db=Depends(get_database), current_user: User = Depends(require_roles(["admin", "manager"]))):
     if not ObjectId.is_valid(movement_type_id):
         raise HTTPException(status_code=400, detail="Invalid movement type ID")
     result = await db.watch_movement_types.update_one(
@@ -93,7 +95,7 @@ async def update_movement_type(movement_type_id: str, data: NameRequest, db=Depe
     raise HTTPException(status_code=404, detail="Movement type not found")
 
 @router.delete("/movement-types/{movement_type_id}")
-async def delete_movement_type(movement_type_id: str, db=Depends(get_database)):
+async def delete_movement_type(movement_type_id: str, db=Depends(get_database), current_user: User = Depends(require_roles(["admin", "manager"]))):
     if not ObjectId.is_valid(movement_type_id):
         raise HTTPException(status_code=400, detail="Invalid movement type ID")
     result = await db.watch_movement_types.delete_one({"_id": ObjectId(movement_type_id)})
@@ -104,7 +106,7 @@ async def delete_movement_type(movement_type_id: str, db=Depends(get_database)):
 # --- Genders ---
 
 @router.post("/genders", response_model=Gender)
-async def create_gender(data: NameRequest, db=Depends(get_database)):
+async def create_gender(data: NameRequest, db=Depends(get_database), current_user: User = Depends(require_roles(["admin", "manager"]))):
     gender_doc = {"name": data.name}
     result = await db.watch_genders.insert_one(gender_doc)
     created_gender = await db.watch_genders.find_one({"_id": result.inserted_id})
@@ -124,7 +126,7 @@ async def get_genders(db=Depends(get_database)):
     return result
 
 @router.put("/genders/{gender_id}")
-async def update_gender(gender_id: str, data: NameRequest, db=Depends(get_database)):
+async def update_gender(gender_id: str, data: NameRequest, db=Depends(get_database), current_user: User = Depends(require_roles(["admin", "manager"]))):
     if not ObjectId.is_valid(gender_id):
         raise HTTPException(status_code=400, detail="Invalid gender ID")
     result = await db.watch_genders.update_one(
@@ -136,7 +138,7 @@ async def update_gender(gender_id: str, data: NameRequest, db=Depends(get_databa
     raise HTTPException(status_code=404, detail="Gender not found")
 
 @router.delete("/genders/{gender_id}")
-async def delete_gender(gender_id: str, db=Depends(get_database)):
+async def delete_gender(gender_id: str, db=Depends(get_database), current_user: User = Depends(require_roles(["admin", "manager"]))):
     if not ObjectId.is_valid(gender_id):
         raise HTTPException(status_code=400, detail="Invalid gender ID")
     result = await db.watch_genders.delete_one({"_id": ObjectId(gender_id)})
@@ -147,7 +149,7 @@ async def delete_gender(gender_id: str, db=Depends(get_database)):
 # --- Colors ---
 
 @router.post("/colors", response_model=Color)
-async def create_color(data: NameRequest, db=Depends(get_database)):
+async def create_color(data: NameRequest, db=Depends(get_database), current_user: User = Depends(require_roles(["admin", "manager"]))):
     color_doc = {"name": data.name}
     result = await db.watch_colors.insert_one(color_doc)
     created_color = await db.watch_colors.find_one({"_id": result.inserted_id})
@@ -167,7 +169,7 @@ async def get_colors(db=Depends(get_database)):
     return result
 
 @router.put("/colors/{color_id}")
-async def update_color(color_id: str, data: NameRequest, db=Depends(get_database)):
+async def update_color(color_id: str, data: NameRequest, db=Depends(get_database), current_user: User = Depends(require_roles(["admin", "manager"]))):
     if not ObjectId.is_valid(color_id):
         raise HTTPException(status_code=400, detail="Invalid color ID")
     result = await db.watch_colors.update_one(
@@ -179,7 +181,7 @@ async def update_color(color_id: str, data: NameRequest, db=Depends(get_database
     raise HTTPException(status_code=404, detail="Color not found")
 
 @router.delete("/colors/{color_id}")
-async def delete_color(color_id: str, db=Depends(get_database)):
+async def delete_color(color_id: str, db=Depends(get_database), current_user: User = Depends(require_roles(["admin", "manager"]))):
     if not ObjectId.is_valid(color_id):
         raise HTTPException(status_code=400, detail="Invalid color ID")
     result = await db.watch_colors.delete_one({"_id": ObjectId(color_id)})

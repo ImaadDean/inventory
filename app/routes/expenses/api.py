@@ -208,6 +208,8 @@ async def get_expenses(
             "page": page,
             "size": size,
             "total_pages": (total + size - 1) // size,
+            "has_next": page * size < total,
+            "has_prev": page > 1,
             "stats": stats
         }
         

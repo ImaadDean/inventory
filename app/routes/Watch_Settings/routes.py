@@ -35,6 +35,9 @@ async def watch_settings_page(request: Request):
     current_user = await get_current_user_from_cookie(request)
     if not current_user:
         return RedirectResponse(url="/auth/login", status_code=302)
+    
+    if current_user.role == "cashier":
+        return RedirectResponse(url="/pos", status_code=302)
 
     # For now, we just render the page.
     # Later, we can pass data for the tables from the database.
