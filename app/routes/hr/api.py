@@ -277,6 +277,7 @@ async def create_external_worker(
             "full_name": data.full_name,
             "phone_number": data.phone_number,
             "email": data.email,
+            "base_salary": data.base_salary,
             "hire_date": datetime.fromisoformat(data.hire_date) if data.hire_date else now_kampala(),
             "created_at": now_kampala(),
             "updated_at": now_kampala(),
