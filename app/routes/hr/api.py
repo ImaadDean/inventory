@@ -304,7 +304,7 @@ async def update_worker(
     data: WorkerUpdateRequest,
     current_user: User = Depends(get_current_user_hybrid_dependency())
 ):
-    """Update worker information"""
+    """Update worker information for both internal and external workers."""
     try:
         db = await get_database()
 
@@ -316,18 +316,26 @@ async def update_worker(
 
         if data.hire_date:
             update_data["hire_date"] = datetime.fromisoformat(data.hire_date)
-        
+
+        # Try to update in 'users' collection first
         result = await db.users.update_one(
             {"_id": ObjectId(worker_id), "is_worker": True},
             {"$set": update_data}
         )
-        
+
+        # If not found in 'users', try 'external_workers'
         if result.matched_count == 0:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Worker not found"
+            result = await db.external_workers.update_one(
+                {"_id": ObjectId(worker_id)},
+                {"$set": update_data}
             )
-        
+
+            if result.matched_count == 0:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Worker not found in either user or external worker collections"
+                )
+
         return {"success": True, "message": "Worker updated successfully"}
     except HTTPException:
         raise
