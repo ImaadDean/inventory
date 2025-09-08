@@ -1004,7 +1004,7 @@
                             <i class="fas fa-eye text-xs"></i>
                         </button>
                         ${expense.status !== 'paid' ? `
-                        <button onclick="openPaymentModal('${expense.id}', '${expense.description}', ${expense.amount})" class="text-green-600 hover:text-green-900 transition-colors duration-200" title="Pay Expense">
+                        <button onclick="openPaymentModal('${expense.id}', '${expense.description}', ${expense.amount - (expense.amount_paid || 0)})" class="text-green-600 hover:text-green-900 transition-colors duration-200" title="Pay Expense">
                             <i class="fas fa-credit-card text-xs"></i>
                         </button>
                         ` : ''}
@@ -1507,22 +1507,62 @@
     // Payment Modal Functions
     let currentPaymentExpense = null;
 
-    function openPaymentModal(expenseId, expenseDescription, expenseAmount) {
-        currentPaymentExpense = {
-            id: expenseId,
-            description: expenseDescription,
-            amount: expenseAmount
-        };
+    async function openPaymentModal(expenseId, expenseDescription, remainingAmount) {
+        try {
+            // Fetch the full expense details from the API
+            const response = await fetch(`/api/expenses/${expenseId}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch expense details');
+            }
 
-        // Update modal content
-        document.getElementById('payment-expense-name').textContent = expenseDescription;
-        document.getElementById('payment-expense-amount').textContent = `UGX ${expenseAmount.toLocaleString()}`;
-        document.getElementById('payment-amount-input').value = expenseAmount;
-        document.getElementById('payment-amount-input').max = expenseAmount;
-        document.getElementById('payment-method-select').value = '';
+            const expense = await response.json();
+            const totalAmount = expense.amount || remainingAmount;
+            const amountPaid = expense.amount_paid || 0;
+            const actualRemaining = totalAmount - amountPaid;
 
-        // Show modal
-        document.getElementById('payment-modal').classList.remove('hidden');
+            currentPaymentExpense = {
+                id: expenseId,
+                description: expenseDescription,
+                amount: totalAmount,
+                remaining: actualRemaining
+            };
+
+            // Update modal content
+            document.getElementById('payment-expense-name').textContent = expenseDescription;
+
+            // Show payment breakdown if partially paid
+            if (amountPaid > 0) {
+                document.getElementById('payment-expense-amount').innerHTML = `
+                    <div class="text-sm space-y-1">
+                        <div class="flex justify-between text-gray-600">
+                            <span>Total Amount:</span>
+                            <span>UGX ${totalAmount.toLocaleString()}</span>
+                        </div>
+                        <div class="flex justify-between text-gray-600">
+                            <span>Already Paid:</span>
+                            <span>UGX ${amountPaid.toLocaleString()}</span>
+                        </div>
+                        <div class="flex justify-between font-semibold text-green-700 border-t pt-1">
+                            <span>Remaining:</span>
+                            <span>UGX ${actualRemaining.toLocaleString()}</span>
+                        </div>
+                    </div>
+                `;
+            } else {
+                document.getElementById('payment-expense-amount').textContent = `UGX ${actualRemaining.toLocaleString()}`;
+            }
+
+            document.getElementById('payment-amount-input').value = actualRemaining;
+            document.getElementById('payment-amount-input').max = actualRemaining;
+            document.getElementById('payment-method-select').value = '';
+
+            // Show modal
+            document.getElementById('payment-modal').classList.remove('hidden');
+
+        } catch (error) {
+            console.error('Error opening payment modal:', error);
+            showToast('Failed to load expense details', 'error');
+        }
     }
 
     function closePaymentModal() {
@@ -1596,6 +1636,8 @@
     // Initialize page
     document.addEventListener('DOMContentLoaded', function() {
         console.log('DOM Content Loaded - initializing expenses page');
+
+
 
         // Load initial data
         applyFilters();

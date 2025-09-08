@@ -177,6 +177,7 @@
                             <tr>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Worker</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Base Salary</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Schedule</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hire Date</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -226,10 +227,9 @@
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Worker</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pay Period</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Base Amount</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bonus</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reduction</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Work Date</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Net Amount</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -441,6 +441,31 @@
                     <p class="text-xs text-gray-500 mt-1">Enter the monthly base salary for this worker</p>
                 </div>
 
+                <!-- Payment Schedule -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                            <i class="fas fa-calendar-alt text-gray-400 mr-1"></i>Payment Frequency
+                        </label>
+                        <select id="worker-payment-frequency" name="payment_frequency" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" onchange="updatePaymentScheduleField()" required>
+                            <option value="">Select frequency...</option>
+                            <option value="monthly">Monthly</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="casual">Casual/On-demand</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">How often the worker gets paid</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                            <i class="fas fa-clock text-gray-400 mr-1"></i>Payment Schedule
+                        </label>
+                        <select id="worker-payment-schedule" name="payment_schedule" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" disabled required>
+                            <option value="">Select payment frequency first...</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1" id="payment-schedule-help">Choose when the worker gets paid</p>
+                    </div>
+                </div>
+
                 <div id="existing-user-hire-date" class="grid grid-cols-1 md:grid-cols-1 gap-3">
                     <div>
                         <label class="block text-xs font-semibold text-gray-700 mb-1">
@@ -458,6 +483,101 @@
         </form>
     </div>
 </div>
+</div>
+
+<!-- Edit Worker Modal -->
+<div id="edit-worker-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300">
+            <div class="px-4 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-t-xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                            <i class="fas fa-user-edit text-white text-xs"></i>
+                        </div>
+                        <h3 class="text-base font-semibold text-white">Edit Worker</h3>
+                    </div>
+                    <button type="button" onclick="closeEditWorkerModal()" class="text-white hover:text-gray-200 transition-colors duration-200">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
+            <form id="edit-worker-form" class="p-4 space-y-3">
+                <input type="hidden" id="edit-worker-id" name="worker_id">
+                <input type="hidden" id="edit-worker-is-external" name="is_external">
+
+                <div id="edit-external-worker-fields" class="hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">
+                                <i class="fas fa-user-tag text-gray-400 mr-1"></i>Full Name
+                            </label>
+                            <input type="text" id="edit-worker-full-name" name="full_name" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200" placeholder="e.g. John Doe">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">
+                                <i class="fas fa-phone text-gray-400 mr-1"></i>Phone Number
+                            </label>
+                            <input type="text" id="edit-worker-phone-number" name="phone_number" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200" placeholder="e.g. 07...">
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                            <i class="fas fa-envelope text-gray-400 mr-1"></i>Email
+                        </label>
+                        <input type="email" id="edit-worker-email" name="email" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200" placeholder="e.g. worker@example.com">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                        <i class="fas fa-money-bill text-gray-400 mr-1"></i>Base Salary (UGX)
+                    </label>
+                    <input type="number" id="edit-worker-base-salary" name="base_salary" min="0" step="1000" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200" placeholder="500000" required>
+                    <p class="text-xs text-gray-500 mt-1">Enter the monthly base salary for this worker</p>
+                </div>
+
+                <!-- Payment Schedule -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                            <i class="fas fa-calendar-alt text-gray-400 mr-1"></i>Payment Frequency
+                        </label>
+                        <select id="edit-worker-payment-frequency" name="payment_frequency" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200" onchange="updateEditPaymentScheduleField()" required>
+                            <option value="">Select frequency...</option>
+                            <option value="monthly">Monthly</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="casual">Casual/On-demand</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">How often the worker gets paid</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                            <i class="fas fa-clock text-gray-400 mr-1"></i>Payment Schedule
+                        </label>
+                        <select id="edit-worker-payment-schedule" name="payment_schedule" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200" disabled required>
+                            <option value="">Select payment frequency first...</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1" id="edit-payment-schedule-help">Choose when the worker gets paid</p>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                        <i class="fas fa-calendar text-gray-400 mr-1"></i>Hire Date
+                    </label>
+                    <input type="date" id="edit-worker-hire-date" name="hire_date" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200">
+                </div>
+
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="closeEditWorkerModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200">Cancel</button>
+                    <button type="submit" id="update-worker-btn" class="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
+                        <i class="fas fa-save mr-2"></i>Update Worker
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 <!-- User Selection Modal -->
@@ -561,27 +681,26 @@
                         <p class="text-xs text-gray-500 mt-1">Auto-populated from worker's base salary (can be modified)</p>
                     </div>
                 </div>
+                <!-- Work Details -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-semibold text-gray-700 mb-1">
-                            <i class="fas fa-calendar-alt text-gray-400 mr-1"></i>Salary Type
+                            <i class="fas fa-calendar text-gray-400 mr-1"></i>Work Date
                         </label>
-                        <select id="salary-type" name="salary_type" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200">
-                            <option value="monthly">Monthly</option>
-                            <option value="weekly">Weekly</option>
-                            <option value="daily">Daily</option>
-                            <option value="hourly">Hourly</option>
-                        </select>
+                        <input type="date" id="salary-work-date" name="work_date" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200" required>
+                        <p class="text-xs text-gray-500 mt-1">Date when the work was performed</p>
                     </div>
-                    <div>
+                    <div id="work-description-field">
                         <label class="block text-xs font-semibold text-gray-700 mb-1">
-                            <i class="fas fa-clock text-gray-400 mr-1"></i>Pay Period
+                            <i class="fas fa-briefcase text-gray-400 mr-1"></i>Work Description
                         </label>
-                        <input type="text" id="salary-pay-period" name="pay_period" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200" placeholder="e.g., 2025-09" onchange="loadWorkerBonusesAndReductions()">
-                        <p class="text-xs text-gray-500 mt-1">Format: YYYY-MM (changing this will reload bonuses/reductions)</p>
+                        <input type="text" id="salary-work-description" name="work_description" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200" placeholder="e.g., Daily work, Project completion, Casual job">
+                        <p class="text-xs text-gray-500 mt-1">Brief description of work performed</p>
                     </div>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+
+                <!-- Bonus and Reduction Fields (Only for Internal Workers) -->
+                <div id="bonus-reduction-fields" class="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-semibold text-gray-700 mb-1">
                             <i class="fas fa-plus-circle text-green-500 mr-1"></i>Bonus Amount (UGX)
@@ -677,21 +796,102 @@
                 <!-- Search Input -->
                 <div class="mb-4">
                     <div class="relative">
-                        <input type="text" id="worker-search-input" class="w-full px-3 py-2 pl-10 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Search workers by name..." oninput="filterWorkers()" onkeydown="handleSearchKeydown(event)">
+                        <input type="text" id="worker-search-input" class="w-full px-3 py-2 pl-10 pr-10 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Search workers by name..." oninput="filterWorkers()" onkeydown="handleSearchKeydown(event)">
                         <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                            <i class="fas fa-search text-gray-400"></i>
+                            <i id="search-icon" class="fas fa-search text-gray-400"></i>
+                        </div>
+                        <div id="search-loading" class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none hidden">
+                            <div class="w-4 h-4 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
                         </div>
                     </div>
                 </div>
 
+                <!-- Loading Skeletons -->
+                <div id="worker-search-loading" class="space-y-3">
+                    <!-- Skeleton Item 1 -->
+                    <div class="p-3 border border-gray-200 rounded-lg animate-pulse">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 bg-gray-300 rounded-full mr-3"></div>
+                                <div>
+                                    <div class="h-4 bg-gray-300 rounded w-24 mb-1"></div>
+                                    <div class="h-3 bg-gray-200 rounded w-16"></div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="h-4 bg-gray-300 rounded w-20 mb-1"></div>
+                                <div class="h-3 bg-gray-200 rounded w-16"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Skeleton Item 2 -->
+                    <div class="p-3 border border-gray-200 rounded-lg animate-pulse">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 bg-gray-300 rounded-full mr-3"></div>
+                                <div>
+                                    <div class="h-4 bg-gray-300 rounded w-28 mb-1"></div>
+                                    <div class="h-3 bg-gray-200 rounded w-20"></div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="h-4 bg-gray-300 rounded w-24 mb-1"></div>
+                                <div class="h-3 bg-gray-200 rounded w-18"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Skeleton Item 3 -->
+                    <div class="p-3 border border-gray-200 rounded-lg animate-pulse">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 bg-gray-300 rounded-full mr-3"></div>
+                                <div>
+                                    <div class="h-4 bg-gray-300 rounded w-32 mb-1"></div>
+                                    <div class="h-3 bg-gray-200 rounded w-14"></div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="h-4 bg-gray-300 rounded w-22 mb-1"></div>
+                                <div class="h-3 bg-gray-200 rounded w-20"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Skeleton Item 4 -->
+                    <div class="p-3 border border-gray-200 rounded-lg animate-pulse">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 bg-gray-300 rounded-full mr-3"></div>
+                                <div>
+                                    <div class="h-4 bg-gray-300 rounded w-26 mb-1"></div>
+                                    <div class="h-3 bg-gray-200 rounded w-18"></div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="h-4 bg-gray-300 rounded w-20 mb-1"></div>
+                                <div class="h-3 bg-gray-200 rounded w-16"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Error State -->
+                <div id="workers-error" class="hidden text-center py-8">
+                    <i class="fas fa-exclamation-triangle text-red-400 text-2xl mb-2"></i>
+                    <p class="text-sm text-red-500 font-medium">Failed to load workers</p>
+                    <button onclick="loadWorkersForSearch()" class="mt-3 px-4 py-2 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors duration-200">
+                        <i class="fas fa-redo mr-1"></i>Try Again
+                    </button>
+                </div>
+
                 <!-- Workers List -->
                 <div class="max-h-64 overflow-y-auto">
-                    <div id="workers-list" class="space-y-2">
+                    <div id="workers-list" class="space-y-2 hidden">
                         <!-- Workers will be loaded here -->
                     </div>
                     <div id="no-workers-found" class="hidden text-center py-8">
                         <i class="fas fa-user-slash text-gray-400 text-2xl mb-2"></i>
                         <p class="text-sm text-gray-500">No workers found</p>
+                        <p class="text-xs text-gray-400 mt-1">Try adjusting your search terms</p>
                     </div>
                 </div>
             </div>
@@ -699,6 +899,103 @@
     </div>
 </div>
 
+<!-- Pay Salary Modal -->
+<div id="pay-salary-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-[80]">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all duration-300">
+            <div class="px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-t-xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                            <i class="fas fa-money-bill-wave text-white text-xs"></i>
+                        </div>
+                        <h3 class="text-base font-semibold text-white">Pay Salary</h3>
+                    </div>
+                    <button type="button" onclick="closePaySalaryModal()" class="text-white hover:text-gray-200 transition-colors duration-200">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-4">
+                <div class="mb-4">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <div class="flex items-start">
+                            <i class="fas fa-info-circle text-blue-500 mr-2 mt-0.5"></i>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium text-blue-900 mb-2">Payment Details</p>
+                                <div class="space-y-1">
+                                    <p class="text-xs text-blue-700">Worker: <span id="pay-worker-name" class="font-semibold"></span></p>
+                                    <div class="text-xs text-blue-700">
+                                        <div id="pay-amount" class="font-semibold"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <form id="pay-salary-form" class="space-y-4">
+                    <input type="hidden" id="pay-salary-id" name="salary_id">
+
+                    <div style="display: block !important; visibility: visible !important;">
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                            <i class="fas fa-money-bill-wave text-gray-400 mr-1"></i>Payment Amount
+                        </label>
+                        <div class="relative">
+                            <input type="number" id="pay-amount-input" name="payment_amount" required min="1" step="1" style="display: block !important; visibility: visible !important;" class="w-full pl-12 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200" placeholder="Enter payment amount">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                <span class="text-gray-500 text-sm">UGX</span>
+                            </div>
+                        </div>
+                        <div class="flex justify-between mt-1">
+                            <button type="button" onclick="setPaymentAmount('partial')" class="text-xs text-blue-600 hover:text-blue-800">Pay Half</button>
+                            <button type="button" onclick="setPaymentAmount('full')" class="text-xs text-green-600 hover:text-green-800">Pay Full</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                            <i class="fas fa-credit-card text-gray-400 mr-1"></i>Payment Method
+                        </label>
+                        <select id="pay-method" name="payment_method" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200">
+                            <option value="cash">Cash</option>
+                            <option value="mobile_money">Mobile Money</option>
+                            <option value="bank_transfer">Bank Transfer</option>
+                            <option value="check">Check</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                            <i class="fas fa-sticky-note text-gray-400 mr-1"></i>Payment Notes (Optional)
+                        </label>
+                        <textarea id="pay-notes" name="notes" rows="3" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200" placeholder="Additional payment notes..."></textarea>
+                    </div>
+
+                    <div class="flex space-x-3 pt-2">
+                        <button type="button" onclick="closePaySalaryModal()" class="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors duration-200">
+                            Cancel
+                        </button>
+                        <button type="submit" class="flex-1 px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <i class="fas fa-check mr-1"></i>Process Payment
+                        </button>
+                    </div>
+
+                    <!-- Payment Progress -->
+                    <div id="payment-progress" class="hidden mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div class="flex items-center">
+                            <i class="fas fa-spinner fa-spin text-blue-500 mr-2"></i>
+                            <div class="text-sm">
+                                <p class="font-medium text-blue-900">Processing Payment...</p>
+                                <p id="payment-step" class="text-blue-700 text-xs mt-1">Finding expense record...</p>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Add Bonus Modal -->
 <div id="add-bonus-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50">
@@ -783,6 +1080,143 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Reduction Modal -->
+<div id="add-reduction-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300">
+            <div class="px-4 py-3 bg-gradient-to-r from-red-500 to-pink-600 rounded-t-xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                            <i class="fas fa-minus-circle text-white text-xs"></i>
+                        </div>
+                        <h3 class="text-base font-semibold text-white">Add Reduction</h3>
+                    </div>
+                    <button type="button" onclick="closeAddReductionModal()" class="text-white hover:text-gray-200 transition-colors duration-200">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
+            <form id="add-reduction-form" class="p-4 space-y-3">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                            <i class="fas fa-user text-gray-400 mr-1"></i>Select Worker
+                        </label>
+                        <div class="relative">
+                            <input type="text" id="reduction-worker-display" readonly class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50 cursor-pointer focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200" placeholder="Click to select a worker..." onclick="openWorkerSearchModal('reduction')">
+                            <input type="hidden" id="reduction-worker-id" name="worker_id" required>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                <i class="fas fa-search text-gray-400"></i>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Choose a worker for the reduction</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                            <i class="fas fa-money-bill text-gray-400 mr-1"></i>Amount (UGX)
+                        </label>
+                        <input type="number" id="reduction-amount" name="amount" min="0" step="1000" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200" placeholder="50000">
+                        <p class="text-xs text-gray-500 mt-1">Enter the reduction amount</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                            <i class="fas fa-tag text-gray-400 mr-1"></i>Reduction Type
+                        </label>
+                        <select id="reduction-type" name="reduction_type" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200">
+                            <option value="">Select type...</option>
+                            <option value="deduction">Deduction</option>
+                            <option value="penalty">Penalty</option>
+                            <option value="advance">Advance Payment</option>
+                            <option value="loan">Loan Repayment</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                            <i class="fas fa-comment text-gray-400 mr-1"></i>Reason
+                        </label>
+                        <input type="text" id="reduction-reason" name="reason" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200" placeholder="e.g., Late arrival penalty">
+                        <p class="text-xs text-gray-500 mt-1">Brief reason for the reduction</p>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                        <i class="fas fa-sticky-note text-gray-400 mr-1"></i>Notes
+                    </label>
+                    <textarea id="reduction-notes" name="notes" rows="3" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200" placeholder="Additional notes..."></textarea>
+                </div>
+                <div class="flex justify-end space-x-3 pt-3 border-t border-gray-200">
+                    <button type="button" onclick="closeAddReductionModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200">Cancel</button>
+                    <button type="submit" id="save-reduction-btn" class="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
+                        <i class="fas fa-save mr-2"></i>Add Reduction
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Worker Status Confirmation Modal -->
+<div id="worker-status-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-[80]">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all duration-300">
+            <div class="px-4 py-3 bg-gradient-to-r from-orange-500 to-red-600 rounded-t-xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                            <i class="fas fa-exclamation-triangle text-white text-xs"></i>
+                        </div>
+                        <h3 class="text-base font-semibold text-white" id="status-modal-title">Confirm Action</h3>
+                    </div>
+                    <button type="button" onclick="closeWorkerStatusModal()" class="text-white hover:text-gray-200 transition-colors duration-200">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center" id="status-modal-icon-bg">
+                            <i class="text-xl" id="status-modal-icon"></i>
+                        </div>
+                    </div>
+                    <div class="ml-4 flex-1">
+                        <h4 class="text-lg font-medium text-gray-900" id="status-modal-heading">Confirm Worker Status Change</h4>
+                        <p class="mt-2 text-sm text-gray-600" id="status-modal-message">
+                            Are you sure you want to change this worker's status?
+                        </p>
+                        <div class="mt-3 p-3 bg-gray-50 rounded-lg">
+                            <div class="text-sm">
+                                <span class="font-medium text-gray-700">Worker:</span>
+                                <span class="ml-1 text-gray-900" id="status-modal-worker-name">Loading...</span>
+                            </div>
+                            <div class="text-sm mt-1">
+                                <span class="font-medium text-gray-700">Current Status:</span>
+                                <span class="ml-1" id="status-modal-current-status">Loading...</span>
+                            </div>
+                            <div class="text-sm mt-1">
+                                <span class="font-medium text-gray-700">New Status:</span>
+                                <span class="ml-1" id="status-modal-new-status">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-4 bg-gray-50 rounded-b-xl flex justify-end space-x-3">
+                <button type="button" onclick="closeWorkerStatusModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-all duration-200">
+                    Cancel
+                </button>
+                <button type="button" onclick="confirmWorkerStatusChange()" id="confirm-status-btn" class="px-4 py-2 text-sm font-medium text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
+                    <i class="fas fa-check mr-2"></i>Confirm
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -899,12 +1333,18 @@ function closeAddWorkerModal() {
 function openAddSalaryModal() {
     document.getElementById('add-salary-modal').classList.remove('hidden');
 
-    // Set default pay period to current month
-    const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
-    document.getElementById('salary-pay-period').value = currentMonth;
+    // Set default work date to today
+    const today = new Date().toISOString().split('T')[0];
+    const workDateField = document.getElementById('salary-work-date');
+    if (workDateField) {
+        workDateField.value = today;
+    }
 
-    // Set default status to active (not paid)
-    document.getElementById('salary-status').value = 'active';
+    // Set default status to pending
+    const statusField = document.getElementById('salary-status');
+    if (statusField) {
+        statusField.value = 'pending';
+    }
 }
 
 function closeAddSalaryModal() {
@@ -930,7 +1370,6 @@ async function loadWorkerBonusesAndReductions() {
     const baseAmountField = document.getElementById('salary-amount');
     const bonusAmountField = document.getElementById('salary-bonus-amount');
     const reductionAmountField = document.getElementById('salary-reduction-amount');
-    const payPeriodField = document.getElementById('salary-pay-period');
 
     const workerId = workerSelect.value;
 
@@ -944,8 +1383,8 @@ async function loadWorkerBonusesAndReductions() {
     }
 
     try {
-        // Get current pay period or use current month
-        const payPeriod = payPeriodField.value || new Date().toISOString().slice(0, 7); // YYYY-MM format
+        // Use current month for filtering bonuses and reductions
+        const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
 
         // Fetch worker info, bonuses and reductions for the worker (include pending status)
         const [workerResponse, bonusesResponse, reductionsResponse] = await Promise.all([
@@ -962,13 +1401,11 @@ async function loadWorkerBonusesAndReductions() {
             // Find the selected worker's information
             const selectedWorker = workerData.workers.find(worker => worker.id === workerId);
             if (selectedWorker) {
-                // Set the base salary from worker's data
-                baseAmountField.value = selectedWorker.base_salary || 0;
+                // Set the base salary from worker's data (only if not already set)
+                if (!baseAmountField.value || baseAmountField.value === '0') {
+                    baseAmountField.value = selectedWorker.base_salary || 0;
+                }
             }
-
-            // Filter bonuses and reductions for the current pay period
-            const currentDate = new Date();
-            const currentMonth = payPeriod || currentDate.toISOString().slice(0, 7);
 
             console.log('Current month for filtering:', currentMonth);
             console.log('Bonuses data:', bonusesData);
@@ -1117,8 +1554,85 @@ function calculateNetAmount() {
 // Worker Search Modal Functions
 function openWorkerSearchModal(context = 'salary') {
     workerSelectionContext = context;
+
+    // Reset all modal states first
+    const loadingElement = document.getElementById('worker-search-loading');
+    const errorElement = document.getElementById('workers-error');
+    const workersListContainer = document.getElementById('workers-list');
+    const noWorkersFound = document.getElementById('no-workers-found');
+
+    // Force reset everything
+    loadingElement.style.display = 'block';
+    loadingElement.classList.remove('hidden');
+    errorElement.style.display = 'none';
+    errorElement.classList.add('hidden');
+    workersListContainer.style.display = 'none';
+    workersListContainer.classList.add('hidden');
+    noWorkersFound.style.display = 'none';
+    noWorkersFound.classList.add('hidden');
+
+    // Clear any existing content
+    workersListContainer.innerHTML = '';
+
+    // Restore skeleton content if it was cleared
+    if (loadingElement.innerHTML.trim() === '') {
+        loadingElement.innerHTML = `
+            <!-- Skeleton Item 1 -->
+            <div class="p-3 border border-gray-200 rounded-lg animate-pulse">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 bg-gray-300 rounded-full mr-3"></div>
+                        <div>
+                            <div class="h-4 bg-gray-300 rounded w-24 mb-1"></div>
+                            <div class="h-3 bg-gray-200 rounded w-16"></div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="h-4 bg-gray-300 rounded w-20 mb-1"></div>
+                        <div class="h-3 bg-gray-200 rounded w-16"></div>
+                    </div>
+                </div>
+            </div>
+            <!-- Skeleton Item 2 -->
+            <div class="p-3 border border-gray-200 rounded-lg animate-pulse">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 bg-gray-300 rounded-full mr-3"></div>
+                        <div>
+                            <div class="h-4 bg-gray-300 rounded w-28 mb-1"></div>
+                            <div class="h-3 bg-gray-200 rounded w-20"></div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="h-4 bg-gray-300 rounded w-24 mb-1"></div>
+                        <div class="h-3 bg-gray-200 rounded w-18"></div>
+                    </div>
+                </div>
+            </div>
+            <!-- Skeleton Item 3 -->
+            <div class="p-3 border border-gray-200 rounded-lg animate-pulse">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 bg-gray-300 rounded-full mr-3"></div>
+                        <div>
+                            <div class="h-4 bg-gray-300 rounded w-32 mb-1"></div>
+                            <div class="h-3 bg-gray-200 rounded w-14"></div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="h-4 bg-gray-300 rounded w-22 mb-1"></div>
+                        <div class="h-3 bg-gray-200 rounded w-20"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    console.log('Modal opened, loading state reset');
+
     document.getElementById('worker-search-modal').classList.remove('hidden');
     loadWorkersForSearch();
+
     // Focus on search input
     setTimeout(() => {
         document.getElementById('worker-search-input').focus();
@@ -1129,100 +1643,264 @@ function closeWorkerSearchModal() {
     document.getElementById('worker-search-modal').classList.add('hidden');
     document.getElementById('worker-search-input').value = '';
     document.getElementById('workers-list').innerHTML = '';
+
+    // Reset all states to initial
+    document.getElementById('worker-search-loading').classList.add('hidden');
+    document.getElementById('workers-error').classList.add('hidden');
+    document.getElementById('workers-list').classList.add('hidden');
+    document.getElementById('no-workers-found').classList.add('hidden');
+
+    console.log('Worker search modal closed and reset');
 }
 
 async function loadWorkersForSearch() {
-    try {
-        const response = await fetch('/api/hr/workers?page=1&size=100&is_active=true');
-        const data = await response.json();
+    const loadingElement = document.getElementById('worker-search-loading');
+    const errorElement = document.getElementById('workers-error');
+    const workersListContainer = document.getElementById('workers-list');
+    const noWorkersFound = document.getElementById('no-workers-found');
 
-        if (response.ok && data.workers) {
+    console.log('Starting to load workers...');
+
+    // Show loading skeletons, hide everything else
+    loadingElement.classList.remove('hidden');
+    errorElement.classList.add('hidden');
+    workersListContainer.classList.add('hidden');
+    noWorkersFound.classList.add('hidden');
+
+    try {
+        // Add minimum loading time to show skeleton
+        const [response] = await Promise.all([
+            fetch('/api/hr/workers?page=1&size=100&is_active=true'),
+            new Promise(resolve => setTimeout(resolve, 800)) // Minimum 800ms loading
+        ]);
+
+        console.log('API response received:', response.status);
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Workers data:', data);
+        console.log('Loading element before hiding:', loadingElement);
+        console.log('Loading element classes before:', loadingElement.className);
+
+        // Force hide loading skeletons
+        loadingElement.style.display = 'none';
+        loadingElement.classList.add('hidden');
+
+        console.log('Loading element classes after hiding:', loadingElement.className);
+
+        if (data.workers && Array.isArray(data.workers)) {
+            console.log('Displaying', data.workers.length, 'workers');
             displayWorkers(data.workers);
+
+            // Fallback: Force hide loading after a short delay
+            setTimeout(() => {
+                const loadingCheck = document.getElementById('worker-search-loading');
+                if (loadingCheck && !loadingCheck.classList.contains('hidden')) {
+                    console.log('Fallback: Force hiding loading skeletons');
+                    loadingCheck.style.display = 'none';
+                    loadingCheck.classList.add('hidden');
+                }
+            }, 100);
         } else {
-            console.error('Failed to load workers:', data);
-            showToast('Failed to load workers', 'error');
+            console.error('Invalid workers data structure:', data);
+            errorElement.classList.remove('hidden');
         }
     } catch (error) {
         console.error('Error loading workers:', error);
-        showToast('Error loading workers', 'error');
+        // Hide loading and show error
+        loadingElement.classList.add('hidden');
+        errorElement.classList.remove('hidden');
     }
 }
 
 function displayWorkers(workers) {
     const workersList = document.getElementById('workers-list');
     const noWorkersFound = document.getElementById('no-workers-found');
+    const loadingElement = document.getElementById('worker-search-loading');
+
+    console.log('displayWorkers called with', workers.length, 'workers');
+    console.log('Loading element in displayWorkers:', loadingElement);
+    console.log('Loading element classes before hiding:', loadingElement.className);
+
+    // Force hide loading skeletons with multiple methods
+    loadingElement.style.display = 'none';
+    loadingElement.classList.add('hidden');
+    loadingElement.innerHTML = ''; // Clear the skeleton content
+
+    console.log('Loading element classes after hiding:', loadingElement.className);
+    console.log('Loading element display style:', loadingElement.style.display);
 
     if (workers.length === 0) {
+        console.log('No workers to display');
         workersList.innerHTML = '';
+        workersList.classList.add('hidden');
         noWorkersFound.classList.remove('hidden');
         return;
     }
 
+    // Hide no workers message and show workers list
     noWorkersFound.classList.add('hidden');
+    noWorkersFound.style.display = 'none';
 
-    workersList.innerHTML = workers.map(worker => `
-        <div class="worker-item p-3 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition-all duration-200" onclick="selectWorker('${worker.id}', '${worker.full_name}', '${worker.username}', ${worker.base_salary || 0})">
+    workersList.classList.remove('hidden');
+    workersList.style.display = 'block';
+
+    console.log('Workers list should now be visible');
+
+    workersList.innerHTML = workers.map(worker => {
+        // Determine what to show below the name
+        let subInfo = '';
+        if (worker.is_external) {
+            // For external workers, show phone number
+            subInfo = worker.phone || 'No phone';
+        } else {
+            // For internal workers, show username
+            subInfo = `@${worker.username}`;
+        }
+
+        return `
+        <div class="worker-item p-3 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition-all duration-200" onclick="selectWorker('${worker.id}', '${worker.full_name}', '${worker.username}', ${worker.base_salary || 0}, '${worker.payment_frequency || 'monthly'}', ${worker.is_external || false})">
             <div class="flex items-center justify-between">
                 <div class="flex items-center">
-                    <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mr-3">
-                        <i class="fas fa-user text-white text-xs"></i>
+                    <div class="w-8 h-8 bg-gradient-to-r ${worker.is_external ? 'from-orange-500 to-red-600' : 'from-blue-500 to-indigo-600'} rounded-full flex items-center justify-center mr-3">
+                        <i class="fas ${worker.is_external ? 'fa-user-tie' : 'fa-user'} text-white text-xs"></i>
                     </div>
                     <div>
                         <div class="font-medium text-gray-900 text-sm">${worker.full_name}</div>
-                        <div class="text-xs text-gray-500">@${worker.username}</div>
+                        <div class="text-xs text-gray-500">${subInfo}</div>
+                        ${worker.is_external ? '<div class="text-xs text-orange-600 font-medium">External</div>' : ''}
                     </div>
                 </div>
                 <div class="text-right">
-                    <div class="text-sm font-medium text-green-600">UGX ${(worker.base_salary || 0).toLocaleString()}</div>
-                    <div class="text-xs text-gray-500">Base Salary</div>
+                    ${worker.payment_frequency === 'casual' ?
+                        '<div class="text-sm font-medium text-orange-600">Casual</div><div class="text-xs text-gray-500">Per Job</div>' :
+                        `<div class="text-sm font-medium text-green-600">UGX ${(worker.base_salary || 0).toLocaleString()}</div><div class="text-xs text-gray-500">Base Salary</div>`
+                    }
                 </div>
             </div>
         </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 function filterWorkers() {
     const searchTerm = document.getElementById('worker-search-input').value.toLowerCase();
     const workerItems = document.querySelectorAll('.worker-item');
-    let visibleCount = 0;
-
-    workerItems.forEach(item => {
-        const workerName = item.querySelector('.font-medium').textContent.toLowerCase();
-        const username = item.querySelector('.text-xs').textContent.toLowerCase();
-
-        if (workerName.includes(searchTerm) || username.includes(searchTerm)) {
-            item.style.display = 'block';
-            visibleCount++;
-        } else {
-            item.style.display = 'none';
-        }
-    });
-
-    // Show/hide no results message
+    const searchIcon = document.getElementById('search-icon');
+    const searchLoading = document.getElementById('search-loading');
     const noWorkersFound = document.getElementById('no-workers-found');
-    if (visibleCount === 0 && searchTerm.length > 0) {
-        noWorkersFound.classList.remove('hidden');
-    } else {
-        noWorkersFound.classList.add('hidden');
+
+    // Show loading animation briefly
+    if (searchTerm.length > 0) {
+        searchIcon.classList.add('hidden');
+        searchLoading.classList.remove('hidden');
     }
+
+    // Use setTimeout to show loading animation briefly
+    setTimeout(() => {
+        let visibleCount = 0;
+
+        workerItems.forEach(item => {
+            const workerName = item.querySelector('.font-medium').textContent.toLowerCase();
+            const subInfoElements = item.querySelectorAll('.text-xs');
+            let searchableText = workerName;
+
+            // Add all sub-info text (username, phone, "External" label) to searchable text
+            subInfoElements.forEach(element => {
+                searchableText += ' ' + element.textContent.toLowerCase();
+            });
+
+            if (searchableText.includes(searchTerm)) {
+                item.style.display = 'block';
+                visibleCount++;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+
+        // Show/hide no results message
+        if (visibleCount === 0 && searchTerm.length > 0) {
+            noWorkersFound.classList.remove('hidden');
+        } else {
+            noWorkersFound.classList.add('hidden');
+        }
+
+        // Hide loading animation and show search icon
+        searchLoading.classList.add('hidden');
+        searchIcon.classList.remove('hidden');
+    }, 200); // Brief delay to show loading animation
 }
 
-function selectWorker(workerId, workerName, username, baseSalary) {
+function selectWorker(workerId, workerName, username, baseSalary, paymentFrequency = 'monthly', isExternal = false) {
     if (workerSelectionContext === 'salary') {
-        document.getElementById('salary-worker-display').value = `${workerName} (${username})`;
+        const displayName = username ? `${workerName} (${username})` : workerName;
+        const isCasual = paymentFrequency === 'casual';
+
+        document.getElementById('salary-worker-display').value = displayName + (isCasual ? ' - Casual Worker' : '') + (isExternal ? ' - External' : '');
         document.getElementById('salary-worker-id').value = workerId;
-        document.getElementById('salary-amount').value = baseSalary;
-        loadWorkerBonusesAndReductions();
+
+        // Hide/show bonus and reduction fields based on worker type
+        const bonusReductionFields = document.getElementById('bonus-reduction-fields');
+        const workDescriptionField = document.getElementById('work-description-field');
+        const workDescriptionInput = document.getElementById('salary-work-description');
+
+        if (isExternal) {
+            bonusReductionFields.style.display = 'none';
+            workDescriptionField.style.display = 'block';
+            // Reset bonus and reduction amounts for external workers
+            document.getElementById('salary-bonus-amount').value = '0';
+            document.getElementById('salary-reduction-amount').value = '0';
+            // Clear work description for fresh input
+            workDescriptionInput.value = '';
+            workDescriptionInput.required = false;
+            // Keep grid layout for external workers
+            workDescriptionField.parentElement.className = 'grid grid-cols-1 md:grid-cols-2 gap-3';
+        } else {
+            bonusReductionFields.style.display = 'grid';
+            workDescriptionField.style.display = 'none';
+            // Load bonuses and reductions for internal workers
+            loadWorkerBonusesAndReductions();
+            // Set default work description for internal workers and make it not required
+            workDescriptionInput.value = 'Regular salary payment';
+            workDescriptionInput.required = false;
+            // Make work date take full width for internal workers
+            workDescriptionField.parentElement.className = 'grid grid-cols-1 gap-3';
+        }
+
+        // For casual workers, don't pre-fill amount, let user enter the job amount
+        if (isCasual) {
+            document.getElementById('salary-amount').value = '';
+            document.getElementById('salary-amount').placeholder = 'Enter amount for this job/day';
+            showToast(`Selected casual worker: ${workerName}. Enter the amount for this specific job.`, 'info');
+        } else {
+            document.getElementById('salary-amount').value = baseSalary;
+            document.getElementById('salary-amount').placeholder = '500000';
+            showToast(`Selected worker: ${workerName}`, 'success');
+        }
+
+        // Set today's date as default work date
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('salary-work-date').value = today;
+
+        // Calculate net amount
+        calculateNetAmount();
+
     } else if (workerSelectionContext === 'bonus') {
-        document.getElementById('bonus-worker-display').value = `${workerName} (${username})`;
+        const displayName = username ? `${workerName} (${username})` : workerName;
+        document.getElementById('bonus-worker-display').value = displayName;
         document.getElementById('bonus-worker-id').value = workerId;
+        showToast(`Selected worker: ${workerName}`, 'success');
     } else if (workerSelectionContext === 'reduction') {
-        document.getElementById('reduction-worker-display').value = `${workerName} (${username})`;
+        const displayName = username ? `${workerName} (${username})` : workerName;
+        document.getElementById('reduction-worker-display').value = displayName;
         document.getElementById('reduction-worker-id').value = workerId;
+        showToast(`Selected worker: ${workerName}`, 'success');
     }
 
     closeWorkerSearchModal();
-    showToast(`Selected worker: ${workerName}`, 'success');
 }
 
 function handleSearchKeydown(event) {
@@ -1616,6 +2294,25 @@ function createWorkerRow(worker) {
     // Format hire date
     const hireDate = worker.hire_date ? new Date(worker.hire_date).toLocaleDateString() : 'Not set';
 
+    // Format payment schedule
+    const paymentFrequency = worker.payment_frequency || 'monthly';
+    const paymentSchedule = worker.payment_schedule || '';
+    let scheduleDisplay = '';
+
+    if (paymentFrequency === 'monthly' && paymentSchedule) {
+        if (paymentSchedule === 'last') {
+            scheduleDisplay = 'Monthly (Last day)';
+        } else {
+            scheduleDisplay = `Monthly (${paymentSchedule}${getOrdinalSuffix(paymentSchedule)})`;
+        }
+    } else if (paymentFrequency === 'weekly' && paymentSchedule) {
+        scheduleDisplay = `Weekly (${paymentSchedule.charAt(0).toUpperCase() + paymentSchedule.slice(1)})`;
+    } else if (paymentFrequency === 'casual') {
+        scheduleDisplay = 'Casual/On-demand';
+    } else {
+        scheduleDisplay = paymentFrequency.charAt(0).toUpperCase() + paymentFrequency.slice(1);
+    }
+
     let userDetails;
     if (worker.is_external) {
         userDetails = `<div class="text-sm text-gray-500">${worker.phone}</div>`;
@@ -1637,7 +2334,8 @@ function createWorkerRow(worker) {
                 </div>
             </div>
         </td>
-        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">UGX ${(worker.base_salary || 0).toLocaleString()}</td>
+        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">${paymentFrequency === 'casual' ? 'Per Job' : `UGX ${(worker.base_salary || 0).toLocaleString()}`}</td>
+        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">${scheduleDisplay}</td>
         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">${hireDate}</td>
         <td class="px-4 py-3 whitespace-nowrap">${statusBadge}</td>
         <td class="px-4 py-3 whitespace-nowrap text-sm font-medium">
@@ -1674,7 +2372,87 @@ function editWorker(workerId) {
     document.getElementById('edit-worker-base-salary').value = worker.base_salary;
     document.getElementById('edit-worker-hire-date').value = worker.hire_date ? worker.hire_date.split('T')[0] : '';
 
+    // Set payment schedule fields
+    const paymentFrequency = worker.payment_frequency || 'monthly';
+    const paymentSchedule = worker.payment_schedule || '';
+
+    document.getElementById('edit-worker-payment-frequency').value = paymentFrequency;
+    updateEditPaymentScheduleField(); // This will populate the schedule options
+
+    // Set the schedule value after options are populated
+    setTimeout(() => {
+        document.getElementById('edit-worker-payment-schedule').value = paymentSchedule;
+    }, 100);
+
     document.getElementById('edit-worker-modal').classList.remove('hidden');
+}
+
+// Add Worker function
+async function handleAddWorker(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    const isNewWorker = document.getElementById('new-worker-checkbox').checked;
+
+    const saveBtn = document.getElementById('save-worker-btn');
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Adding...';
+
+    try {
+        let data;
+        let endpoint;
+
+        if (isNewWorker) {
+            // Create external worker
+            data = {
+                full_name: formData.get('full_name'),
+                phone_number: formData.get('phone_number'),
+                email: formData.get('email'),
+                base_salary: parseFloat(formData.get('base_salary')),
+                hire_date: formData.get('hire_date_new'),
+                payment_frequency: formData.get('payment_frequency'),
+                payment_schedule: formData.get('payment_schedule')
+            };
+            endpoint = '/api/hr/external-workers';
+        } else {
+            // Convert existing user to worker
+            data = {
+                user_id: formData.get('user_id'),
+                base_salary: parseFloat(formData.get('base_salary')),
+                hire_date: formData.get('hire_date_existing'),
+                payment_frequency: formData.get('payment_frequency'),
+                payment_schedule: formData.get('payment_schedule')
+            };
+            endpoint = '/api/hr/workers';
+        }
+
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            showToast(result.message || 'Worker added successfully', 'success');
+            closeAddWorkerModal();
+            loadWorkers();
+            loadUsers(); // Refresh users list
+            form.reset();
+            // Reset checkbox state
+            document.getElementById('new-worker-checkbox').checked = false;
+            document.getElementById('new-worker-checkbox').dispatchEvent(new Event('change'));
+        } else {
+            const error = await response.json();
+            showToast(error.detail || 'Failed to add worker', 'error');
+        }
+    } catch (error) {
+        console.error('Error adding worker:', error);
+        showToast('An error occurred while adding the worker.', 'error');
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Add Worker';
+    }
 }
 
 function closeEditWorkerModal() {
@@ -1695,6 +2473,8 @@ async function handleEditWorker(event) {
     const data = {
         base_salary: parseFloat(formData.get('base_salary')),
         hire_date: formData.get('hire_date'),
+        payment_frequency: formData.get('payment_frequency'),
+        payment_schedule: formData.get('payment_schedule')
     };
 
     if (isExternal) {
@@ -1726,8 +2506,625 @@ async function handleEditWorker(event) {
     }
 }
 
+// Global variable to store current worker status change data
+let currentWorkerStatusChange = null;
+
 function toggleWorkerStatus(workerId) {
-    showToast('Toggle worker status functionality coming soon', 'info');
+    const worker = workers.find(w => w.id === workerId);
+    if (!worker) {
+        showToast('Worker not found', 'error');
+        return;
+    }
+
+    // Store the worker data for the confirmation
+    currentWorkerStatusChange = {
+        workerId: workerId,
+        worker: worker,
+        newStatus: !worker.is_active
+    };
+
+    // Update modal content
+    const modal = document.getElementById('worker-status-modal');
+    const title = document.getElementById('status-modal-title');
+    const heading = document.getElementById('status-modal-heading');
+    const message = document.getElementById('status-modal-message');
+    const workerName = document.getElementById('status-modal-worker-name');
+    const currentStatus = document.getElementById('status-modal-current-status');
+    const newStatus = document.getElementById('status-modal-new-status');
+    const iconBg = document.getElementById('status-modal-icon-bg');
+    const icon = document.getElementById('status-modal-icon');
+    const confirmBtn = document.getElementById('confirm-status-btn');
+
+    // Set worker information
+    workerName.textContent = worker.full_name || worker.username || 'Unknown Worker';
+
+    if (worker.is_active) {
+        // Deactivating worker
+        title.textContent = 'Deactivate Worker';
+        heading.textContent = 'Deactivate Worker Account';
+        message.textContent = 'Are you sure you want to deactivate this worker? They will no longer be able to access the system and will not appear in active worker lists.';
+        currentStatus.innerHTML = '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>';
+        newStatus.innerHTML = '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">Inactive</span>';
+        iconBg.className = 'w-10 h-10 rounded-full flex items-center justify-center bg-red-100';
+        icon.className = 'text-xl fas fa-user-times text-red-600';
+        confirmBtn.className = 'px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg';
+        confirmBtn.innerHTML = '<i class="fas fa-user-times mr-2"></i>Deactivate Worker';
+    } else {
+        // Activating worker
+        title.textContent = 'Activate Worker';
+        heading.textContent = 'Activate Worker Account';
+        message.textContent = 'Are you sure you want to activate this worker? They will be able to access the system and will appear in active worker lists.';
+        currentStatus.innerHTML = '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">Inactive</span>';
+        newStatus.innerHTML = '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>';
+        iconBg.className = 'w-10 h-10 rounded-full flex items-center justify-center bg-green-100';
+        icon.className = 'text-xl fas fa-user-check text-green-600';
+        confirmBtn.className = 'px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg';
+        confirmBtn.innerHTML = '<i class="fas fa-user-check mr-2"></i>Activate Worker';
+    }
+
+    // Show the modal
+    modal.classList.remove('hidden');
+}
+
+function closeWorkerStatusModal() {
+    document.getElementById('worker-status-modal').classList.add('hidden');
+    currentWorkerStatusChange = null;
+}
+
+async function confirmWorkerStatusChange() {
+    if (!currentWorkerStatusChange) {
+        showToast('No worker status change data found', 'error');
+        return;
+    }
+
+    const confirmBtn = document.getElementById('confirm-status-btn');
+    const originalBtnContent = confirmBtn.innerHTML;
+
+    confirmBtn.disabled = true;
+    confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+
+    try {
+        const { workerId, newStatus } = currentWorkerStatusChange;
+
+        const response = await fetch(`/api/hr/workers/${workerId}/status`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ is_active: newStatus }),
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            const statusText = newStatus ? 'activated' : 'deactivated';
+            showToast(result.message || `Worker ${statusText} successfully`, 'success');
+            closeWorkerStatusModal();
+            loadWorkers(); // Reload the workers list
+            loadStats(); // Reload statistics
+        } else {
+            const error = await response.json();
+            showToast(error.detail || 'Failed to update worker status', 'error');
+        }
+    } catch (error) {
+        console.error('Error updating worker status:', error);
+        showToast('An error occurred while updating worker status', 'error');
+    } finally {
+        confirmBtn.disabled = false;
+        confirmBtn.innerHTML = originalBtnContent;
+    }
+}
+
+// Add Salary function
+async function handleAddSalary(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+
+    const saveBtn = document.getElementById('save-salary-btn');
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+
+    try {
+        const data = {
+            worker_id: formData.get('worker_id'),
+            amount: parseFloat(formData.get('amount')),
+            work_date: formData.get('work_date'),
+            work_description: formData.get('work_description'),
+            bonus_amount: parseFloat(formData.get('bonus_amount')) || 0,
+            reduction_amount: parseFloat(formData.get('reduction_amount')) || 0,
+            payment_method: formData.get('payment_method'),
+            status: formData.get('status'),
+            notes: formData.get('notes')
+        };
+
+        const response = await fetch('/api/hr/salaries', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            showToast(result.message || 'Salary processed successfully', 'success');
+            closeAddSalaryModal();
+            loadSalaries();
+            form.reset();
+        } else {
+            const error = await response.json();
+            showToast(error.detail || 'Failed to process salary', 'error');
+        }
+    } catch (error) {
+        console.error('Error processing salary:', error);
+        showToast('An error occurred while processing the salary.', 'error');
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '<i class="fas fa-money-bill-wave mr-1"></i>Process Salary';
+    }
+}
+
+// Add Bonus function
+async function handleAddBonus(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+
+    const saveBtn = document.getElementById('save-bonus-btn');
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Adding...';
+
+    try {
+        const data = {
+            worker_id: formData.get('worker_id'),
+            amount: parseFloat(formData.get('amount')),
+            bonus_type: formData.get('bonus_type'),
+            reason: formData.get('reason'),
+            notes: formData.get('notes')
+        };
+
+        const response = await fetch('/api/hr/bonuses', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            showToast(result.message || 'Bonus added successfully', 'success');
+            closeAddBonusModal();
+            loadBonuses();
+            form.reset();
+        } else {
+            const error = await response.json();
+            showToast(error.detail || 'Failed to add bonus', 'error');
+        }
+    } catch (error) {
+        console.error('Error adding bonus:', error);
+        showToast('An error occurred while adding the bonus.', 'error');
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '<i class="fas fa-gift mr-1"></i>Add Bonus';
+    }
+}
+
+// Add Reduction function
+async function handleAddReduction(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+
+    const saveBtn = document.getElementById('save-reduction-btn');
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Adding...';
+
+    try {
+        const data = {
+            worker_id: formData.get('worker_id'),
+            amount: parseFloat(formData.get('amount')),
+            reduction_type: formData.get('reduction_type'),
+            reason: formData.get('reason'),
+            notes: formData.get('notes')
+        };
+
+        const response = await fetch('/api/hr/reductions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            showToast(result.message || 'Reduction added successfully', 'success');
+            closeAddReductionModal();
+            loadReductions();
+            form.reset();
+        } else {
+            const error = await response.json();
+            showToast(error.detail || 'Failed to add reduction', 'error');
+        }
+    } catch (error) {
+        console.error('Error adding reduction:', error);
+        showToast('An error occurred while adding the reduction.', 'error');
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '<i class="fas fa-minus-circle mr-1"></i>Add Reduction';
+    }
+}
+
+// Load salaries
+async function loadSalaries() {
+    const loading = document.getElementById('salaries-loading');
+    const tableBody = document.getElementById('salaries-table-body');
+
+    loading.classList.remove('hidden');
+
+    try {
+        const statusFilter = document.getElementById('salaries-status-filter').value;
+        const params = new URLSearchParams();
+        if (statusFilter) params.append('status', statusFilter);
+
+        const response = await fetch(`/api/hr/salaries?${params}`);
+        if (response.ok) {
+            const data = await response.json();
+            const salaries = data.salaries || [];
+
+            tableBody.innerHTML = '';
+            salaries.forEach(salary => {
+                const row = createSalaryRow(salary);
+                tableBody.appendChild(row);
+            });
+        } else {
+            showToast('Error loading salaries', 'error');
+        }
+    } catch (error) {
+        console.error('Error loading salaries:', error);
+        showToast('Error loading salaries', 'error');
+    } finally {
+        loading.classList.add('hidden');
+    }
+}
+
+// Load bonuses
+async function loadBonuses() {
+    const loading = document.getElementById('bonuses-loading');
+    const tableBody = document.getElementById('bonuses-table-body');
+
+    loading.classList.remove('hidden');
+
+    try {
+        const statusFilter = document.getElementById('bonuses-status-filter').value;
+        const params = new URLSearchParams();
+        if (statusFilter) params.append('status', statusFilter);
+
+        const response = await fetch(`/api/hr/bonuses?${params}`);
+        if (response.ok) {
+            const data = await response.json();
+            const bonuses = data.bonuses || [];
+
+            tableBody.innerHTML = '';
+            bonuses.forEach(bonus => {
+                const row = createBonusRow(bonus);
+                tableBody.appendChild(row);
+            });
+        } else {
+            showToast('Error loading bonuses', 'error');
+        }
+    } catch (error) {
+        console.error('Error loading bonuses:', error);
+        showToast('Error loading bonuses', 'error');
+    } finally {
+        loading.classList.add('hidden');
+    }
+}
+
+// Load reductions
+async function loadReductions() {
+    const loading = document.getElementById('reductions-loading');
+    const tableBody = document.getElementById('reductions-table-body');
+
+    loading.classList.remove('hidden');
+
+    try {
+        const statusFilter = document.getElementById('reductions-status-filter').value;
+        const params = new URLSearchParams();
+        if (statusFilter) params.append('status', statusFilter);
+
+        const response = await fetch(`/api/hr/reductions?${params}`);
+        if (response.ok) {
+            const data = await response.json();
+            const reductions = data.reductions || [];
+
+            tableBody.innerHTML = '';
+            reductions.forEach(reduction => {
+                const row = createReductionRow(reduction);
+                tableBody.appendChild(row);
+            });
+        } else {
+            showToast('Error loading reductions', 'error');
+        }
+    } catch (error) {
+        console.error('Error loading reductions:', error);
+        showToast('Error loading reductions', 'error');
+    } finally {
+        loading.classList.add('hidden');
+    }
+}
+
+// Create salary row
+function createSalaryRow(salary) {
+    const row = document.createElement('tr');
+    row.className = 'hover:bg-gray-50 transition-colors duration-200';
+
+    const statusBadge = getStatusBadge(salary.status);
+    const workDate = salary.work_date ? new Date(salary.work_date).toLocaleDateString() : 'N/A';
+    const baseAmount = salary.amount || 0;
+    const bonusAmount = salary.bonus_amount || 0;
+    const reductionAmount = salary.reduction_amount || 0;
+    const netAmount = baseAmount + bonusAmount - reductionAmount;
+
+    // Determine description based on worker type and bonus/reduction amounts
+    let fullDescription;
+    const isExternalWorker = salary.is_external_worker;
+
+    if (isExternalWorker) {
+        // External worker - show work description only, no bonus/reduction info
+        fullDescription = salary.work_description || 'Work completed';
+    } else if (bonusAmount > 0 || reductionAmount > 0) {
+        // Internal worker with bonus/reduction - show salary payment with adjustments
+        const bonusText = bonusAmount > 0 ? `+UGX ${bonusAmount.toLocaleString()} bonus` : '';
+        const reductionText = reductionAmount > 0 ? `-UGX ${reductionAmount.toLocaleString()} reduction` : '';
+        const adjustments = [bonusText, reductionText].filter(Boolean).join(', ');
+        fullDescription = `Salary payment (${adjustments})`;
+    } else {
+        // Internal worker without adjustments
+        fullDescription = 'Salary payment';
+    }
+
+    row.innerHTML = `
+        <td class="px-4 py-3 text-sm text-gray-900">${salary.worker_name || 'Unknown'}</td>
+        <td class="px-4 py-3 text-sm text-gray-900">${workDate}</td>
+        <td class="px-4 py-3 text-sm text-gray-900">${fullDescription}</td>
+        <td class="px-4 py-3 text-sm text-gray-900">UGX ${baseAmount.toLocaleString()}</td>
+        <td class="px-4 py-3 text-sm font-semibold text-gray-900">UGX ${netAmount.toLocaleString()}</td>
+        <td class="px-4 py-3">${statusBadge}</td>
+        <td class="px-4 py-3 text-sm">
+            <div class="flex space-x-2">
+                ${salary.status !== 'paid' ?
+                    `<button onclick="openPaySalaryModal('${salary.id}', '${salary.worker_name}', ${netAmount})" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs transition-colors duration-200">
+                        <i class="fas fa-money-bill-wave mr-1"></i>Pay
+                    </button>` : ''
+                }
+                <button onclick="editSalary('${salary.id}')" class="text-indigo-600 hover:text-indigo-900 text-xs">Edit</button>
+                <button onclick="deleteSalary('${salary.id}')" class="text-red-600 hover:text-red-900 text-xs">Delete</button>
+            </div>
+        </td>
+    `;
+
+    return row;
+}
+
+// Create bonus row
+function createBonusRow(bonus) {
+    const row = document.createElement('tr');
+    row.className = 'hover:bg-gray-50 transition-colors duration-200';
+
+    const statusBadge = getStatusBadge(bonus.status);
+    const createdDate = bonus.created_at ? new Date(bonus.created_at).toLocaleDateString() : 'N/A';
+
+    row.innerHTML = `
+        <td class="px-4 py-3 text-sm text-gray-900">${bonus.worker_name || 'Unknown'}</td>
+        <td class="px-4 py-3 text-sm text-gray-900">UGX ${(bonus.amount || 0).toLocaleString()}</td>
+        <td class="px-4 py-3 text-sm text-gray-900">${bonus.bonus_type || 'N/A'}</td>
+        <td class="px-4 py-3 text-sm text-gray-900">${bonus.reason || 'N/A'}</td>
+        <td class="px-4 py-3">${statusBadge}</td>
+        <td class="px-4 py-3 text-sm text-gray-900">${createdDate}</td>
+        <td class="px-4 py-3 text-sm">
+            <button onclick="editBonus('${bonus.id}')" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</button>
+            <button onclick="deleteBonus('${bonus.id}')" class="text-red-600 hover:text-red-900">Delete</button>
+        </td>
+    `;
+
+    return row;
+}
+
+// Create reduction row
+function createReductionRow(reduction) {
+    const row = document.createElement('tr');
+    row.className = 'hover:bg-gray-50 transition-colors duration-200';
+
+    const statusBadge = getStatusBadge(reduction.status);
+    const createdDate = reduction.created_at ? new Date(reduction.created_at).toLocaleDateString() : 'N/A';
+
+    row.innerHTML = `
+        <td class="px-4 py-3 text-sm text-gray-900">${reduction.worker_name || 'Unknown'}</td>
+        <td class="px-4 py-3 text-sm text-gray-900">UGX ${(reduction.amount || 0).toLocaleString()}</td>
+        <td class="px-4 py-3 text-sm text-gray-900">${reduction.reduction_type || 'N/A'}</td>
+        <td class="px-4 py-3 text-sm text-gray-900">${reduction.reason || 'N/A'}</td>
+        <td class="px-4 py-3">${statusBadge}</td>
+        <td class="px-4 py-3 text-sm text-gray-900">${createdDate}</td>
+        <td class="px-4 py-3 text-sm">
+            <button onclick="editReduction('${reduction.id}')" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</button>
+            <button onclick="deleteReduction('${reduction.id}')" class="text-red-600 hover:text-red-900">Delete</button>
+        </td>
+    `;
+
+    return row;
+}
+
+// Helper function to get status badge
+function getStatusBadge(status) {
+    const statusClasses = {
+        'pending': 'bg-yellow-100 text-yellow-800',
+        'approved': 'bg-blue-100 text-blue-800',
+        'paid': 'bg-green-100 text-green-800',
+        'active': 'bg-orange-100 text-orange-800',
+        'partially_paid': 'bg-purple-100 text-purple-800',
+        'cancelled': 'bg-red-100 text-red-800',
+        'applied': 'bg-green-100 text-green-800'
+    };
+
+    const className = statusClasses[status] || 'bg-gray-100 text-gray-800';
+    return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${className}">${status || 'Unknown'}</span>`;
+}
+
+// Placeholder functions for edit/delete operations
+function editSalary(salaryId) {
+    showToast('Edit salary functionality coming soon', 'info');
+}
+
+function deleteSalary(salaryId) {
+    showToast('Delete salary functionality coming soon', 'info');
+}
+
+function editBonus(bonusId) {
+    showToast('Edit bonus functionality coming soon', 'info');
+}
+
+function deleteBonus(bonusId) {
+    showToast('Delete bonus functionality coming soon', 'info');
+}
+
+function editReduction(reductionId) {
+    showToast('Edit reduction functionality coming soon', 'info');
+}
+
+function deleteReduction(reductionId) {
+    showToast('Delete reduction functionality coming soon', 'info');
+}
+
+// Payment schedule functions
+function updatePaymentScheduleField() {
+    const frequencySelect = document.getElementById('worker-payment-frequency');
+    const scheduleSelect = document.getElementById('worker-payment-schedule');
+    const helpText = document.getElementById('payment-schedule-help');
+    const baseSalaryWrapper = document.getElementById('base-salary-wrapper');
+    const baseSalaryInput = document.getElementById('worker-base-salary');
+
+    const frequency = frequencySelect.value;
+
+    // Clear existing options
+    scheduleSelect.innerHTML = '';
+    scheduleSelect.disabled = false;
+
+    if (frequency === 'monthly') {
+        scheduleSelect.innerHTML = `
+            <option value="">Select day of month...</option>
+            <option value="1">1st of the month</option>
+            <option value="5">5th of the month</option>
+            <option value="10">10th of the month</option>
+            <option value="15">15th of the month</option>
+            <option value="20">20th of the month</option>
+            <option value="25">25th of the month</option>
+            <option value="30">30th of the month</option>
+            <option value="last">Last day of the month</option>
+        `;
+        helpText.textContent = 'Choose which day of the month the worker gets paid';
+        // Show base salary field for regular workers
+        baseSalaryWrapper.style.display = 'block';
+        baseSalaryInput.required = true;
+    } else if (frequency === 'weekly') {
+        scheduleSelect.innerHTML = `
+            <option value="">Select day of week...</option>
+            <option value="monday">Monday</option>
+            <option value="tuesday">Tuesday</option>
+            <option value="wednesday">Wednesday</option>
+            <option value="thursday">Thursday</option>
+            <option value="friday">Friday</option>
+            <option value="saturday">Saturday</option>
+            <option value="sunday">Sunday</option>
+        `;
+        helpText.textContent = 'Choose which day of the week the worker gets paid';
+        // Show base salary field for regular workers
+        baseSalaryWrapper.style.display = 'block';
+        baseSalaryInput.required = true;
+    } else if (frequency === 'casual') {
+        scheduleSelect.innerHTML = `
+            <option value="on_demand">Paid when called to work</option>
+        `;
+        scheduleSelect.disabled = true;
+        helpText.textContent = 'Casual workers are paid per job/day when called to work';
+        // Hide base salary field for casual workers
+        baseSalaryWrapper.style.display = 'none';
+        baseSalaryInput.required = false;
+        baseSalaryInput.value = '0'; // Set to 0 for casual workers
+    } else {
+        scheduleSelect.innerHTML = '<option value="">Select payment frequency first...</option>';
+        scheduleSelect.disabled = true;
+        helpText.textContent = 'Choose when the worker gets paid';
+        // Show base salary field by default
+        baseSalaryWrapper.style.display = 'block';
+        baseSalaryInput.required = true;
+    }
+}
+
+function updateEditPaymentScheduleField() {
+    const frequencySelect = document.getElementById('edit-worker-payment-frequency');
+    const scheduleSelect = document.getElementById('edit-worker-payment-schedule');
+    const helpText = document.getElementById('edit-payment-schedule-help');
+    const baseSalaryInput = document.getElementById('edit-worker-base-salary');
+
+    const frequency = frequencySelect.value;
+
+    // Clear existing options
+    scheduleSelect.innerHTML = '';
+    scheduleSelect.disabled = false;
+
+    if (frequency === 'monthly') {
+        scheduleSelect.innerHTML = `
+            <option value="">Select day of month...</option>
+            <option value="1">1st of the month</option>
+            <option value="5">5th of the month</option>
+            <option value="10">10th of the month</option>
+            <option value="15">15th of the month</option>
+            <option value="20">20th of the month</option>
+            <option value="25">25th of the month</option>
+            <option value="30">30th of the month</option>
+            <option value="last">Last day of the month</option>
+        `;
+        helpText.textContent = 'Choose which day of the month the worker gets paid';
+        baseSalaryInput.parentElement.style.display = 'block';
+        baseSalaryInput.required = true;
+    } else if (frequency === 'weekly') {
+        scheduleSelect.innerHTML = `
+            <option value="">Select day of week...</option>
+            <option value="monday">Monday</option>
+            <option value="tuesday">Tuesday</option>
+            <option value="wednesday">Wednesday</option>
+            <option value="thursday">Thursday</option>
+            <option value="friday">Friday</option>
+            <option value="saturday">Saturday</option>
+            <option value="sunday">Sunday</option>
+        `;
+        helpText.textContent = 'Choose which day of the week the worker gets paid';
+        baseSalaryInput.parentElement.style.display = 'block';
+        baseSalaryInput.required = true;
+    } else if (frequency === 'casual') {
+        scheduleSelect.innerHTML = `
+            <option value="on_demand">Paid when called to work</option>
+        `;
+        scheduleSelect.disabled = true;
+        helpText.textContent = 'Casual workers are paid per job/day when called to work';
+        baseSalaryInput.parentElement.style.display = 'none';
+        baseSalaryInput.required = false;
+        baseSalaryInput.value = '0';
+    } else {
+        scheduleSelect.innerHTML = '<option value="">Select payment frequency first...</option>';
+        scheduleSelect.disabled = true;
+        helpText.textContent = 'Choose when the worker gets paid';
+        baseSalaryInput.parentElement.style.display = 'block';
+        baseSalaryInput.required = true;
+    }
+}
+
+// Helper function to get ordinal suffix (1st, 2nd, 3rd, etc.)
+function getOrdinalSuffix(num) {
+    const number = parseInt(num);
+    if (number >= 11 && number <= 13) {
+        return 'th';
+    }
+    switch (number % 10) {
+        case 1: return 'st';
+        case 2: return 'nd';
+        case 3: return 'rd';
+        default: return 'th';
+    }
 }
 
 // View functions for salary, bonus, and reduction records
@@ -1741,6 +3138,275 @@ function viewBonus(bonusId) {
 
 function viewReduction(reductionId) {
     showToast('View reduction details functionality coming soon', 'info');
+}
+
+// Pay Salary Modal Functions
+function setPaymentAmount(type) {
+    if (!window.currentSalaryExpense) return;
+
+    const paymentInput = document.getElementById('pay-amount-input');
+    const remainingAmount = window.currentSalaryExpense.remainingAmount;
+
+    if (type === 'full') {
+        paymentInput.value = remainingAmount;
+    } else if (type === 'partial') {
+        paymentInput.value = Math.floor(remainingAmount / 2);
+    }
+}
+
+async function openPaySalaryModal(salaryId, workerName, netAmount) {
+    try {
+        console.log('Opening pay salary modal for:', salaryId, workerName, netAmount);
+
+        // Show modal first
+        document.getElementById('pay-salary-modal').classList.remove('hidden');
+        document.getElementById('pay-salary-id').value = salaryId;
+        document.getElementById('pay-worker-name').textContent = workerName;
+
+        // Show loading state
+        document.getElementById('pay-amount').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+
+        // Ensure payment amount input is visible and functional
+        const paymentInput = document.getElementById('pay-amount-input');
+        console.log('Payment input element:', paymentInput);
+        if (paymentInput) {
+            paymentInput.style.display = 'block';
+            paymentInput.value = netAmount;
+            paymentInput.max = netAmount;
+            console.log('Set payment input value to:', netAmount);
+        }
+
+        // Find the corresponding expense record for this salary
+        const expenseResponse = await fetch(`/api/expenses/?search=Salary ID: ${salaryId}`);
+        if (!expenseResponse.ok) {
+            throw new Error('Failed to find expense record');
+        }
+
+        const expenseData = await expenseResponse.json();
+        const expenses = expenseData.expenses || [];
+
+        if (expenses.length === 0) {
+            throw new Error('No expense record found for this salary');
+        }
+
+        const expense = expenses[0];
+        const totalAmount = expense.amount || netAmount;
+        const amountPaid = expense.amount_paid || 0;
+        const remainingAmount = totalAmount - amountPaid;
+
+        // Store expense info for payment processing
+        window.currentSalaryExpense = {
+            salaryId: salaryId,
+            expenseId: expense.id,
+            totalAmount: totalAmount,
+            amountPaid: amountPaid,
+            remainingAmount: remainingAmount
+        };
+
+        // Update payment amount display
+        if (amountPaid > 0) {
+            document.getElementById('pay-amount').innerHTML = `
+                <div class="text-sm space-y-1">
+                    <div class="flex justify-between text-gray-600">
+                        <span>Total Amount:</span>
+                        <span>UGX ${totalAmount.toLocaleString()}</span>
+                    </div>
+                    <div class="flex justify-between text-gray-600">
+                        <span>Already Paid:</span>
+                        <span>UGX ${amountPaid.toLocaleString()}</span>
+                    </div>
+                    <div class="flex justify-between font-semibold text-green-700 border-t pt-1">
+                        <span>Remaining:</span>
+                        <span>UGX ${remainingAmount.toLocaleString()}</span>
+                    </div>
+                </div>
+            `;
+        } else {
+            document.getElementById('pay-amount').textContent = `UGX ${remainingAmount.toLocaleString()}`;
+        }
+
+        // Reset form and set payment amount
+        document.getElementById('pay-salary-form').reset();
+        document.getElementById('pay-salary-id').value = salaryId;
+        document.getElementById('pay-amount-input').value = remainingAmount;
+        document.getElementById('pay-amount-input').max = remainingAmount;
+
+    } catch (error) {
+        console.error('Error opening pay salary modal:', error);
+
+        // Fallback: store basic info
+        window.currentSalaryExpense = {
+            salaryId: salaryId,
+            expenseId: null,
+            totalAmount: netAmount,
+            amountPaid: 0,
+            remainingAmount: netAmount
+        };
+
+        // Show simple amount display for fallback
+        document.getElementById('pay-amount').textContent = `UGX ${netAmount.toLocaleString()}`;
+
+        // Set payment amount input for fallback
+        document.getElementById('pay-amount-input').value = netAmount;
+        document.getElementById('pay-amount-input').max = netAmount;
+
+        showToast('Could not load payment details. Using salary amount.', 'warning');
+    }
+}
+
+function closePaySalaryModal() {
+    document.getElementById('pay-salary-modal').classList.add('hidden');
+    document.getElementById('pay-salary-form').reset();
+    document.getElementById('payment-progress').classList.add('hidden');
+
+    // Reset button state
+    const submitButton = document.querySelector('#pay-salary-form button[type="submit"]');
+    submitButton.innerHTML = '<i class="fas fa-check mr-1"></i>Process Payment';
+    submitButton.disabled = false;
+
+    // Clear stored expense information
+    window.currentSalaryExpense = null;
+}
+
+// Handle pay salary form submission
+document.getElementById('pay-salary-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const formData = new FormData(this);
+    const salaryId = formData.get('salary_id');
+    const paymentMethod = formData.get('payment_method');
+    const paymentAmount = parseFloat(formData.get('payment_amount'));
+    const notes = formData.get('notes');
+
+    console.log('Form data:', {
+        salaryId,
+        paymentMethod,
+        paymentAmount,
+        notes
+    });
+
+    // Show loading state
+    const submitButton = this.querySelector('button[type="submit"]');
+    const originalText = submitButton.innerHTML;
+    const progressDiv = document.getElementById('payment-progress');
+    const progressStep = document.getElementById('payment-step');
+
+    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Processing...';
+    submitButton.disabled = true;
+    progressDiv.classList.remove('hidden');
+    progressStep.textContent = 'Finding expense record...';
+
+    try {
+        // Validate payment amount
+        if (!paymentAmount || paymentAmount <= 0) {
+            throw new Error('Please enter a valid payment amount');
+        }
+
+        // Use the expense information stored when modal was opened
+        if (!window.currentSalaryExpense) {
+            throw new Error('No expense information available. Please close and reopen the payment modal.');
+        }
+
+        const expenseInfo = window.currentSalaryExpense;
+        console.log('Using stored expense info:', expenseInfo);
+
+        // Validate payment amount doesn't exceed remaining balance
+        if (paymentAmount > expenseInfo.remainingAmount) {
+            throw new Error(`Payment amount (UGX ${paymentAmount.toLocaleString()}) cannot exceed remaining balance (UGX ${expenseInfo.remainingAmount.toLocaleString()})`);
+        }
+
+        progressStep.textContent = 'Recording payment...';
+
+        // Step 2: Record payment for the expense (user-specified amount)
+        const paymentData = {
+            amount: paymentAmount,
+            payment_method: paymentMethod,
+            notes: notes || `Salary payment processed from HR page (${paymentAmount < expenseInfo.remainingAmount ? 'Partial payment' : 'Full payment'})`
+        };
+
+        console.log('Recording payment for expense:', expenseInfo.expenseId, paymentData);
+        const paymentResponse = await fetch(`/api/expenses/${expenseInfo.expenseId}/payment`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(paymentData)
+        });
+
+        console.log('Payment response status:', paymentResponse.status);
+        const paymentResult = await paymentResponse.json();
+        console.log('Payment response data:', paymentResult);
+
+        if (!paymentResponse.ok) {
+            throw new Error(paymentResult.detail || 'Failed to record payment');
+        }
+
+        console.log('Payment recorded successfully');
+        progressStep.textContent = 'Updating salary status...';
+
+        // Step 3: Update salary status (only mark as "paid" if fully paid)
+        const newAmountPaid = expenseInfo.amountPaid + paymentAmount;
+        const isFullyPaid = newAmountPaid >= expenseInfo.totalAmount;
+        const newSalaryStatus = isFullyPaid ? 'paid' : 'pending';
+
+        console.log(`Payment: ${paymentAmount}, New total paid: ${newAmountPaid}, Total amount: ${expenseInfo.totalAmount}, Fully paid: ${isFullyPaid}`);
+
+        const statusResponse = await fetch(`/api/hr/salaries/${salaryId}/status`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                status: newSalaryStatus
+            })
+        });
+
+        if (!statusResponse.ok) {
+            const errorData = await statusResponse.json();
+            console.warn('Failed to update salary status:', errorData);
+            // Don't throw error here since payment was successful
+        }
+
+        const paymentType = isFullyPaid ? 'Full payment' : 'Partial payment';
+        showToast(`${paymentType} of UGX ${paymentAmount.toLocaleString()} processed successfully!`, 'success');
+        closePaySalaryModal();
+        loadSalaries(); // Reload the salary table
+
+    } catch (error) {
+        console.error('Error processing payment:', error);
+        showToast(error.message || 'Error processing payment', 'error');
+    } finally {
+        // Reset button state
+        submitButton.innerHTML = originalText;
+        submitButton.disabled = false;
+        progressDiv.classList.add('hidden');
+    }
+});
+
+// Alternative function to pay salary directly (updates status only)
+async function paySalaryDirect(salaryId) {
+    try {
+        const statusResponse = await fetch(`/api/hr/salaries/${salaryId}/status`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                status: 'paid'
+            })
+        });
+
+        if (statusResponse.ok) {
+            showToast('Salary marked as paid successfully!', 'success');
+            loadSalaries(); // Reload the salary table
+        } else {
+            const errorData = await statusResponse.json();
+            showToast(errorData.detail || 'Failed to update salary status', 'error');
+        }
+    } catch (error) {
+        console.error('Error updating salary status:', error);
+        showToast('Error updating salary status', 'error');
+    }
 }
 </script>
 {% endblock %}

@@ -342,10 +342,17 @@ async def record_expense_payment(
         expense = await expenses_collection.find_one({"_id": ObjectId(expense_id)})
         if not expense:
             raise HTTPException(status_code=404, detail="Expense not found")
+
+        print(f"Found expense record: {expense}")
         
         amount = float(payment_data.get("amount", 0))
         payment_method = payment_data.get("payment_method", "cash")
         notes = payment_data.get("notes", "")
+
+        print(f"Processing payment for expense {expense_id}")
+        print(f"Payment data received: {payment_data}")
+        print(f"Parsed - amount: {amount}, payment_method: {payment_method}, notes: {notes}")
+        print(f"Current expense payment_method: {expense.get('payment_method')}")
         
         if amount <= 0:
             raise HTTPException(status_code=400, detail="Payment amount must be greater than 0")
@@ -353,9 +360,14 @@ async def record_expense_payment(
         # Calculate current amount paid
         current_paid = expense.get("amount_paid", 0)
         total_amount = expense.get("amount", 0)
-        
+
+        print(f"Payment validation - current_paid: {current_paid}, total_amount: {total_amount}, new_amount: {amount}")
+        print(f"Would result in: {current_paid + amount} (max allowed: {total_amount})")
+
         if current_paid + amount > total_amount:
-            raise HTTPException(status_code=400, detail="Payment amount exceeds remaining balance")
+            error_msg = f"Payment amount exceeds remaining balance. Current paid: {current_paid}, New payment: {amount}, Total: {total_amount}"
+            print(f"ERROR: {error_msg}")
+            raise HTTPException(status_code=400, detail=error_msg)
         
         # Record the payment in installments collection
         payment_doc = {
@@ -373,16 +385,37 @@ async def record_expense_payment(
         new_amount_paid = current_paid + amount
         new_status = "paid" if new_amount_paid >= total_amount else "partially_paid"
         
+        # Update expense with new amount paid, status, and payment method
+        update_data = {
+            "amount_paid": new_amount_paid,
+            "status": new_status,
+            "updated_at": kampala_to_utc(now_kampala()),
+            "updated_by": user.username
+        }
+
+        # Only update payment method when expense is fully paid
+        current_payment_method = expense.get("payment_method")
+        print(f"Current payment method: '{current_payment_method}'")
+        print(f"New payment method: '{payment_method}'")
+        print(f"New status: '{new_status}'")
+
+        # Update payment method only if:
+        # 1. This payment fully pays the expense (status becomes 'paid'), AND
+        # 2. Current payment method is default/empty/not_paid
+        if (new_status == "paid" and
+            (not current_payment_method or
+             current_payment_method == "cash" or
+             current_payment_method == "not_paid")):
+            update_data["payment_method"] = payment_method
+            print(f"Expense fully paid - updating payment method to: '{payment_method}'")
+        else:
+            print(f"Keeping existing payment method: '{current_payment_method}' (status: {new_status})")
+
+        print(f"Final update data: {update_data}")
+
         await expenses_collection.update_one(
             {"_id": ObjectId(expense_id)},
-            {
-                "$set": {
-                    "amount_paid": new_amount_paid,
-                    "status": new_status,
-                    "updated_at": kampala_to_utc(now_kampala()),
-                    "updated_by": user.username
-                }
-            }
+            {"$set": update_data}
         )
         
         return {

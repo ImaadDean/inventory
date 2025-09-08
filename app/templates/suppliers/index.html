@@ -86,7 +86,7 @@
             </div>
         </div>
 
-        <!-- Total Value -->
+        <!-- Total Unpaid Balance -->
         <div class="bg-white overflow-hidden shadow-md rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
             <div class="p-4">
                 <div class="flex items-center">
@@ -96,14 +96,14 @@
                         </div>
                     </div>
                     <div class="ml-3 flex-1">
-                        <dt class="text-xs font-medium text-gray-500 truncate">Total Value</dt>
-                        <dd class="text-base font-bold text-gray-900 mt-0.5" id="total-value">UGX 0</dd>
+                        <dt class="text-xs font-medium text-gray-500 truncate">Total Unpaid Balance</dt>
+                        <dd class="text-base font-bold text-gray-900 mt-0.5" id="total-unpaid-balance">UGX 0</dd>
                     </div>
                 </div>
             </div>
             <div class="bg-gradient-to-r from-yellow-50 to-orange-100 px-4 py-2">
                 <div class="text-xs">
-                    <span class="text-orange-700 font-medium">Inventory value</span>
+                    <span class="text-orange-700 font-medium">Total Unpaid Balance</span>
                 </div>
             </div>
         </div>
@@ -956,7 +956,7 @@ function updateSupplierStats(stats) {
     document.getElementById('total-suppliers').textContent = stats.total || 0;
     document.getElementById('active-suppliers').textContent = stats.active || 0;
     document.getElementById('supplied-products').textContent = stats.products || 0;
-    document.getElementById('total-value').textContent = `UGX ${(stats.total_value || 0).toLocaleString()}`;
+    document.getElementById('total-unpaid-balance').textContent = `UGX ${(stats.total_value || 0).toLocaleString()}`;
 }
 
 function exportSuppliers() {

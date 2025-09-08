@@ -132,11 +132,14 @@ async def get_suppliers(
 
         total_products = await products_collection.count_documents({})
 
+        # Calculate total unpaid balance for stats
+        total_unpaid_balance = sum(unpaid_balances.values())
+        
         stats = {
             "total": total_suppliers,
             "active": active_suppliers,
             "products": total_products,
-            "total_value": 0  # TODO: Calculate total inventory value
+            "total_value": total_unpaid_balance  # Changed from 0 to total unpaid balance
         }
         
         return {
