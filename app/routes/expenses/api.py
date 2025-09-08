@@ -16,6 +16,17 @@ import logging
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+def convert_objectids_to_strings(obj):
+    """Recursively convert ObjectId instances to strings in a dictionary or list"""
+    if isinstance(obj, dict):
+        return {key: convert_objectids_to_strings(value) for key, value in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_objectids_to_strings(item) for item in obj]
+    elif isinstance(obj, ObjectId):
+        return str(obj)
+    else:
+        return obj
+
 
 
 @router.get("/api/expenses/", response_model=dict)
@@ -153,10 +164,14 @@ async def get_expenses(
         expenses = await cursor.to_list(length=size)
         
         # Convert ObjectId to string and format data
+        formatted_expenses = []
         for expense in expenses:
+            # Convert all ObjectIds to strings
+            expense = convert_objectids_to_strings(expense)
+
             expense["id"] = str(expense["_id"])
             del expense["_id"]
-            
+
             # Format date
             if expense.get("expense_date"):
                 if isinstance(expense["expense_date"], str):
@@ -165,6 +180,8 @@ async def get_expenses(
                 else:
                     # Convert datetime to string
                     expense["expense_date"] = expense["expense_date"].isoformat()
+
+            formatted_expenses.append(expense)
         
         # Optimized stats calculation using aggregation
         stats_pipeline = [
@@ -203,7 +220,7 @@ async def get_expenses(
         }
         
         return {
-            "expenses": expenses,
+            "expenses": formatted_expenses,
             "total": total,
             "page": page,
             "size": size,
@@ -276,10 +293,13 @@ async def get_expense(
         if not expense:
             raise HTTPException(status_code=404, detail="Expense not found")
         
+        # Convert all ObjectIds to strings
+        expense = convert_objectids_to_strings(expense)
+
         # Convert ObjectId to string
         expense["id"] = str(expense["_id"])
         del expense["_id"]
-        
+
         # Format date
         if expense.get("expense_date"):
             if isinstance(expense["expense_date"], str):
@@ -310,17 +330,19 @@ async def get_expense_payments(
         payments_cursor = installments_collection.find({"expense_id": ObjectId(expense_id)}).sort("payment_date", 1)
         payments = await payments_cursor.to_list(length=None)
         
+        formatted_payments = []
         for payment in payments:
+            # Convert all ObjectIds to strings
+            payment = convert_objectids_to_strings(payment)
+
             payment["id"] = str(payment["_id"])
             del payment["_id"]
-            if payment.get("expense_id"):
-                payment["expense_id"] = str(payment["expense_id"])
-            if payment.get("order_id") and payment.get("order_id") is not None:
-                payment["order_id"] = str(payment["order_id"])
             if payment.get("payment_date"):
                 payment["payment_date"] = payment["payment_date"].isoformat()
 
-        return payments
+            formatted_payments.append(payment)
+
+        return formatted_payments
         
     except Exception as e:
         logger.error(f"Error fetching payments for expense {expense_id}: {e}")
@@ -417,7 +439,64 @@ async def record_expense_payment(
             {"_id": ObjectId(expense_id)},
             {"$set": update_data}
         )
-        
+
+        # Check if this expense is linked to a salary record and update it
+        try:
+            # First try to use the direct salary_id field (for new expenses)
+            salary_id = expense.get("salary_id")
+
+            if not salary_id:
+                # Fallback: Look for salary ID in the expense notes (for existing expenses)
+                expense_notes = expense.get("notes", "")
+                print(f"No direct salary_id field, checking expense notes: '{expense_notes}'")
+
+                if "Salary ID:" in expense_notes:
+                    print("Found 'Salary ID:' in expense notes")
+                    # Extract salary ID from notes
+                    import re
+                    salary_id_match = re.search(r"Salary ID: ([a-f0-9A-F]{24})", expense_notes)
+                    if salary_id_match:
+                        salary_id = salary_id_match.group(1)  # Keep as string
+                        print(f"Extracted salary ID from notes: {salary_id}")
+                    else:
+                        print("No salary ID found in expense notes with regex pattern")
+                else:
+                    print("No 'Salary ID:' found in expense notes")
+            else:
+                print(f"Found direct salary_id field: {salary_id}")
+
+            if salary_id:
+                # Update the salary record's amount_paid field
+                salaries_collection = db.salaries
+                print(f"Updating salary {salary_id} with amount_paid: {new_amount_paid}, status: {'paid' if new_status == 'paid' else 'pending'}")
+
+                # Convert salary_id to ObjectId if it's a string
+                salary_object_id = ObjectId(salary_id) if isinstance(salary_id, str) else salary_id
+
+                salary_update_result = await salaries_collection.update_one(
+                    {"_id": salary_object_id},
+                    {
+                        "$set": {
+                            "amount_paid": new_amount_paid,
+                            "status": "paid" if new_status == "paid" else "pending",
+                            "updated_at": kampala_to_utc(now_kampala())
+                        }
+                    }
+                )
+
+                if salary_update_result.modified_count > 0:
+                    print(f"Successfully updated salary record {salary_id} with amount_paid: {new_amount_paid}")
+                else:
+                    print(f"Failed to update salary record {salary_id} - no documents matched")
+            else:
+                print("No salary ID found - this expense is not linked to a salary record")
+
+        except Exception as e:
+            print(f"Warning: Failed to update linked salary record: {str(e)}")
+            import traceback
+            print(f"Traceback: {traceback.format_exc()}")
+            # Don't fail the payment if salary update fails
+
         return {
             "message": "Payment recorded successfully",
             "amount_paid": amount,

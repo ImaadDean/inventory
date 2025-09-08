@@ -56,6 +56,7 @@ class Salary(BaseModel):
     bonus_amount: float = Field(default=0.0, ge=0, description="Additional bonus amount")
     reduction_amount: float = Field(default=0.0, ge=0, description="Total reductions")
     net_amount: float = Field(..., description="Final amount after bonuses and reductions")
+    amount_paid: float = Field(default=0.0, ge=0, description="Amount paid so far")
     status: PaymentStatus = PaymentStatus.PENDING
     payment_method: Optional[str] = Field(None, description="Payment method used")
     payment_date: Optional[datetime] = Field(None, description="Date when payment was made")

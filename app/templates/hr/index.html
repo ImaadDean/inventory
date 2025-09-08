@@ -2,6 +2,8 @@
 
 {% block title %}HR Management - Inventory Management System{% endblock %}
 
+
+
 {% block content %}
 <div class="space-y-4 animate-fade-in">
     <!-- Header -->
@@ -222,23 +224,26 @@
                     </div>
                 </div>
 
-                <div class="overflow-x-auto bg-white rounded-lg border border-gray-200">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Worker</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Work Date</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Net Amount</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="salaries-table-body" class="bg-white divide-y divide-gray-200">
-                            <!-- Salaries will be loaded here -->
-                        </tbody>
-                    </table>
+                <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
+                                <tr>
+                                    <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Worker</th>
+                                    <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Work Date</th>
+                                    <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Description</th>
+                                    <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Net Amount</th>
+                                    <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Paid</th>
+                                    <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Remaining</th>
+                                    <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                                    <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="salaries-table-body" class="bg-white divide-y divide-gray-100">
+                                <!-- Salaries will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <div id="salaries-loading" class="text-center py-12 hidden">
@@ -2850,7 +2855,8 @@ async function loadReductions() {
 // Create salary row
 function createSalaryRow(salary) {
     const row = document.createElement('tr');
-    row.className = 'hover:bg-gray-50 transition-colors duration-200';
+    // Set row class based on status (similar to expense table)
+    row.className = `hover:bg-gray-50 transition-colors duration-200 ${salary.status === 'pending' ? 'bg-yellow-50 border-l-4 border-yellow-400' : salary.status === 'active' ? 'bg-orange-50 border-l-4 border-orange-400' : ''}`;
 
     const statusBadge = getStatusBadge(salary.status);
     const workDate = salary.work_date ? new Date(salary.work_date).toLocaleDateString() : 'N/A';
@@ -2877,22 +2883,53 @@ function createSalaryRow(salary) {
         fullDescription = 'Salary payment';
     }
 
+    // Calculate payment tracking information
+    const amountPaid = salary.amount_paid || 0;
+    const remainingBalance = salary.remaining_balance || (netAmount - amountPaid);
+
     row.innerHTML = `
-        <td class="px-4 py-3 text-sm text-gray-900">${salary.worker_name || 'Unknown'}</td>
-        <td class="px-4 py-3 text-sm text-gray-900">${workDate}</td>
-        <td class="px-4 py-3 text-sm text-gray-900">${fullDescription}</td>
-        <td class="px-4 py-3 text-sm text-gray-900">UGX ${baseAmount.toLocaleString()}</td>
-        <td class="px-4 py-3 text-sm font-semibold text-gray-900">UGX ${netAmount.toLocaleString()}</td>
-        <td class="px-4 py-3">${statusBadge}</td>
-        <td class="px-4 py-3 text-sm">
-            <div class="flex space-x-2">
+        <td class="px-3 py-3 whitespace-nowrap">
+            <div class="flex items-center">
+                <div class="w-8 h-8 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-lg flex items-center justify-center mr-3">
+                    <i class="fas fa-user text-white text-xs"></i>
+                </div>
+                <div>
+                    <div class="text-sm font-medium text-gray-900">${salary.worker_name || 'Unknown'}</div>
+                    <div class="text-xs text-gray-500">Worker</div>
+                </div>
+            </div>
+        </td>
+        <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
+            ${workDate}
+        </td>
+        <td class="px-3 py-3 whitespace-nowrap">
+            <div class="text-sm font-medium text-gray-900">${fullDescription}</div>
+        </td>
+        <td class="px-3 py-3 whitespace-nowrap">
+            <div class="text-sm font-bold text-gray-900">UGX ${netAmount.toLocaleString()}</div>
+        </td>
+        <td class="px-3 py-3 whitespace-nowrap">
+            <div class="text-sm font-bold ${amountPaid > 0 ? 'text-green-600' : 'text-gray-500'}">UGX ${amountPaid.toLocaleString()}</div>
+        </td>
+        <td class="px-3 py-3 whitespace-nowrap">
+            <div class="text-sm font-bold ${remainingBalance > 0 ? 'text-red-600' : 'text-green-600'}">UGX ${remainingBalance.toLocaleString()}</div>
+        </td>
+        <td class="px-3 py-3 whitespace-nowrap">
+            ${statusBadge}
+        </td>
+        <td class="px-3 py-3 whitespace-nowrap text-right text-sm font-medium">
+            <div class="flex items-center space-x-2">
                 ${salary.status !== 'paid' ?
-                    `<button onclick="openPaySalaryModal('${salary.id}', '${salary.worker_name}', ${netAmount})" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs transition-colors duration-200">
-                        <i class="fas fa-money-bill-wave mr-1"></i>Pay
+                    `<button onclick="openPaySalaryModal('${salary.id}', '${salary.worker_name}', ${netAmount})" class="text-green-600 hover:text-green-900 transition-colors duration-200" title="Pay Salary">
+                        <i class="fas fa-credit-card text-xs"></i>
                     </button>` : ''
                 }
-                <button onclick="editSalary('${salary.id}')" class="text-indigo-600 hover:text-indigo-900 text-xs">Edit</button>
-                <button onclick="deleteSalary('${salary.id}')" class="text-red-600 hover:text-red-900 text-xs">Delete</button>
+                <button onclick="editSalary('${salary.id}')" class="text-indigo-600 hover:text-indigo-900 transition-colors duration-200" title="Edit">
+                    <i class="fas fa-edit text-xs"></i>
+                </button>
+                <button onclick="deleteSalary('${salary.id}')" class="text-red-600 hover:text-red-900 transition-colors duration-200" title="Delete">
+                    <i class="fas fa-trash text-xs"></i>
+                </button>
             </div>
         </td>
     `;
@@ -2948,7 +2985,7 @@ function createReductionRow(reduction) {
     return row;
 }
 
-// Helper function to get status badge
+// Helper function to get status badge (matching expense table style)
 function getStatusBadge(status) {
     const statusClasses = {
         'pending': 'bg-yellow-100 text-yellow-800',
@@ -2961,7 +2998,10 @@ function getStatusBadge(status) {
     };
 
     const className = statusClasses[status] || 'bg-gray-100 text-gray-800';
-    return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${className}">${status || 'Unknown'}</span>`;
+    return `<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${className}">
+        <i class="fas fa-circle text-xs mr-1"></i>
+        ${status ? status.replace('_', ' ') : 'Unknown'}
+    </span>`;
 }
 
 // Placeholder functions for edit/delete operations
@@ -3357,7 +3397,8 @@ document.getElementById('pay-salary-form').addEventListener('submit', async func
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                status: newSalaryStatus
+                status: newSalaryStatus,
+                amount_paid: newAmountPaid
             })
         });
 

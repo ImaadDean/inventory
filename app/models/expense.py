@@ -22,6 +22,7 @@ class Expense(BaseModel):
     vendor: Optional[str] = Field(None, max_length=200)
     notes: Optional[str] = Field(None, max_length=1000)
     status: str = Field(default="not_paid")  # paid, not_paid, partially_paid
+    salary_id: Optional[str] = Field(None, description="Reference to linked salary record")
     products: Optional[List[RestockedProduct]] = Field(default=None)
     created_at: datetime = Field(default_factory=lambda: kampala_to_utc(now_kampala()))
     updated_at: datetime = Field(default_factory=lambda: kampala_to_utc(now_kampala()))
@@ -30,6 +31,9 @@ class Expense(BaseModel):
     
     class Config:
         populate_by_name = True
+        populate_by_name = True
+        arbitrary_types_allowed = True
+        json_encoders = {ObjectId: str}
         json_encoders = {
             ObjectId: str,
             datetime: lambda v: v.isoformat(),

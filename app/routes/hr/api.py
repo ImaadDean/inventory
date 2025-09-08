@@ -514,6 +514,7 @@ async def create_salary(
             "bonus_amount": float(bonus_amount),
             "reduction_amount": float(reduction_amount),
             "net_amount": float(net_amount),
+            "amount_paid": float(net_amount) if data.status == "paid" else 0.0,
             "status": data.status or "pending",
             "payment_method": data.payment_method or "cash",
             "notes": data.notes or "",
@@ -576,6 +577,7 @@ async def create_salary(
                         (f", Reduction: UGX {reduction_float:,.0f}" if reduction_float > 0 else "") +
                         (f". {data.notes}" if data.notes else "") +
                         f". Salary ID: {salary_id}")[:1000],  # Limit notes length
+                "salary_id": salary_id,  # Direct link to salary record
                 "status": payment_status,
                 "created_at": kampala_to_utc(now_kampala()),
                 "updated_at": kampala_to_utc(now_kampala()),
@@ -642,12 +644,30 @@ async def update_salary_status(
                 detail="Status is required"
             )
 
+        # Get the salary record first
+        salary = await db.salaries.find_one({"_id": ObjectId(salary_id)})
+        if not salary:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Salary record not found"
+            )
+
+        # Calculate amount_paid - use provided amount_paid if available, otherwise calculate based on status
+        net_amount = salary.get("net_amount", 0)
+        if "amount_paid" in status_data:
+            # Use the provided amount_paid (for partial payments from HR)
+            amount_paid = float(status_data.get("amount_paid", 0))
+        else:
+            # Calculate based on status (for direct status updates)
+            amount_paid = net_amount if new_status == "paid" else salary.get("amount_paid", 0)
+
         # Update salary record
         salary_result = await db.salaries.update_one(
             {"_id": ObjectId(salary_id)},
             {
                 "$set": {
                     "status": new_status,
+                    "amount_paid": amount_paid,
                     "updated_at": now_kampala()
                 }
             }
@@ -674,8 +694,8 @@ async def update_salary_status(
 
                 expense_status = expense_status_map.get(new_status, "not_paid")
 
-                # Calculate amount_paid based on status
-                amount_paid = salary.get("net_amount", 0) if new_status == "paid" else 0
+                # Use the amount_paid from the salary record (which was just updated)
+                expense_amount_paid = amount_paid
 
                 # Find the expense record
                 expense = await db.expenses.find_one({"notes": {"$regex": f"Salary ID: {salary_id}"}})
@@ -696,7 +716,7 @@ async def update_salary_status(
 
                         payment_doc = {
                             "expense_id": expense_id,
-                            "amount": amount_paid,
+                            "amount": expense_amount_paid,
                             "payment_date": kampala_to_utc(now_kampala()),
                             "payment_method": salary.get("payment_method", "cash"),
                             "notes": f"Payment made from HR salary processing for {worker_name}",
@@ -711,7 +731,7 @@ async def update_salary_status(
                         {
                             "$set": {
                                 "status": expense_status,
-                                "amount_paid": amount_paid,
+                                "amount_paid": expense_amount_paid,
                                 "updated_at": kampala_to_utc(now_kampala())
                             }
                         }
@@ -825,6 +845,11 @@ async def get_salaries(
                 is_external_worker = not bool(worker.get("username"))
                 print(f"Is external worker: {is_external_worker}")
 
+                # Calculate payment tracking information
+                net_amount = salary.get("net_amount", 0)
+                amount_paid = salary.get("amount_paid", 0)
+                remaining_balance = max(0, net_amount - amount_paid)
+
                 salary_data = {
                     "id": str(salary["_id"]),
                     "worker_id": str(salary["worker_id"]),
@@ -834,7 +859,9 @@ async def get_salaries(
                     "work_description": salary.get("work_description", ""),
                     "bonus_amount": salary.get("bonus_amount", 0),
                     "reduction_amount": salary.get("reduction_amount", 0),
-                    "net_amount": salary.get("net_amount", 0),
+                    "net_amount": net_amount,
+                    "amount_paid": amount_paid,
+                    "remaining_balance": remaining_balance,
                     "status": salary.get("status", "pending"),
                     "payment_method": salary.get("payment_method", ""),
                     "notes": salary.get("notes", ""),
