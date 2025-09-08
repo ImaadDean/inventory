@@ -192,22 +192,46 @@ async def get_expenses(
                         {"$group": {"_id": None, "total": {"$sum": "$amount"}}}
                     ],
                     "month_amount": [
-                        {"$match": {"expense_date": {"$gte": get_month_start()}}},
+                        {
+                            "$addFields": {
+                                "expense_date_parsed": {
+                                    "$dateFromString": {
+                                        "dateString": "$expense_date",
+                                        "onError": None
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "$match": {
+                                "$or": [
+                                    {"expense_date_parsed": {"$gte": get_month_start()}},
+                                    {"expense_date": {"$regex": f"^{datetime.now().month}/{datetime.now().year}|^{datetime.now().year}-{datetime.now().month:02d}"}}
+                                ]
+                            }
+                        },
                         {"$group": {"_id": None, "total": {"$sum": "$amount"}}}
                     ],
-                    "pending_amount": [
+                    "pending_balance": [
                         {"$match": {"status": {"$in": ["pending", "not_paid", "partially_paid"]}}},
-                        {"$group": {"_id": None, "total": {"$sum": "$amount"}}}
+                        {
+                            "$addFields": {
+                                "remaining_balance": {
+                                    "$subtract": ["$amount", {"$ifNull": ["$amount_paid", 0]}]
+                                }
+                            }
+                        },
+                        {"$group": {"_id": None, "total": {"$sum": "$remaining_balance"}}}
                     ]
                 }
             }
         ]
         
         stats_result = await expenses_collection.aggregate(stats_pipeline).to_list(length=1)
-        
+
         total_amount = stats_result[0]['total_amount'][0]['total'] if stats_result and stats_result[0]['total_amount'] else 0
         month_amount = stats_result[0]['month_amount'][0]['total'] if stats_result and stats_result[0]['month_amount'] else 0
-        pending_amount = stats_result[0]['pending_amount'][0]['total'] if stats_result and stats_result[0]['pending_amount'] else 0
+        pending_balance = stats_result[0]['pending_balance'][0]['total'] if stats_result and stats_result[0]['pending_balance'] else 0
         
         # Categories count
         categories_count = len(await expenses_collection.distinct("category"))
@@ -215,7 +239,7 @@ async def get_expenses(
         stats = {
             "total": total_amount,
             "month": month_amount,
-            "pending": pending_amount,
+            "pending": pending_balance,
             "categories": categories_count
         }
         

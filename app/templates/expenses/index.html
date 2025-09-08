@@ -2,6 +2,30 @@
 
 {% block title %}Expenses - Inventory Management System{% endblock %}
 
+{% block extra_head %}
+<style>
+    /* Enhanced skeleton animation */
+    @keyframes shimmer {
+        0% {
+            background-position: -200px 0;
+        }
+        100% {
+            background-position: calc(200px + 100%) 0;
+        }
+    }
+
+    .skeleton-shimmer {
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200px 100%;
+        animation: shimmer 1.5s infinite;
+    }
+
+    .payment-modal-transition {
+        transition: all 0.3s ease-in-out;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="space-y-4 animate-fade-in">
     <!-- Header -->
@@ -65,7 +89,7 @@
             </div>
             <div class="bg-gradient-to-r from-blue-50 to-blue-100 px-4 py-2">
                 <div class="text-xs">
-                    <span class="text-blue-700 font-medium">Current month</span>
+                    <span class="text-blue-700 font-medium">Current month total</span>
                 </div>
             </div>
         </div>
@@ -87,7 +111,7 @@
             </div>
             <div class="bg-gradient-to-r from-yellow-50 to-orange-100 px-4 py-2">
                 <div class="text-xs">
-                    <span class="text-orange-700 font-medium">Awaiting payment</span>
+                    <span class="text-orange-700 font-medium">Remaining balance</span>
                 </div>
             </div>
         </div>
@@ -279,11 +303,8 @@
                         </label>
                         <select name="payment_method" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200">
                             <option value="">Select Method</option>
-                            <option value="cash">💵 Cash</option>
-                            <option value="bank_transfer">🏦 Bank Transfer</option>
                             <option value="mobile_money">📱 Mobile Money</option>
-                            <option value="check">📄 Check</option>
-                            <option value="card">💳 Card</option>
+                            <option value="cash">💵 Cash</option>
                         </select>
                     </div>
                 </div>
@@ -623,6 +644,19 @@
 </div>
 
 <script>
+    // Helper functions for escaping strings
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function escapeJs(text) {
+        if (!text) return '';
+        return text.replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+    }
+
     // Pagination state variables
     let currentPage = 1;
     let totalExpenses = 0;
@@ -970,14 +1004,14 @@
                             <i class="fas fa-receipt text-white text-xs"></i>
                         </div>
                         <div>
-                            <div class="text-sm font-medium text-gray-900">${expense.description}</div>
-                            <div class="text-xs text-gray-500">${expense.vendor || 'No vendor'}</div>
+                            <div class="text-sm font-medium text-gray-900">${escapeHtml(expense.description)}</div>
+                            <div class="text-xs text-gray-500">${escapeHtml(expense.vendor || 'No vendor')}</div>
                         </div>
                     </div>
                 </td>
                 <td class="px-3 py-3 whitespace-nowrap">
                     <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                        ${getCategoryIcon(expense.category)} ${expense.category}
+                        ${getCategoryIcon(expense.category)} ${escapeHtml(expense.category)}
                     </span>
                 </td>
                 <td class="px-3 py-3 whitespace-nowrap">
@@ -996,7 +1030,7 @@
                     </span>
                 </td>
                 <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
-                    ${expense.payment_method || 'N/A'}
+                    ${escapeHtml(expense.payment_method || 'N/A')}
                 </td>
                 <td class="px-3 py-3 whitespace-nowrap text-right text-sm font-medium">
                     <div class="flex items-center space-x-2">
@@ -1004,7 +1038,7 @@
                             <i class="fas fa-eye text-xs"></i>
                         </button>
                         ${expense.status !== 'paid' ? `
-                        <button onclick="openPaymentModal('${expense.id}', '${expense.description}', ${expense.amount - (expense.amount_paid || 0)})" class="text-green-600 hover:text-green-900 transition-colors duration-200" title="Pay Expense">
+                        <button onclick="openPaymentModal('${expense.id}', '${escapeJs(expense.description)}', ${expense.amount - (expense.amount_paid || 0)})" class="text-green-600 hover:text-green-900 transition-colors duration-200" title="Pay Expense">
                             <i class="fas fa-credit-card text-xs"></i>
                         </button>
                         ` : ''}
@@ -1111,9 +1145,51 @@
         `).join('');
     }
 
+    // Global variable to store category icons
+    let categoryIconsMap = {};
+
     function getCategoryIcon(category) {
-        // This will be updated dynamically based on loaded categories
-        return '📝'; // Default fallback
+        // Use dynamically loaded category icons or fallback to static mapping
+        if (categoryIconsMap[category]) {
+            return categoryIconsMap[category];
+        }
+
+        // Static fallback mapping for common categories
+        const staticIcons = {
+            'Stock Purchase': '🛒',
+            'External Labor': '👷',
+            'Inventory': '📦',
+            'Utilities': '⚡',
+            'Rent': '🏠',
+            'Supplies': '📋',
+            'Marketing': '📢',
+            'Transport': '🚚',
+            'Other': '📝'
+        };
+
+        return staticIcons[category] || '📝'; // Default fallback
+    }
+
+    // Function to load category icons from API
+    async function loadCategoryIcons() {
+        try {
+            const response = await fetch('/api/expense-categories/', {
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const categories = data.categories || [];
+
+                // Build the icons map
+                categoryIconsMap = {};
+                categories.forEach(category => {
+                    categoryIconsMap[category.name] = category.icon || '📝';
+                });
+            }
+        } catch (error) {
+            console.error('Error loading category icons:', error);
+        }
     }
 
     function getStatusColor(status) {
@@ -1509,6 +1585,11 @@
 
     async function openPaymentModal(expenseId, expenseDescription, remainingAmount) {
         try {
+            // Show modal with skeleton loading
+            document.getElementById('payment-modal').classList.remove('hidden');
+            document.getElementById('payment-loading-skeleton').classList.remove('hidden');
+            document.getElementById('payment-form').classList.add('hidden');
+
             // Fetch the full expense details from the API
             const response = await fetch(`/api/expenses/${expenseId}`);
             if (!response.ok) {
@@ -1556,12 +1637,17 @@
             document.getElementById('payment-amount-input').max = actualRemaining;
             document.getElementById('payment-method-select').value = '';
 
-            // Show modal
-            document.getElementById('payment-modal').classList.remove('hidden');
+            // Hide skeleton and show form with a smooth transition
+            setTimeout(() => {
+                document.getElementById('payment-loading-skeleton').classList.add('hidden');
+                document.getElementById('payment-form').classList.remove('hidden');
+            }, 500); // Small delay to show the skeleton animation
 
         } catch (error) {
             console.error('Error opening payment modal:', error);
             showToast('Failed to load expense details', 'error');
+            // Hide modal on error
+            document.getElementById('payment-modal').classList.add('hidden');
         }
     }
 
@@ -1569,6 +1655,10 @@
         document.getElementById('payment-modal').classList.add('hidden');
         currentPaymentExpense = null;
         document.getElementById('payment-form').reset();
+
+        // Reset skeleton state for next time
+        document.getElementById('payment-loading-skeleton').classList.remove('hidden');
+        document.getElementById('payment-form').classList.add('hidden');
     }
 
     function processPayment() {
@@ -1637,7 +1727,8 @@
     document.addEventListener('DOMContentLoaded', function() {
         console.log('DOM Content Loaded - initializing expenses page');
 
-
+        // Load category icons for display
+        loadCategoryIcons();
 
         // Load initial data
         applyFilters();
@@ -2115,7 +2206,41 @@
                 </div>
             </div>
 
-            <form id="payment-form" class="p-4 space-y-4">
+            <!-- Loading Skeleton -->
+            <div id="payment-loading-skeleton" class="p-4 space-y-4 payment-modal-transition">
+                <!-- Expense Info Skeleton -->
+                <div class="bg-gray-50 rounded-lg p-3">
+                    <div class="h-3 skeleton-shimmer rounded w-16 mb-2"></div>
+                    <div class="h-4 skeleton-shimmer rounded w-3/4"></div>
+                </div>
+
+                <!-- Expense Amount Skeleton -->
+                <div class="bg-red-50 rounded-lg p-3 border border-red-200">
+                    <div class="h-3 skeleton-shimmer rounded w-24 mb-2"></div>
+                    <div class="h-6 skeleton-shimmer rounded w-32"></div>
+                </div>
+
+                <!-- Payment Amount Skeleton -->
+                <div>
+                    <div class="h-3 skeleton-shimmer rounded w-28 mb-2"></div>
+                    <div class="h-10 skeleton-shimmer rounded-lg"></div>
+                </div>
+
+                <!-- Payment Method Skeleton -->
+                <div>
+                    <div class="h-3 skeleton-shimmer rounded w-32 mb-2"></div>
+                    <div class="h-10 skeleton-shimmer rounded-lg"></div>
+                </div>
+
+                <!-- Buttons Skeleton -->
+                <div class="flex justify-end space-x-2 pt-3 border-t border-gray-200">
+                    <div class="h-8 skeleton-shimmer rounded-lg w-16"></div>
+                    <div class="h-8 skeleton-shimmer rounded-lg w-20"></div>
+                </div>
+            </div>
+
+            <!-- Actual Form (hidden during loading) -->
+            <form id="payment-form" class="p-4 space-y-4 hidden payment-modal-transition">
                 <!-- Expense Info -->
                 <div class="bg-gray-50 rounded-lg p-3">
                     <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Expense</div>
@@ -2133,7 +2258,7 @@
                     <label class="block text-xs font-semibold text-gray-700 mb-2">
                         <i class="fas fa-money-bill text-gray-400 mr-1"></i>Payment Amount
                     </label>
-                    <input type="number" id="payment-amount-input" 
+                    <input type="number" id="payment-amount-input"
                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
                            placeholder="Enter payment amount" min="1" step="1" required>
                 </div>
@@ -2146,26 +2271,23 @@
                     <select id="payment-method-select" required
                             class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200">
                         <option value="">Select payment method</option>
-                        <option value="cash">💵 Cash</option>
-                        <option value="bank_transfer">🏦 Bank Transfer</option>
                         <option value="mobile_money">📱 Mobile Money</option>
-                        <option value="credit_card">💳 Credit Card</option>
-                        <option value="check">📄 Check</option>
-                        <option value="other">🔧 Other</option>
+                        <option value="cash">💵 Cash</option>
                     </select>
                 </div>
 
                 <div class="flex justify-end space-x-2 pt-3 border-t border-gray-200">
-                    <button type="button" onclick="closePaymentModal()" 
+                    <button type="button" onclick="closePaymentModal()"
                             class="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200">
                         Cancel
                     </button>
-                    <button type="button" id="pay-now-button" onclick="processPayment()" 
+                    <button type="button" id="pay-now-button" onclick="processPayment()"
                             class="px-3 py-2 text-xs font-medium text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
                         <i class="fas fa-check mr-1"></i>Pay Now
                     </button>
                 </div>
             </form>
+
         </div>
     </div>
 </div>

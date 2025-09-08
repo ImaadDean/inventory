@@ -1,18 +1,17 @@
-from datetime import datetime
 import logging
 from .timezone import now_kampala, kampala_to_utc, format_kampala_date
 
 logger = logging.getLogger(__name__)
 
 async def initialize_default_expense_categories(db):
-    """Initialize default expense categories - only Restocking"""
+    """Initialize default expense categories"""
     try:
         categories_collection = db.expense_categories
 
-        # Remove old default categories except Restocking
+        # Remove old default categories including the ones we're replacing
         unwanted_defaults = [
             "Inventory", "Utilities", "Rent", "Supplies",
-            "Marketing", "Transport", "Other"
+            "Marketing", "Transport", "Other", "Restocking", "Stocking"
         ]
 
         for category_name in unwanted_defaults:
@@ -21,62 +20,48 @@ async def initialize_default_expense_categories(db):
                 "is_default": True
             })
 
-        # Check if Restocking category already exists
-        restocking_exists = await categories_collection.find_one({
-            "name": "Restocking",
-            "is_default": True
-        })
-
-        # Check if Stocking category already exists
-        stocking_exists = await categories_collection.find_one({
-            "name": "Stocking",
-            "is_default": True
-        })
-
-        if restocking_exists and stocking_exists:
-            # logger.info("Restocking and Stocking categories already exist")
-            return
-        
-        # Create Restocking category if it doesn't exist
-        if not restocking_exists:
-            restocking_category = {
-                "name": "Restocking",
-                "icon": "📦",
-                "is_default": True,
-                "is_active": True,
-                "created_at": datetime.utcnow(),
-                "updated_at": datetime.utcnow(),
-                "created_by": "system"
+        # Define default categories to create
+        default_categories = [
+            {
+                "name": "Stock Purchase",
+                "icon": "🛒",
+                "description": "Expenses for purchasing stock and inventory (restocking and new stock)"
+            },
+            {
+                "name": "External Labor",
+                "icon": "👷",
+                "description": "Payments for external workers and contractors"
             }
+        ]
 
-            # Insert Restocking category
-            result = await categories_collection.insert_one(restocking_category)
+        # Check and create each default category
+        for category_info in default_categories:
+            category_exists = await categories_collection.find_one({
+                "name": category_info["name"],
+                "is_default": True
+            })
 
-            if result.inserted_id:
-                logger.info("Successfully initialized Restocking expense category")
+            if not category_exists:
+                category_doc = {
+                    "name": category_info["name"],
+                    "icon": category_info["icon"],
+                    "is_default": True,
+                    "is_active": True,
+                    "created_at": kampala_to_utc(now_kampala()),
+                    "updated_at": kampala_to_utc(now_kampala()),
+                    "created_by": "system"
+                }
+
+                # Insert category
+                result = await categories_collection.insert_one(category_doc)
+
+                if result.inserted_id:
+                    logger.info(f"Successfully initialized {category_info['name']} expense category")
+                else:
+                    logger.error(f"Failed to initialize {category_info['name']} expense category")
             else:
-                logger.error("Failed to initialize Restocking expense category")
+                logger.info(f"{category_info['name']} category already exists")
 
-        # Create Stocking category if it doesn't exist
-        if not stocking_exists:
-            stocking_category = {
-                "name": "Stocking",
-                "icon": "📋",
-                "is_default": True,
-                "is_active": True,
-                "created_at": datetime.utcnow(),
-                "updated_at": datetime.utcnow(),
-                "created_by": "system"
-            }
-
-            # Insert Stocking category
-            result = await categories_collection.insert_one(stocking_category)
-
-            if result.inserted_id:
-                logger.info("Successfully initialized Stocking expense category")
-            else:
-                logger.error("Failed to initialize Stocking expense category")
-            
     except Exception as e:
         logger.error(f"Error initializing default expense categories: {e}")
 
@@ -94,7 +79,7 @@ async def create_restocking_expense(db, product_name, quantity, unit_cost, total
         # Create expense document for restocking
         expense_doc = {
             "description": f"Restocking: {product_name} (Qty: {quantity})",
-            "category": "Restocking",
+            "category": "Stock Purchase",
             "amount": float(total_cost),
             "expense_date": format_kampala_date(now_kampala()),  # Convert to string in EAT
             "payment_method": final_payment_method,
@@ -135,7 +120,7 @@ async def create_stocking_expense(db, product_name, quantity, unit_cost, total_c
         # Create expense document for initial stocking
         expense_doc = {
             "description": f"Initial Stocking: {product_name} (Qty: {quantity})",
-            "category": "Stocking",
+            "category": "Stock Purchase",
             "amount": float(total_cost),
             "expense_date": format_kampala_date(now_kampala()),  # Convert to string in EAT
             "payment_method": final_payment_method,
