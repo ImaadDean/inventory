@@ -1,0 +1,1164 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if per_order %}
+        Per Order {{ per_order.order_number }} - Inventory Management System
+    {% else %}
+        Per Orders - Inventory Management System
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+{% if per_order %}
+    {# Detail View #}
+    <div class="space-y-6">
+        <!-- Header with Back Button -->
+        <div class="bg-gradient-to-r from-blue-500 to-indigo-600 shadow-lg rounded-xl p-6 text-white">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+                <div class="mb-4 md:mb-0">
+                    <div class="flex items-center space-x-3 mb-2">
+                        <a href="/per-order" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-3 py-2 rounded-lg flex items-center space-x-2 transition-all duration-200">
+                            <i class="fas fa-arrow-left text-sm"></i>
+                            <span class="font-medium">Back to Per Orders</span>
+                        </a>
+                    </div>
+                    <h1 class="text-2xl md:text-3xl font-bold">Per Order {{ per_order.order_number }}</h1>
+                    <p class="text-blue-100 text-sm">Detailed per order management and tracking</p>
+                </div>
+                <div class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-3">
+                    <!-- Status Badge -->
+                    <div class="flex items-center space-x-2">
+                        <span class="px-3 py-1 rounded-full text-xs font-medium
+                            {% if per_order.status == 'delivered' %}bg-green-500 bg-opacity-20 text-green-100 border border-green-400{% endif %}
+                            {% if per_order.status == 'pending' %}bg-yellow-500 bg-opacity-20 text-yellow-100 border border-yellow-400{% endif %}
+                            {% if per_order.status == 'processing' %}bg-blue-500 bg-opacity-20 text-blue-100 border border-blue-400{% endif %}
+                            {% if per_order.status == 'shipped' %}bg-purple-500 bg-opacity-20 text-purple-100 border border-purple-400{% endif %}
+                            {% if per_order.status == 'cancelled' %}bg-red-500 bg-opacity-20 text-red-100 border border-red-400{% endif %}
+                            {% if per_order.status == 'returned' %}bg-gray-500 bg-opacity-20 text-gray-100 border border-gray-400{% endif %}">
+                            {{ per_order.status.title() }}
+                        </span>
+                        <span class="px-3 py-1 rounded-full text-xs font-medium
+                            {% if per_order.payment_status == 'paid' %}bg-green-500 bg-opacity-20 text-green-100 border border-green-400{% endif %}
+                            {% if per_order.payment_status == 'pending' %}bg-yellow-500 bg-opacity-20 text-yellow-100 border border-yellow-400{% endif %}
+                            {% if per_order.payment_status == 'partially_paid' %}bg-orange-500 bg-opacity-20 text-orange-100 border border-orange-400{% endif %}
+                            {% if per_order.payment_status == 'failed' %}bg-red-500 bg-opacity-20 text-red-100 border border-red-400{% endif %}">
+                            {{ per_order.payment_status.replace('_', ' ').title() }}
+                        </span>
+                        <span class="px-3 py-1 rounded-full text-xs font-medium
+                            {% if per_order.priority == 'urgent' %}bg-red-500 bg-opacity-20 text-red-100 border border-red-400{% endif %}
+                            {% if per_order.priority == 'high' %}bg-orange-500 bg-opacity-20 text-orange-100 border border-orange-400{% endif %}
+                            {% if per_order.priority == 'normal' %}bg-blue-500 bg-opacity-20 text-blue-100 border border-blue-400{% endif %}
+                            {% if per_order.priority == 'low' %}bg-gray-500 bg-opacity-20 text-gray-100 border border-gray-400{% endif %}">
+                            {{ per_order.priority.title() }} Priority
+                        </span>
+                    </div>
+                    <!-- Action Buttons -->
+                    <div class="flex space-x-2">
+                        <button onclick="printOrder()" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-all duration-200">
+                            <i class="fas fa-print text-sm"></i>
+                            <span class="font-medium">Print</span>
+                        </button>
+                        {% if per_order.status != 'delivered' and per_order.status != 'cancelled' and per_order.status != 'returned' %}
+                        <button onclick="editPerOrder()" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-all duration-200">
+                            <i class="fas fa-edit text-sm"></i>
+                            <span class="font-medium">Edit</span>
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Information Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Customer Information -->
+            <div class="bg-white rounded-xl shadow-md p-6 border border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <i class="fas fa-user text-blue-500 mr-2"></i>
+                    Customer Information
+                </h3>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-sm font-medium text-gray-600">Name</label>
+                        <p class="text-gray-900 font-medium">{{ per_order.customer_name or 'Walk-in Customer' }}</p>
+                    </div>
+                    {% if per_order.customer_email %}
+                    <div>
+                        <label class="text-sm font-medium text-gray-600">Email</label>
+                        <p class="text-gray-900">{{ per_order.customer_email }}</p>
+                    </div>
+                    {% endif %}
+                    {% if per_order.customer_phone %}
+                    <div>
+                        <label class="text-sm font-medium text-gray-600">Phone</label>
+                        <p class="text-gray-900">{{ per_order.customer_phone }}</p>
+                    </div>
+                    {% endif %}
+                    {% if per_order.customer_id %}
+                    <div>
+                        <label class="text-sm font-medium text-gray-600">Customer ID</label>
+                        <p class="text-gray-900 text-sm font-mono">{{ per_order.customer_id }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Order Summary -->
+            <div class="bg-white rounded-xl shadow-md p-6 border border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <i class="fas fa-receipt text-green-500 mr-2"></i>
+                    Order Summary
+                </h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Subtotal</span>
+                        <span class="font-medium">UGX {{ "{:,.0f}".format(per_order.subtotal) }}</span>
+                    </div>
+                    {% if per_order.tax_total > 0 %}
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Tax</span>
+                        <span class="font-medium">UGX {{ "{:,.0f}".format(per_order.tax_total) }}</span>
+                    </div>
+                    {% endif %}
+                    {% if per_order.discount_total > 0 %}
+                    <div class="flex justify-between text-red-600">
+                        <span>Discount</span>
+                        <span class="font-medium">-UGX {{ "{:,.0f}".format(per_order.discount_total) }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="border-t pt-2">
+                        <div class="flex justify-between text-lg font-bold">
+                            <span>Total</span>
+                            <span>UGX {{ "{:,.0f}".format(per_order.total_amount) }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Information -->
+            <div class="bg-white rounded-xl shadow-md p-6 border border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <i class="fas fa-credit-card text-purple-500 mr-2"></i>
+                    Payment Information
+                </h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Paid Amount</span>
+                        <span class="font-medium text-green-600">UGX 0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Balance</span>
+                        <span class="font-medium text-red-600">UGX {{ "{:,.0f}".format(per_order.total_amount) }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Items -->
+        <div class="bg-white rounded-xl shadow-md border border-gray-200">
+            <div class="p-6 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                    <i class="fas fa-shopping-cart text-indigo-500 mr-2"></i>
+                    Order Items ({{ per_order.items|length }})
+                </h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for item in per_order.items %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4">
+                                <div class="text-sm font-medium text-gray-900">{{ item.product_name }}</div>
+                                <div class="text-sm text-gray-500">ID: {{ item.product_id }}</div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-900">{{ item.quantity }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-900">UGX {{ "{:,.0f}".format(item.unit_price) }}</td>
+                            <td class="px-6 py-4 text-sm font-medium text-gray-900">UGX {{ "{:,.0f}".format(item.total_price) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% else %}
+    {# List View #}
+    <div class="space-y-4">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-purple-500 to-indigo-600 shadow-lg rounded-xl p-4 text-white">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+                <div class="mb-2 md:mb-0">
+                    <h1 class="text-xl md:text-2xl font-bold">Per Order Management</h1>
+                    <p class="text-purple-100 text-sm">Detailed order tracking and management</p>
+                </div>
+                <div class="flex space-x-2">
+                    <button onclick="window.location.reload()" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-3 py-2 rounded-lg flex items-center space-x-2 transition-all duration-200 text-sm">
+                        <i class="fas fa-refresh text-xs"></i>
+                        <span class="font-medium">Refresh</span>
+                    </button>
+                    <button onclick="openCreatePerOrderModal()" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-3 py-2 rounded-lg flex items-center space-x-2 transition-all duration-200 text-sm">
+                        <i class="fas fa-plus text-xs"></i>
+                        <span class="font-medium">New Per Order</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Per Orders Table -->
+        <div class="bg-white rounded-xl shadow-md border border-gray-200">
+            <div class="p-6 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900">Per Orders List</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order Number</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="per-orders-table-body" class="bg-white divide-y divide-gray-200">
+                        {% for order in per_orders %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4"><a href="/per-order/{{ order._id }}" class="text-blue-600 hover:underline">{{ order.order_number }}</a></td>
+                            <td class="px-6 py-4">{{ order.customer_name }}</td>
+                            <td class="px-6 py-4">{{ order.status }}</td>
+                            <td class="px-6 py-4">UGX {{ "{:,.0f}".format(order.total_amount) }}</td>
+                            <td class="px-6 py-4">{{ order.created_at.strftime('%Y-%m-%d') }}</td>
+                            <td class="px-6 py-4"><a href="/per-order/{{ order._id }}" class="text-blue-600 hover:underline">View</a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Per Order Modal -->
+    <div id="create-per-order-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[90vh] transform transition-all duration-300">
+                <div class="px-4 py-3 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-t-xl">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                                <i class="fas fa-plus-circle text-white text-xs"></i>
+                            </div>
+                            <h3 class="text-base font-semibold text-white">Create New Per Order</h3>
+                        </div>
+                        <button type="button" onclick="closeCreatePerOrderModal()" class="text-white hover:text-gray-200 transition-colors duration-200">
+                            <i class="fas fa-times text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="p-4 bg-gray-50" style="max-height: calc(90vh - 50px); overflow-y: auto;">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                        <div class="lg:col-span-2 space-y-4">
+                            <!-- Product Search -->
+                            <div class="bg-white shadow-md rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300">
+                                <div class="px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-600">
+                                    <div class="flex items-center">
+                                        <div class="w-7 h-7 bg-white bg-opacity-20 rounded-md flex items-center justify-center mr-2">
+                                            <i class="fas fa-search text-white text-sm"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="text-sm font-semibold text-white">Product Search</h3>
+                                            <p class="text-blue-100 text-xs">Find products by name, SKU, or barcode</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="p-4">
+                                    <div class="relative">
+                                        <input type="text"
+                                               id="modal-product-search"
+                                               placeholder="Search by name, SKU, or barcode..."
+                                               class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 pr-20">
+                                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 space-x-2">
+                                            <button type="button" id="modal-barcode-camera-btn"
+                                                    class="p-1 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-all duration-200"
+                                                    title="Scan barcode with camera">
+                                                <i class="fas fa-camera text-sm"></i>
+                                            </button>
+                                            <i class="fas fa-search text-gray-400 text-sm"></i>
+                                        </div>
+                                    </div>
+                                    <div id="modal-search-results" class="mt-3 space-y-2 max-h-48 overflow-y-auto"></div>
+                                </div>
+                            </div>
+                            <!-- Shopping Cart -->
+                            <div class="bg-white shadow-md rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300">
+                                <div class="px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-600">
+                                    <div class="flex items-center">
+                                        <div class="w-7 h-7 bg-white bg-opacity-20 rounded-md flex items-center justify-center mr-2">
+                                            <i class="fas fa-shopping-cart text-white text-sm"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="text-sm font-semibold text-white">Order Items</h3>
+                                            <p class="text-purple-100 text-xs">Review selected items</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="p-4">
+                                    <div id="modal-cart-items" class="space-y-2">
+                                        <div class="text-center py-6 text-gray-500">
+                                            <i class="fas fa-shopping-cart text-2xl mb-2"></i>
+                                            <p class="text-sm">Cart is empty</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="space-y-4">
+                            <!-- Client Info -->
+                            <div class="bg-white shadow-md rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300">
+                                <div class="px-4 py-3 bg-gradient-to-r from-teal-500 to-cyan-600">
+                                    <div class="flex items-center">
+                                        <div class="w-7 h-7 bg-white bg-opacity-20 rounded-md flex items-center justify-center mr-2">
+                                            <i class="fas fa-user text-white text-sm"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="text-sm font-semibold text-white">Client Information</h3>
+                                            <p class="text-teal-100 text-xs">Select or add customer</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="p-4">
+                                    <div class="flex gap-2">
+                                        <input type="text" id="modal-client-search" placeholder="Search client by name or phone..." class="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200">
+                                        <button type="button"
+                                                id="modal-add-client-btn"
+                                                class="px-3 py-2 bg-gradient-to-r from-teal-500 to-cyan-600 text-white rounded-lg hover:from-teal-600 hover:to-cyan-700 text-sm font-semibold shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300">
+                                            <i class="fas fa-plus mr-1"></i>New
+                                        </button>
+                                    </div>
+                                    <div id="modal-client-results" class="mt-3 space-y-2 max-h-32 overflow-y-auto"></div>
+                                    <div id="modal-selected-client" class="hidden mt-2 p-3 bg-gradient-to-r from-teal-50 to-cyan-50 border border-teal-200 rounded-lg"></div>
+                                </div>
+                            </div>
+                            <!-- Order Summary -->
+                            <div class="bg-white shadow-md rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300">
+                                <div class="px-4 py-3 bg-gradient-to-r from-orange-500 to-red-600">
+                                    <div class="flex items-center">
+                                        <div class="w-7 h-7 bg-white bg-opacity-20 rounded-md flex items-center justify-center mr-2">
+                                            <i class="fas fa-calculator text-white text-sm"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="text-sm font-semibold text-white">Order Summary</h3>
+                                            <p class="text-orange-100 text-xs">Final totals for the order</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="p-4">
+                                    <div id="modal-summary" class="space-y-2 text-sm"></div>
+                                    <button id="modal-create-per-order" class="w-full mt-4 px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-700 text-white rounded-lg hover:from-purple-700 hover:to-indigo-800 font-semibold text-sm shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300">
+                                        <i class="fas fa-check-circle mr-2"></i>Create Per Order
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Item Discount Modal -->
+    <div id="item-discount-modal" class="fixed inset-0 bg-black bg-opacity-75 backdrop-blur-sm hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all duration-300">
+                <div class="px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-t-xl">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                                <i class="fas fa-percent text-white text-xs"></i>
+                            </div>
+                            <h3 class="text-base font-semibold text-white">Item Discount</h3>
+                        </div>
+                        <button type="button" onclick="closeItemDiscountModal()" class="text-white hover:text-gray-200 transition-colors duration-200">
+                            <i class="fas fa-times text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <div class="mb-4">
+                        <div class="bg-gray-50 rounded-lg p-3 mb-4">
+                            <div class="flex items-center mb-2">
+                                <i class="fas fa-box text-gray-500 mr-2"></i>
+                                <span class="text-sm font-semibold text-gray-800" id="discount-item-name">Product Name</span>
+                            </div>
+                            <div class="text-xs text-gray-600 space-y-1">
+                                <div>Quantity: <span id="discount-item-quantity" class="font-medium">1</span></div>
+                                <div>Unit Price: UGX <span id="discount-item-price" class="font-medium">0</span></div>
+                                <div>Subtotal: UGX <span id="discount-item-subtotal" class="font-medium">0</span></div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3 mb-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">Discount Type</label>
+                                <select id="item-discount-type" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200">
+                                    <option value="fixed">Fixed Amount (UGX)</option>
+                                    <option value="percentage">Percentage (%)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">Discount Value</label>
+                                <input type="number" id="item-discount-value" step="1" min="0" placeholder="0"
+                                       class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200">
+                            </div>
+                        </div>
+
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="text-gray-700">Discount Amount:</span>
+                                <span class="font-bold text-green-600" id="calculated-discount">UGX 0</span>
+                            </div>
+                            <div class="flex justify-between items-center text-sm mt-1">
+                                <span class="text-gray-700">Final Price:</span>
+                                <span class="font-bold text-gray-900" id="final-item-price">UGX 0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end space-x-2">
+                        <button type="button" onclick="removeItemDiscount()" class="px-3 py-2 text-xs font-medium text-red-700 bg-red-100 hover:bg-red-200 rounded-lg transition-all duration-200">
+                            <i class="fas fa-trash mr-1"></i>Remove Discount
+                        </button>
+                        <button type="button" onclick="closeItemDiscountModal()" class="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200">
+                            <i class="fas fa-times mr-1"></i>Cancel
+                        </button>
+                        <button type="button" onclick="applyItemDiscount()" class="px-3 py-2 text-xs font-medium text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 rounded-lg transition-all duration-200">
+                            <i class="fas fa-check mr-1"></i>Apply Discount
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Client Modal -->
+    <div id="add-client-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300">
+                <div class="px-4 py-3 bg-gradient-to-r from-teal-500 to-cyan-600 rounded-t-xl">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                                <i class="fas fa-user-plus text-white text-xs"></i>
+                            </div>
+                            <h3 class="text-base font-semibold text-white">Add New Customer</h3>
+                        </div>
+                        <button type="button" id="close-client-modal" class="text-white hover:text-gray-200 transition-colors duration-200">
+                            <i class="fas fa-times text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+                <form id="add-client-form" class="p-4 space-y-3">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">
+                                <i class="fas fa-user text-gray-400 mr-1"></i>Full Name *
+                            </label>
+                            <input type="text" id="client-name-input" required
+                                   class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                                   placeholder="Enter customer's full name">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">
+                                <i class="fas fa-phone text-gray-400 mr-1"></i>Phone Number *
+                            </label>
+                            <input type="tel" id="client-phone-input" required
+                                   class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                                   placeholder="Enter phone number">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                            <i class="fas fa-map-marker-alt text-gray-400 mr-1"></i>Address
+                        </label>
+                        <textarea id="client-address-input" rows="2"
+                                  class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                                  placeholder="Enter address (optional)"></textarea>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">
+                                <i class="fas fa-city text-gray-400 mr-1"></i>City
+                            </label>
+                            <input type="text" id="client-city-input"
+                                   class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                                   placeholder="Enter city">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">
+                                <i class="fas fa-flag text-gray-400 mr-1"></i>Country
+                            </label>
+                            <input type="text" id="client-country-input"
+                                   class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                                   placeholder="Enter country">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                            <i class="fas fa-sticky-note text-gray-400 mr-1"></i>Notes
+                        </label>
+                        <textarea id="client-notes-input" rows="2"
+                                  class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                                  placeholder="Additional notes (optional)"></textarea>
+                    </div>
+                    <div class="flex justify-end space-x-2 pt-3 border-t border-gray-200">
+                        <button type="button" id="cancel-client" class="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200">
+                            Cancel
+                        </button>
+                        <button type="submit" id="submit-client" class="px-3 py-2 text-xs font-medium text-white bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
+                            <i class="fas fa-user-plus mr-1"></i>Add Customer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Open New Bottle Confirmation Modal -->
+    <div id="open-bottle-modal" class="fixed inset-0 bg-black bg-opacity-75 backdrop-blur-sm hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all duration-300">
+                <div class="px-4 py-3 bg-gradient-to-r from-orange-500 to-red-600 rounded-t-xl">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                                <i class="fas fa-unlock text-white text-xs"></i>
+                            </div>
+                            <h3 class="text-base font-semibold text-white">Open New Bottle</h3>
+                        </div>
+                        <button type="button" onclick="closeOpenBottleModal()" class="text-white hover:text-gray-200 transition-colors duration-200">
+                            <i class="fas fa-times text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <div class="flex items-start mb-4">
+                        <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center mr-3">
+                            <i class="fas fa-exclamation-triangle text-orange-600"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="text-sm font-semibold text-gray-900 mb-1">Confirm Opening New Bottle</h4>
+                            <p class="text-xs text-gray-600 mb-2">No opened bottle available for decants. Opening a new bottle will:</p>
+                            <ul class="text-xs text-gray-600 space-y-1 mb-3">
+                                <li>• Reduce bottle stock by 1</li>
+                                <li>• Make <span id="new-bottle-decants" class="font-semibold">0</span> decants available</li>
+                                <li>• Add 1 decant to your cart</li>
+                            </ul>
+                            <div class="bg-orange-50 border border-orange-200 rounded-lg p-2">
+                                <p class="text-xs text-orange-800">
+                                    <strong>Product:</strong> <span id="bottle-product-name">-</span><br>
+                                    <strong>Bottle Size:</strong> <span id="bottle-size">-</span>ml<br>
+                                    <strong>Decant Size:</strong> <span id="decant-size">-</span>ml<br>
+                                    <strong>Price per Decant:</strong> UGX <span id="decant-price">-</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-2">
+                        <button type="button" onclick="closeOpenBottleModal()" class="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200">
+                            <i class="fas fa-times mr-1"></i>Cancel
+                        </button>
+                        <button type="button" onclick="confirmAndOpenBottle()" class="px-3 py-2 text-xs font-medium text-white bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 rounded-lg transition-all duration-200">
+                            <i class="fas fa-unlock mr-1"></i>Open Bottle & Add Decant
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+<script>
+let cart = [];
+let selectedClient = null;
+let modalClients = [];
+
+function openCreatePerOrderModal() {
+    document.getElementById('create-per-order-modal').classList.remove('hidden');
+    document.getElementById('modal-product-search').addEventListener('input', searchProductsInModal);
+    document.getElementById('modal-client-search').addEventListener('input', searchClientsInModal);
+    document.getElementById('modal-create-per-order').addEventListener('click', createPerOrderFromModal);
+    document.getElementById('modal-add-client-btn').addEventListener('click', openAddClientModal);
+    document.getElementById('close-client-modal').addEventListener('click', closeAddClientModal);
+    document.getElementById('cancel-client').addEventListener('click', closeAddClientModal);
+    document.getElementById('add-client-form').addEventListener('submit', addNewClient);
+}
+
+function closeCreatePerOrderModal() {
+    document.getElementById('create-per-order-modal').classList.add('hidden');
+    cart = [];
+    selectedClient = null;
+    modalClients = [];
+    updateModalCartDisplay();
+    updateModalSummary();
+}
+
+function openAddClientModal() {
+    document.getElementById('add-client-modal').classList.remove('hidden');
+}
+
+function closeAddClientModal() {
+    document.getElementById('add-client-modal').classList.add('hidden');
+    document.getElementById('add-client-form').reset();
+}
+
+async function addNewClient(event) {
+    event.preventDefault();
+    const name = document.getElementById('client-name-input').value.trim();
+    const phone = document.getElementById('client-phone-input').value.trim();
+    const address = document.getElementById('client-address-input').value.trim();
+    const city = document.getElementById('client-city-input').value.trim();
+    const country = document.getElementById('client-country-input').value.trim();
+    const notes = document.getElementById('client-notes-input').value.trim();
+
+    if (!name || !phone) {
+        alert('Full Name and Phone Number are required.');
+        return;
+    }
+
+    const clientData = { name, phone, address, city, country, notes };
+
+    try {
+        const response = await fetch('/api/pos/customers/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(clientData)
+        });
+
+        if (response.ok) {
+            const newClient = await response.json();
+            alert('Customer added successfully!');
+            closeAddClientModal();
+            modalClients = [newClient];
+            selectClientInModal(0);
+        } else {
+            const errorData = await response.json();
+            alert(`Error: ${errorData.detail || 'Failed to add customer'}`);
+        }
+    } catch (error) {
+        console.error('Error adding new client:', error);
+        alert('An unexpected error occurred.');
+    }
+}
+
+async function searchProductsInModal() {
+    const query = document.getElementById('modal-product-search').value.trim();
+    const resultsContainer = document.getElementById('modal-search-results');
+    if (query.length < 2) {
+        resultsContainer.innerHTML = '';
+        return;
+    }
+    resultsContainer.innerHTML = `
+        <div class="space-y-2">
+            <div class="flex items-center justify-center py-4 px-3">
+                <div class="flex items-center space-x-3">
+                    <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+                    <span class="text-sm text-gray-600 font-medium">Searching products...</span>
+                </div>
+            </div>
+        </div>
+    `;
+
+    try {
+        const response = await fetch(`/api/pos/products/search?query=${encodeURIComponent(query)}&limit=10`);
+        if (response.ok) {
+            const products = await response.json();
+            displaySearchResultsInModal(products);
+        } else {
+            resultsContainer.innerHTML = '<div class="text-center py-4 px-3 text-red-500">Error searching products</div>';
+        }
+    } catch (error) {
+        console.error('Product search error:', error);
+        resultsContainer.innerHTML = '<div class="text-center py-4 px-3 text-red-500">Error searching products</div>';
+    }
+}
+
+function displaySearchResultsInModal(products) {
+    const resultsContainer = document.getElementById('modal-search-results');
+    if (!products || products.length === 0) {
+        resultsContainer.innerHTML = '<div class="text-center py-4 px-3 text-gray-500">No products found</div>';
+        return;
+    }
+
+    resultsContainer.innerHTML = products.map(product => {
+        if (product.is_perfume_with_decants && product.decant) {
+            let decantOption = '';
+            if (product.has_opened_bottle && product.opened_bottle_decants > 0) {
+                decantOption = `
+                    <div class="group bg-white hover:bg-purple-50 cursor-pointer border border-gray-200 rounded-lg p-2" onclick="addToCart('${product.id}', '${product.name.replace(/'/g, "\'" )} (${product.decant.decant_size_ml}ml Decant)', ${product.decant.decant_price}, '${product.sku}-DECANT', ${product.opened_bottle_decants}, true)">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <i class="fas fa-vial text-purple-500 mr-2"></i>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">Decant (${product.decant.decant_size_ml}ml)</p>
+                                    <p class="text-xs text-green-600">
+                                        <i class="fas fa-check-circle mr-1"></i>
+                                        ${product.opened_bottle_decants} decants from opened bottle
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-bold text-sm text-purple-600">UGX ${product.decant.decant_price.toLocaleString()}</p>
+                                <button class="bg-gradient-to-r from-purple-500 to-pink-600 text-white px-2 py-1 rounded text-xs font-medium">
+                                    <i class="fas fa-plus mr-1"></i>Add Decant
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (product.can_open_new_bottle) {
+                decantOption = `
+                    <div class="group bg-white hover:bg-orange-50 cursor-pointer border border-orange-200 rounded-lg p-2" onclick="confirmOpenNewBottle('${product.id}', '${product.name.replace(/'/g, "\'" )}', ${product.bottle_size_ml}, ${product.decant.decant_size_ml}, ${product.decant.decant_price})">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <i class="fas fa-unlock text-orange-500 mr-2"></i>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">Open New Bottle for Decants</p>
+                                    <p class="text-xs text-orange-600">
+                                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                                        No opened bottle
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-bold text-sm text-orange-600">UGX ${product.decant.decant_price.toLocaleString()}</p>
+                                <button class="bg-gradient-to-r from-orange-500 to-red-600 text-white px-2 py-1 rounded text-xs font-medium">
+                                    <i class="fas fa-unlock mr-1"></i>Open & Add
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            let fullBottleOption = '';
+            if (product.stock_quantity > 0) {
+                fullBottleOption = `
+                    <div class="group bg-white hover:bg-blue-50 cursor-pointer border border-gray-200 rounded-lg p-2" onclick='addToCart("${product.id}", "${product.name.replace(/'/g, "\'" )} (Full Bottle)", ${product.price}, "${product.sku}", ${product.stock_quantity}, false)'>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <i class="fas fa-wine-bottle text-blue-500 mr-2"></i>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">Full Bottle (${product.bottle_size_ml}ml)</p>
+                                    <p class="text-xs text-gray-500">${product.stock_quantity} bottles available</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-bold text-sm text-blue-600">UGX ${product.price.toLocaleString()}</p>
+                                <button class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-2 py-1 rounded text-xs font-medium">
+                                    <i class="fas fa-plus mr-1"></i>Add Bottle
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                fullBottleOption = `
+                    <div class="group bg-gray-100 border border-gray-200 rounded-lg p-2 opacity-50">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <i class="fas fa-wine-bottle text-gray-400 mr-2"></i>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-500">Full Bottle (${product.bottle_size_ml}ml)</p>
+                                    <p class="text-xs text-red-500">Out of Stock</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="bg-gray-50 rounded-lg p-2 space-y-2">
+                    <p class="font-semibold text-sm text-gray-900">${product.name}</p>
+                    ${fullBottleOption}
+                    ${decantOption}
+                </div>
+            `;
+        }
+
+        return `
+            <div class="group bg-gray-50 hover:bg-blue-50 border border-gray-200 rounded-lg p-3 cursor-pointer" onclick='addToCart("${product.id}", "${product.name.replace(/'/g, "\'" )}", ${product.price}, "${product.sku}", ${product.stock_quantity}, false)'>
+                <div class="flex justify-between items-center">
+                    <div class="flex-1">
+                        <p class="font-semibold text-sm text-gray-800 group-hover:text-blue-800">${product.name || 'Unnamed Product'}</p>
+                        <p class="text-xs text-gray-500">${product.sku || ''}</p>
+                        <p class="text-xs text-gray-500">${product.stock_quantity} ${product.unit || 'pcs'}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-bold text-sm text-blue-600 mb-1">UGX ${product.price.toLocaleString()}</p>
+                        <button class="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-3 py-1 rounded-lg text-xs font-medium shadow-sm hover:shadow-md transition-all duration-200 transform hover:scale-105">
+                            Add
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+async function searchClientsInModal() {
+    const query = document.getElementById('modal-client-search').value.trim();
+    const resultsContainer = document.getElementById('modal-client-results');
+    if (query.length < 2) {
+        resultsContainer.innerHTML = '';
+        modalClients = [];
+        return;
+    }
+    resultsContainer.innerHTML = '<p>Searching...</p>';
+    const response = await fetch(`/api/pos/customers/search?query=${query}&limit=5`);
+    const data = await response.json();
+    modalClients = data.customers;
+    resultsContainer.innerHTML = modalClients.map((c, index) => `<div class="p-2 hover:bg-gray-100 cursor-pointer" onclick='selectClientInModal(${index})'>${c.name}</div>`).join('');
+}
+
+function selectClientInModal(index) {
+    const client = modalClients[index];
+    selectedClient = client;
+    document.getElementById('modal-selected-client').innerHTML = `<p class="font-semibold text-teal-900 text-sm">${client.name}</p><p class="text-xs text-teal-600">${client.phone || ''}</p>`;
+    document.getElementById('modal-selected-client').classList.remove('hidden');
+    document.getElementById('modal-client-results').innerHTML = '';
+    document.getElementById('modal-client-search').value = '';
+    modalClients = [];
+}
+
+function addToCart(id, name, price, sku, stock, isDecant) {
+    const cartItemId = isDecant ? `${id}-DECANT` : id;
+    const existingItem = cart.find(item => item.cartItemId === cartItemId);
+    if (existingItem) {
+        existingItem.quantity++;
+    } else {
+        cart.push({ id, name, price, sku, quantity: 1, stock, isDecant, cartItemId, discount_amount: 0 });
+    }
+    updateModalCartDisplay();
+    updateModalSummary();
+}
+
+function updateModalCartDisplay() {
+    const cartContainer = document.getElementById('modal-cart-items');
+
+    if (cart.length === 0) {
+        cartContainer.innerHTML = `
+            <div class="text-center py-6 text-gray-500">
+                <i class="fas fa-shopping-cart text-2xl mb-2"></i>
+                <p class="text-sm">Cart is empty</p>
+            </div>
+        `;
+        return;
+    }
+
+    cartContainer.innerHTML = cart.map(item => {
+        const isDecant = item.isDecant || false;
+        const iconClass = isDecant ? 'fas fa-vial' : 'fas fa-box';
+        const bgColor = isDecant ? 'from-purple-500 to-pink-600' : 'from-blue-500 to-indigo-600';
+
+        return `
+        <div class="group bg-white hover:bg-gray-50 border border-gray-200 rounded-xl p-3 transition-all duration-200 shadow-sm">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center flex-1 mr-3">
+                    <div class="w-8 h-8 bg-gradient-to-r ${bgColor} rounded-lg flex items-center justify-center mr-3 shadow-sm">
+                        <i class="${iconClass} text-white text-xs"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="font-semibold text-sm text-gray-900 mb-1">${item.name}</p>
+                        <div class="flex items-center space-x-3 text-xs text-gray-600">
+                            <span class="flex items-center">
+                                <i class="fas fa-tag text-gray-400 mr-1"></i>
+                                UGX ${item.price.toLocaleString()}
+                            </span>
+                            ${isDecant ? '<span class="bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-xs">Decant</span>' : ''}
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="flex items-center bg-white rounded-lg border border-gray-300 shadow-sm">
+                        <button onclick="updateQuantityInModal('${item.cartItemId}', ${item.quantity - 1})" class="w-7 h-7 text-gray-600 hover:bg-gray-100 rounded-l-lg text-xs font-medium transition-all duration-200 flex items-center justify-center"><i class="fas fa-minus"></i></button>
+                        <span class="text-sm font-bold px-3 py-1 bg-white text-gray-900 min-w-[2rem] text-center">${item.quantity}</span>
+                        <button onclick="updateQuantityInModal('${item.cartItemId}', ${item.quantity + 1})" class="w-7 h-7 text-gray-600 hover:bg-gray-100 rounded-r-lg text-xs font-medium transition-all duration-200 flex items-center justify-center"><i class="fas fa-plus"></i></button>
+                    </div>
+                    <button onclick="removeFromCartInModal('${item.cartItemId}')" class="w-7 h-7 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg text-xs font-medium transition-all duration-200 flex items-center justify-center" title="Remove item"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+            <div class="mt-2 pt-2 border-t border-gray-200">
+                <div class="flex items-center justify-between">
+                    <button onclick="toggleItemDiscount('${item.cartItemId}')" class="text-xs px-2 py-1 rounded-md transition-all duration-200 ${item.discount_amount > 0 ? 'bg-green-100 text-green-700 border border-green-300' : 'bg-gray-100 text-gray-600 border border-gray-300'} hover:bg-green-200">
+                        <i class="fas fa-percent mr-1"></i>
+                        ${item.discount_amount > 0 ? 'Edit Discount' : 'Add Discount'}
+                    </button>
+                    <div class="text-right">
+                        ${item.discount_amount > 0 ? `
+                        <div class="text-xs text-gray-500 line-through">UGX ${(item.price * item.quantity).toLocaleString()}</div>
+                        <div class="text-sm font-bold text-gray-800">UGX ${((item.price * item.quantity) - item.discount_amount).toLocaleString()}</div>
+                        ` : `
+                        <div class="text-sm font-bold text-gray-800">UGX ${(item.price * item.quantity).toLocaleString()}</div>
+                        `}
+                    </div>
+                </div>
+            </div>
+        </div>
+        `;
+    }).join('');
+}
+
+function updateQuantityInModal(cartItemId, newQuantity) {
+    if (newQuantity <= 0) {
+        removeFromCartInModal(cartItemId);
+        return;
+    }
+    const item = cart.find(item => item.cartItemId === cartItemId);
+    if (item) {
+        if (item.stock !== undefined && newQuantity > item.stock) {
+            alert(`Cannot add more ${item.name}. Only ${item.stock} available.`);
+            return;
+        }
+        item.quantity = newQuantity;
+        updateModalCartDisplay();
+        updateModalSummary();
+    }
+}
+
+function removeFromCartInModal(cartItemId) {
+    cart = cart.filter(item => item.cartItemId !== cartItemId);
+    updateModalCartDisplay();
+    updateModalSummary();
+}
+
+function updateModalSummary() {
+    const summaryContainer = document.getElementById('modal-summary');
+    const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
+    const totalDiscount = cart.reduce((acc, item) => acc + (item.discount_amount || 0), 0);
+    const total = subtotal - totalDiscount;
+    
+    summaryContainer.innerHTML = `
+        <div class="space-y-3">
+            <div class="flex justify-between items-center p-2 bg-gray-50 rounded-lg">
+                <span class="text-gray-600 text-sm font-medium">Subtotal:</span>
+                <span class="font-semibold text-gray-900 text-sm">UGX ${subtotal.toLocaleString()}</span>
+            </div>
+            <div class="flex justify-between items-center p-2 bg-green-50 rounded-lg">
+                <span class="text-gray-600 text-sm font-medium">Discount:</span>
+                <span class="font-semibold text-green-600 text-sm">UGX ${totalDiscount.toLocaleString()}</span>
+            </div>
+            <div class="border-t border-gray-200 pt-3">
+                <div class="flex justify-between items-center p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
+                    <span class="text-base font-bold text-gray-900">Total:</span>
+                    <span class="text-lg font-bold text-blue-600">UGX ${total.toLocaleString()}</span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+async function createPerOrderFromModal() {
+    if (cart.length === 0) {
+        alert('Cart is empty');
+        return;
+    }
+    const perOrderData = {
+        customer_id: selectedClient ? selectedClient.id : null,
+        customer_name: selectedClient ? selectedClient.name : "Walk-in Customer",
+        items: cart.map(item => ({
+            product_id: item.id,
+            product_name: item.name,
+            product_sku: item.sku,
+            quantity: item.quantity,
+            unit_price: item.price,
+            total_price: item.price * item.quantity,
+            discount_amount: 0,
+            tax_amount: 0,
+            is_decant: item.isDecant
+        })),
+        shipping_cost: 0
+    };
+
+    const response = await fetch('/api/per-order/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(perOrderData)
+    });
+
+    if (response.ok) {
+        const newPerOrder = await response.json();
+        window.location.href = `/per-order/${newPerOrder._id}`;
+    } else {
+        alert('Failed to create per order');
+    }
+}
+
+function printOrder() {
+    window.print();
+}
+
+function editPerOrder() {
+    window.location.href = '/per-order?edit={{ per_order._id }}';
+}
+
+let pendingBottleData = null;
+
+function confirmOpenNewBottle(productId, productName, bottleSizeMl, decantSizeMl, decantPrice) {
+    pendingBottleData = { productId, productName, bottleSizeMl, decantSizeMl, decantPrice };
+    document.getElementById('bottle-product-name').textContent = productName;
+    document.getElementById('bottle-size').textContent = bottleSizeMl;
+    document.getElementById('decant-size').textContent = decantSizeMl;
+    document.getElementById('decant-price').textContent = decantPrice.toLocaleString();
+    document.getElementById('new-bottle-decants').textContent = Math.floor(bottleSizeMl / decantSizeMl);
+    document.getElementById('open-bottle-modal').classList.remove('hidden');
+}
+
+function closeOpenBottleModal() {
+    document.getElementById('open-bottle-modal').classList.add('hidden');
+    pendingBottleData = null;
+}
+
+async function confirmAndOpenBottle() {
+    if (!pendingBottleData) return; 
+    
+    const response = await fetch(`/api/products/${pendingBottleData.productId}/open-bottle`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    });
+
+    if (response.ok) {
+        const decantName = `${pendingBottleData.productName} (${pendingBottleData.decantSizeMl}ml Decant)`;
+        const decantSku = `${pendingBottleData.productId}-DECANT`;
+        const decantStock = Math.floor(pendingBottleData.bottleSizeMl / pendingBottleData.decantSizeMl);
+        addToCart(pendingBottleData.productId, decantName, pendingBottleData.decantPrice, decantSku, decantStock, true);
+        closeOpenBottleModal();
+    } else {
+        alert('Failed to open new bottle');
+    }
+    pendingBottleData = null;
+}
+let currentDiscountItemId = null;
+
+function toggleItemDiscount(cartItemId) {
+    const item = cart.find(item => item.cartItemId === cartItemId);
+    if (!item) return;
+
+    currentDiscountItemId = cartItemId;
+
+    document.getElementById('discount-item-name').textContent = item.name;
+    document.getElementById('discount-item-quantity').textContent = item.quantity;
+    document.getElementById('discount-item-price').textContent = item.price.toLocaleString();
+    document.getElementById('discount-item-subtotal').textContent = (item.price * item.quantity).toLocaleString();
+
+    if (item.discount_amount > 0) {
+        const itemSubtotal = item.price * item.quantity;
+        const discountPercentage = (item.discount_amount / itemSubtotal) * 100;
+
+        if (discountPercentage % 1 === 0 && discountPercentage <= 100) {
+            document.getElementById('item-discount-type').value = 'percentage';
+            document.getElementById('item-discount-value').value = discountPercentage;
+        } else {
+            document.getElementById('item-discount-type').value = 'fixed';
+            document.getElementById('item-discount-value').value = item.discount_amount;
+        }
+    } else {
+        document.getElementById('item-discount-type').value = 'fixed';
+        document.getElementById('item-discount-value').value = '';
+    }
+
+    document.getElementById('item-discount-type').addEventListener('change', calculateItemDiscount);
+    document.getElementById('item-discount-value').addEventListener('input', calculateItemDiscount);
+
+    calculateItemDiscount();
+
+    document.getElementById('item-discount-modal').classList.remove('hidden');
+}
+
+function calculateItemDiscount() {
+    if (!currentDiscountItemId) return;
+    const item = cart.find(item => item.cartItemId === currentDiscountItemId);
+    if (!item) return;
+
+    const discountType = document.getElementById('item-discount-type').value;
+    const discountValue = parseFloat(document.getElementById('item-discount-value').value) || 0;
+    const itemSubtotal = item.price * item.quantity;
+
+    let discountAmount = 0;
+    if (discountValue > 0) {
+        if (discountType === 'percentage') {
+            discountAmount = Math.min((itemSubtotal * discountValue) / 100, itemSubtotal);
+        } else {
+            discountAmount = Math.min(discountValue, itemSubtotal);
+        }
+    }
+
+    const finalPrice = itemSubtotal - discountAmount;
+
+    document.getElementById('calculated-discount').textContent = `UGX ${Math.round(discountAmount).toLocaleString()}`;
+    document.getElementById('final-item-price').textContent = `UGX ${Math.round(finalPrice).toLocaleString()}`;
+}
+
+function applyItemDiscount() {
+    if (!currentDiscountItemId) return;
+    const item = cart.find(item => item.cartItemId === currentDiscountItemId);
+    if (!item) return;
+
+    const discountType = document.getElementById('item-discount-type').value;
+    const discountValue = parseFloat(document.getElementById('item-discount-value').value) || 0;
+    const itemSubtotal = item.price * item.quantity;
+
+    let discountAmount = 0;
+    if (discountValue > 0) {
+        if (discountType === 'percentage') {
+            discountAmount = Math.min((itemSubtotal * discountValue) / 100, itemSubtotal);
+        } else {
+            discountAmount = Math.min(discountValue, itemSubtotal);
+        }
+    }
+
+    item.discount_amount = discountAmount;
+
+    updateModalCartDisplay();
+    updateModalSummary();
+    closeItemDiscountModal();
+}
+
+function removeItemDiscount() {
+    if (!currentDiscountItemId) return;
+    const item = cart.find(item => item.cartItemId === currentDiscountItemId);
+    if (item) {
+        item.discount_amount = 0;
+        updateModalCartDisplay();
+        updateModalSummary();
+    }
+    closeItemDiscountModal();
+}
+
+function closeItemDiscountModal() {
+    document.getElementById('item-discount-modal').classList.add('hidden');
+    currentDiscountItemId = null;
+    document.getElementById('item-discount-type').removeEventListener('change', calculateItemDiscount);
+    document.getElementById('item-discount-value').removeEventListener('input', calculateItemDiscount);
+    document.getElementById('item-discount-value').value = '';
+    document.getElementById('calculated-discount').textContent = 'UGX 0';
+    document.getElementById('final-item-price').textContent = 'UGX 0';
+}
+</script>
+
+<style>
+@media print {
+    .no-print { display: none !important; }
+    body { background: white !important; }
+    .bg-gradient-to-r { background: #3b82f6 !important; color: white !important; }
+}
+</style>
+{% endblock %}

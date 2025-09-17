@@ -34,6 +34,7 @@ from app.routes.stock.api import router as stock_api_router
 from app.routes.Watch_Settings.api import router as watch_settings_api_router
 from app.routes.product_requests.api import router as product_requests_api_router
 from app.routes.hr.api import router as hr_api_router
+from app.routes.per_order.api import router as per_order_api_router
 
 # Import HTML route routers
 from app.routes.auth.route import auth_routes
@@ -55,6 +56,7 @@ from app.routes.stock.route import stock_routes
 from app.routes.Watch_Settings.routes import watch_settings_routes
 from app.routes.product_requests.routes import router as product_requests_routes
 from app.routes.hr.routes import router as hr_routes
+from app.routes.per_order.routes import per_order_routes
 
 # Import authentication utilities
 from app.utils.auth import verify_token, get_user_by_username
@@ -242,6 +244,7 @@ app.include_router(stock_api_router)
 app.include_router(watch_settings_api_router)
 app.include_router(product_requests_api_router)
 app.include_router(hr_api_router, prefix="/api/hr")
+app.include_router(per_order_api_router)
 
 # Include HTML route routers
 app.include_router(auth_routes)
@@ -263,6 +266,7 @@ app.include_router(stock_routes)
 app.include_router(watch_settings_routes)
 app.include_router(product_requests_routes)
 app.include_router(hr_routes)
+app.include_router(per_order_routes)
 
 
 # Root endpoint - redirect based on authentication status and role
