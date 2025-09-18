@@ -8,6 +8,9 @@ from ...utils.auth import get_current_user_hybrid
 from ...config.database import get_database
 from typing import Optional
 
+import json
+from bson import json_util
+
 per_order_routes = APIRouter(prefix="/per-order", tags=["Per Order Web"])
 templates = Jinja2Templates(directory="app/templates")
 
@@ -86,11 +89,12 @@ async def per_order_list_page(request: Request, current_user: User = Depends(get
     """Display per orders list page"""
     db = await get_database()
     per_orders = await db.per_orders.find().sort("created_at", -1).to_list(length=100)
-    
+
     context = {
         "request": request,
         "user": current_user,
         "per_orders": per_orders,
+        "per_orders_json": json.loads(json_util.dumps(per_orders)),
         "per_order": None # Explicitly set per_order to None for the list view
     }
 

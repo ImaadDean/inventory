@@ -4,7 +4,14 @@ from typing import Optional, Dict, Any
 from datetime import datetime
 from ...config.database import get_database
 from ...models.user import User
-from ...models.per_order import PerOrder, PerOrderCreate, PerOrderUpdate
+from ...models.per_order import (
+    PerOrder,
+    PerOrderCreate,
+    PerOrderUpdate,
+    PerOrderStatus,
+    PerOrderStatusHistory,
+    PerOrderPaymentStatus,
+)
 from ...utils.auth import get_current_user_hybrid_dependency
 from .utils import generate_per_order_number
 
@@ -13,6 +20,60 @@ router = APIRouter(
     tags=["Per Order API"],
     dependencies=[Depends(get_current_user_hybrid_dependency())]
 )
+
+
+@router.get("/", response_model=dict)
+async def list_per_orders(
+    page: int = 1,
+    size: int = 10,
+    search: Optional[str] = None,
+    status: Optional[str] = None,
+    date_from: Optional[datetime] = None,
+    date_to: Optional[datetime] = None,
+    current_user: User = Depends(get_current_user_hybrid_dependency())
+):
+    """List per orders with pagination and filtering"""
+    db = await get_database()
+    query = {}
+
+    if search:
+        query["$or"] = [
+            {"order_number": {"$regex": search, "$options": "i"}},
+            {"customer_name": {"$regex": search, "$options": "i"}},
+        ]
+
+    if status:
+        query["status"] = status
+
+    if date_from and date_to:
+        query["created_at"] = {"$gte": date_from, "$lte": date_to}
+    elif date_from:
+        query["created_at"] = {"$gte": date_from}
+    elif date_to:
+        query["created_at"] = {"$lte": date_to}
+
+    total = await db.per_orders.count_documents(query)
+    per_orders = await db.per_orders.find(query).sort("created_at", -1).skip((page - 1) * size).limit(size).to_list(length=size)
+
+    # Convert ObjectId to string for each order and nested items
+    def convert_objectid_to_str(obj):
+        if isinstance(obj, dict):
+            return {k: convert_objectid_to_str(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [convert_objectid_to_str(elem) for elem in obj]
+        elif isinstance(obj, ObjectId):
+            return str(obj)
+        return obj
+
+    per_orders_serializable = [convert_objectid_to_str(order) for order in per_orders]
+
+    return {
+        "orders": per_orders_serializable,
+        "page": page,
+        "size": size,
+        "total": total,
+        "total_pages": (total + size - 1) // size
+    }
 
 
 @router.post("/", response_model=PerOrder, status_code=status.HTTP_201_CREATED)
@@ -53,12 +114,122 @@ async def create_per_order(
     return created_order
 
 
+@router.put("/{per_order_id}", response_model=PerOrder)
+async def update_per_order(
+    per_order_id: str,
+    per_order_in: PerOrderUpdate,
+    current_user: User = Depends(get_current_user_hybrid_dependency())
+):
+    """
+    Update an existing per order.
+
+    This endpoint saves changes to a per order without affecting product stock levels.
+    Stock adjustments are handled when converting a per order to a final order.
+    """
+    db = await get_database()
+
+    if not ObjectId.is_valid(per_order_id):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid per order ID")
+
+    existing_per_order = await db.per_orders.find_one({"_id": ObjectId(per_order_id)})
+    if not existing_per_order:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Per order not found")
+
+    update_data = per_order_in.dict(exclude_unset=True)
+
+    if not update_data:
+        return existing_per_order
+
+    # Recalculate totals if items or shipping cost changed
+    if 'items' in update_data or 'shipping_cost' in update_data:
+        items = update_data.get('items', existing_per_order.get('items', []))
+        shipping_cost = update_data.get('shipping_cost', existing_per_order.get('shipping_cost', 0))
+
+        subtotal = sum(item.get('total_price', 0) for item in items)
+        discount_total = sum(item.get('discount_amount', 0) for item in items)
+        total_amount = subtotal - discount_total + shipping_cost
+        
+        update_data['subtotal'] = subtotal
+        update_data['discount_total'] = discount_total
+        update_data['total_amount'] = total_amount
+
+    update_data['updated_at'] = datetime.utcnow()
+
+    # Handle status history
+    if 'status' in update_data and update_data['status'] != existing_per_order.get('status'):
+        new_status_entry = PerOrderStatusHistory(
+            status=update_data['status'],
+            changed_by=current_user.id
+        )
+        await db.per_orders.update_one(
+            {"_id": ObjectId(per_order_id)},
+            {
+                "$set": update_data,
+                "$push": {"status_history": new_status_entry.dict()}
+            }
+        )
+    else:
+        await db.per_orders.update_one(
+            {"_id": ObjectId(per_order_id)},
+            {"$set": update_data}
+        )
+
+    updated_order = await db.per_orders.find_one({"_id": ObjectId(per_order_id)})
+    return updated_order
+
+
+@router.get("/stats", response_model=dict)
+async def get_per_order_stats(
+    current_user: User = Depends(get_current_user_hybrid_dependency())
+):
+    """Get per order statistics"""
+    db = await get_database()
+
+    total_orders = await db.per_orders.count_documents({})
+    pending_orders = await db.per_orders.count_documents({"status": "pending"})
+    delivered_orders = await db.per_orders.count_documents({"status": "delivered"})
+
+    pipeline = [
+        {
+            "$group": {
+                "_id": None,
+                "total_revenue": {"$sum": "$total_amount"}
+            }
+        }
+    ]
+    total_revenue_result = await db.per_orders.aggregate(pipeline).to_list(length=1)
+    total_revenue = total_revenue_result[0]["total_revenue"] if total_revenue_result else 0
+
+    pipeline = [
+        {"$unwind": "$items"},
+        {
+            "$group": {
+                "_id": "$items.product_name",
+                "total_ordered": {"$sum": "$items.quantity"}
+            }
+        },
+        {"$sort": {"total_ordered": -1}},
+        {"$limit": 5}
+    ]
+    most_ordered_products = await db.per_orders.aggregate(pipeline).to_list(length=5)
+
+    return {
+        "total_orders": total_orders,
+        "pending_orders": pending_orders,
+        "delivered_orders": delivered_orders,
+        "total_revenue": total_revenue,
+        "most_ordered_products": most_ordered_products
+    }
+
+
 @router.get("/{per_order_id}", response_model=dict)
 async def get_per_order_details(
     per_order_id: str,
     include_customer: bool = Query(True, description="Include customer details"),
     include_original_order: bool = Query(True, description="Include original order details"),
     include_assigned_user: bool = Query(True, description="Include assigned user details"),
+    include_sale: bool = Query(False, description="Include related sale details"),
+    include_installment: bool = Query(False, description="Include related installment details"),
     current_user: User = Depends(get_current_user_hybrid_dependency())
 ):
     """Get comprehensive per order details with related information"""
@@ -81,28 +252,28 @@ async def get_per_order_details(
             )
 
         # Convert ObjectId to string for JSON serialization
-        order["id"] = str(order["_id"])
-        del order["_id"]
+        per_order["id"] = str(per_order["_id"])
+        del per_order["_id"]
         
         # Convert other ObjectIds to strings
-        if order.get("client_id"):
-            order["client_id"] = str(order["client_id"])
-        if order.get("created_by"):
-            order["created_by"] = str(order["created_by"])
-        if order.get("sale_id"):
-            order["sale_id"] = str(order["sale_id"])
-        if order.get("installment_id"):
-            order["installment_id"] = str(order["installment_id"])
+        if per_order.get("client_id"):
+            per_order["client_id"] = str(per_order["client_id"])
+        if per_order.get("created_by"):
+            per_order["created_by"] = str(per_order["created_by"])
+        if per_order.get("sale_id"):
+            per_order["sale_id"] = str(per_order["sale_id"])
+        if per_order.get("installment_id"):
+            per_order["installment_id"] = str(per_order["installment_id"])
 
         # Convert datetime objects to ISO format
-        if order.get("created_at"):
-            order["created_at"] = order["created_at"].isoformat()
-        if order.get("updated_at"):
-            order["updated_at"] = order["updated_at"].isoformat()
+        if per_order.get("created_at"):
+            per_order["created_at"] = per_order["created_at"].isoformat()
+        if per_order.get("updated_at"):
+            per_order["updated_at"] = per_order["updated_at"].isoformat()
 
         # Prepare response data
         response_data = {
-            "order": order,
+            "order": per_order,
             "customer": None,
             "created_by": None,
             "related_sale": None,
@@ -110,9 +281,9 @@ async def get_per_order_details(
         }
 
         # Get customer information if requested and client_id exists
-        if include_customer and order.get("client_id"):
+        if include_customer and per_order.get("client_id"):
             try:
-                customer = await db.customers.find_one({"_id": ObjectId(order["client_id"])})
+                customer = await db.customers.find_one({"_id": ObjectId(per_order["client_id"])})
                 if customer:
                     customer["id"] = str(customer["_id"])
                     del customer["_id"]
@@ -127,9 +298,9 @@ async def get_per_order_details(
                 print(f"Error fetching customer: {e}")
 
         # Get creator information
-        if order.get("created_by"):
+        if per_order.get("created_by"):
             try:
-                creator = await db.users.find_one({"_id": ObjectId(order["created_by"])})
+                creator = await db.users.find_one({"_id": ObjectId(per_order["created_by"])})
                 if creator:
                     response_data["created_by"] = {
                         "id": str(creator["_id"]),
@@ -141,9 +312,9 @@ async def get_per_order_details(
                 print(f"Error fetching creator: {e}")
 
         # Get related sale information if requested and sale_id exists
-        if include_sale and order.get("sale_id"):
+        if include_sale and per_order.get("sale_id"):
             try:
-                sale = await db.sales.find_one({"_id": ObjectId(order["sale_id"])})
+                sale = await db.sales.find_one({"_id": ObjectId(per_order["sale_id"])})
                 if sale:
                     sale["id"] = str(sale["_id"])
                     del sale["_id"]
@@ -160,9 +331,9 @@ async def get_per_order_details(
                 print(f"Error fetching related sale: {e}")
 
         # Get related installment information if requested and installment_id exists
-        if include_installment and order.get("installment_id"):
+        if include_installment and per_order.get("installment_id"):
             try:
-                installment = await db.installments.find_one({"_id": ObjectId(order["installment_id"])})
+                installment = await db.installments.find_one({"_id": ObjectId(per_order["installment_id"])})
                 if installment:
                     installment["id"] = str(installment["_id"])
                     del installment["_id"]
@@ -202,6 +373,50 @@ async def get_per_order_details(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve order details: {str(e)}"
         )
+
+
+@router.get("/stats", response_model=dict)
+async def get_per_order_stats(
+    current_user: User = Depends(get_current_user_hybrid_dependency())
+):
+    """Get per order statistics"""
+    db = await get_database()
+
+    total_orders = await db.per_orders.count_documents({})
+    pending_orders = await db.per_orders.count_documents({"status": "pending"})
+    delivered_orders = await db.per_orders.count_documents({"status": "delivered"})
+
+    pipeline = [
+        {
+            "$group": {
+                "_id": None,
+                "total_revenue": {"$sum": "$total_amount"}
+            }
+        }
+    ]
+    total_revenue_result = await db.per_orders.aggregate(pipeline).to_list(length=1)
+    total_revenue = total_revenue_result[0]["total_revenue"] if total_revenue_result else 0
+
+    pipeline = [
+        {"$unwind": "$items"},
+        {
+            "$group": {
+                "_id": "$items.product_name",
+                "total_ordered": {"$sum": "$items.quantity"}
+            }
+        },
+        {"$sort": {"total_ordered": -1}},
+        {"$limit": 5}
+    ]
+    most_ordered_products = await db.per_orders.aggregate(pipeline).to_list(length=5)
+
+    return {
+        "total_orders": total_orders,
+        "pending_orders": pending_orders,
+        "delivered_orders": delivered_orders,
+        "total_revenue": total_revenue,
+        "most_ordered_products": most_ordered_products
+    }
 
 
 @router.get("/{order_id}/summary", response_model=dict)

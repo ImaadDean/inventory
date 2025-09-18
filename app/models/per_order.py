@@ -234,7 +234,6 @@ class PerOrder(BaseModel):
 
 class PerOrderCreate(BaseModel):
     """Schema for creating a new per order"""
-    order_number: str = Field(..., min_length=5, max_length=50)
     original_order_id: Optional[str] = None
     customer_id: Optional[str] = None
     customer_name: str = Field(..., min_length=1, max_length=100)

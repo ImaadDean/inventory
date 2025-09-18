@@ -94,12 +94,6 @@
                         <p class="text-gray-900">{{ per_order.customer_phone }}</p>
                     </div>
                     {% endif %}
-                    {% if per_order.customer_id %}
-                    <div>
-                        <label class="text-sm font-medium text-gray-600">Customer ID</label>
-                        <p class="text-gray-900 text-sm font-mono">{{ per_order.customer_id }}</p>
-                    </div>
-                    {% endif %}
                 </div>
             </div>
 
@@ -134,24 +128,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Payment Information -->
-            <div class="bg-white rounded-xl shadow-md p-6 border border-gray-200">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                    <i class="fas fa-credit-card text-purple-500 mr-2"></i>
-                    Payment Information
-                </h3>
-                <div class="space-y-3">
-                    <div class="flex justify-between">
-                        <span class="text-gray-600">Paid Amount</span>
-                        <span class="font-medium text-green-600">UGX 0</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-gray-600">Balance</span>
-                        <span class="font-medium text-red-600">UGX {{ "{:,.0f}".format(per_order.total_amount) }}</span>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <!-- Order Items -->
@@ -177,7 +153,6 @@
                         <tr class="hover:bg-gray-50">
                             <td class="px-6 py-4">
                                 <div class="text-sm font-medium text-gray-900">{{ item.product_name }}</div>
-                                <div class="text-sm text-gray-500">ID: {{ item.product_id }}</div>
                             </td>
                             <td class="px-6 py-4 text-sm text-gray-900">{{ item.quantity }}</td>
                             <td class="px-6 py-4 text-sm text-gray-900">UGX {{ "{:,.0f}".format(item.unit_price) }}</td>
@@ -212,36 +187,185 @@
             </div>
         </div>
 
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <!-- Total Orders -->
+            <div class="bg-white overflow-hidden shadow-md rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+                <div class="p-4">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-gradient-to-r from-blue-400 to-blue-600 rounded-lg flex items-center justify-center shadow-md">
+                                <i class="fas fa-boxes text-white text-xs"></i>
+                            </div>
+                        </div>
+                        <div class="ml-3 flex-1">
+                            <dt class="text-xs font-medium text-gray-500 truncate">Total Orders</dt>
+                            <dd class="text-base font-bold text-gray-900 mt-0.5" id="total-orders">0</dd>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gradient-to-r from-blue-50 to-blue-100 px-4 py-2">
+                    <div class="text-xs">
+                        <span class="text-blue-700 font-medium">All time</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pending Orders -->
+            <div class="bg-white overflow-hidden shadow-md rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+                <div class="p-4">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center shadow-md">
+                                <i class="fas fa-exclamation-triangle text-white text-xs"></i>
+                            </div>
+                        </div>
+                        <div class="ml-3 flex-1">
+                            <dt class="text-xs font-medium text-gray-500 truncate">Pending Orders</dt>
+                            <dd class="text-base font-bold text-gray-900 mt-0.5" id="pending-orders">0</dd>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gradient-to-r from-yellow-50 to-orange-100 px-4 py-2">
+                    <div class="text-xs">
+                        <span class="text-orange-700 font-medium">Awaiting action</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delivered Orders -->
+            <div class="bg-white overflow-hidden shadow-md rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+                <div class="p-4">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-gradient-to-r from-green-400 to-green-600 rounded-lg flex items-center justify-center shadow-md">
+                                <i class="fas fa-check-circle text-white text-xs"></i>
+                            </div>
+                        </div>
+                        <div class="ml-3 flex-1">
+                            <dt class="text-xs font-medium text-gray-500 truncate">Delivered Orders</dt>
+                            <dd class="text-base font-bold text-gray-900 mt-0.5" id="delivered-orders">0</dd>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gradient-to-r from-green-50 to-green-100 px-4 py-2">
+                    <div class="text-xs">
+                        <span class="text-green-700 font-medium">Completed</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Revenue -->
+            <div class="bg-white overflow-hidden shadow-md rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+                <div class="p-4">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-gradient-to-r from-purple-400 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
+                                <i class="fas fa-dollar-sign text-white text-xs"></i>
+                            </div>
+                        </div>
+                        <div class="ml-3 flex-1">
+                            <dt class="text-xs font-medium text-gray-500 truncate">Total Revenue</dt>
+                            <dd class="text-base font-bold text-gray-900 mt-0.5" id="total-revenue">UGX 0</dd>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gradient-to-r from-purple-50 to-purple-100 px-4 py-2">
+                    <div class="text-xs">
+                        <span class="text-purple-700 font-medium">From all orders</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Per Orders Table -->
-        <div class="bg-white rounded-xl shadow-md border border-gray-200">
-            <div class="p-6 border-b border-gray-200">
-                <h3 class="text-lg font-semibold text-gray-900">Per Orders List</h3>
+        <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300">
+            <div class="px-4 py-3 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-3 lg:space-y-0">
+                    <div class="flex items-center">
+                        <div class="w-6 h-6 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center mr-2">
+                            <i class="fas fa-list text-white text-xs"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-semibold text-gray-900">Per Orders</h3>
+                            <div class="text-xs text-gray-600">
+                                <span id="orders-count">0 orders</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filters -->
+                    <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                        <div class="relative">
+                            <input type="text" id="search-orders" placeholder="Search orders, clients..."
+                                   class="pl-7 pr-3 py-1.5 w-full sm:w-40 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
+                            <i class="fas fa-search absolute left-2 top-2 text-gray-400 text-xs"></i>
+                        </div>
+                        <select id="status-filter" class="px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
+                            <option value="">All Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="processing">Processing</option>
+                            <option value="shipped">Shipped</option>
+                            <option value="delivered">Delivered</option>
+                            <option value="cancelled">Cancelled</option>
+                            <option value="returned">Returned</option>
+                        </select>
+                        <div class="flex items-center space-x-1">
+                            <input type="date" id="date-from" class="px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" title="From Date">
+                            <span class="text-gray-400 text-xs">to</span>
+                            <input type="date" id="date-to" class="px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" title="To Date">
+                        </div>
+                        <button onclick="clearFilters()" class="px-2 py-1.5 text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-lg transition-all duration-200 flex items-center space-x-1" title="Clear Filters">
+                            <i class="fas fa-times text-xs"></i>
+                            <span class="text-xs">Clear</span>
+                        </button>
+                    </div>
+                </div>
             </div>
             <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead class="bg-gray-50">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order Number</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Order #</th>
+                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Client</th>
+                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Items</th>
+                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Total</th>
+                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
+                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
-                    <tbody id="per-orders-table-body" class="bg-white divide-y divide-gray-200">
-                        {% for order in per_orders %}
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4"><a href="/per-order/{{ order._id }}" class="text-blue-600 hover:underline">{{ order.order_number }}</a></td>
-                            <td class="px-6 py-4">{{ order.customer_name }}</td>
-                            <td class="px-6 py-4">{{ order.status }}</td>
-                            <td class="px-6 py-4">UGX {{ "{:,.0f}".format(order.total_amount) }}</td>
-                            <td class="px-6 py-4">{{ order.created_at.strftime('%Y-%m-%d') }}</td>
-                            <td class="px-6 py-4"><a href="/per-order/{{ order._id }}" class="text-blue-600 hover:underline">View</a></td>
-                        </tr>
-                        {% endfor %}
+                    <tbody id="per-orders-table-body" class="bg-white divide-y divide-gray-100">
+                        <!-- Orders will be loaded here -->
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Pagination Controls -->
+            <div class="px-4 py-3 border-t border-gray-200 bg-gray-50">
+                <div class="flex flex-col items-center space-y-2">
+                    <!-- Pagination Info -->
+                    <div class="text-xs text-gray-600 font-medium">
+                        <span id="pagination-info">Page 1 of 1</span>
+                    </div>
+
+                    <div id="loading-message" class="text-center text-gray-500 py-1" style="display: none;">
+                        <div class="flex items-center justify-center space-x-2">
+                            <div class="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-500"></div>
+                            <span class="text-xs">Loading more orders...</span>
+                        </div>
+                    </div>
+
+                    <div id="end-message" class="text-center text-gray-500 py-2" style="display: none;">
+                        <div class="flex flex-col items-center">
+                            <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center mb-1">
+                                <i class="fas fa-check text-gray-400 text-sm"></i>
+                            </div>
+                            <p class="text-xs font-medium">You've reached the end</p>
+                            <p class="text-xs">All orders have been loaded</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -531,6 +655,23 @@
         </div>
     </div>
 
+        <!-- View Per Order Modal -->
+    <div id="view-per-order-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div id="view-per-order-modal-content" class="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] transform transition-all duration-300">
+                <div class="px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-t-xl">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-base font-semibold text-white">Per Order Details</h3>
+                        <button type="button" onclick="closeViewPerOrderModal()" class="text-white hover:text-gray-200 transition-colors duration-200">
+                            <i class="fas fa-times text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="view-per-order-modal-body" class="p-6 bg-gray-50" style="max-height: calc(90vh - 50px); overflow-y: auto;">
+                </div>
+            </div>
+        </div>
+    </div>
     <!-- Open New Bottle Confirmation Modal -->
     <div id="open-bottle-modal" class="fixed inset-0 bg-black bg-opacity-75 backdrop-blur-sm hidden z-50">
         <div class="flex items-center justify-center min-h-screen p-4">
@@ -583,13 +724,148 @@
             </div>
         </div>
     </div>
+
+    <!-- Items Modal Template -->
+    <div id="items-modal-template" class="hidden absolute z-50 bg-white rounded-lg shadow-xl border border-gray-200 p-4 w-80">
+        <div class="flex justify-between items-center mb-2">
+            <h3 class="items-modal-title text-sm font-semibold text-gray-800">Order Items</h3>
+            <button class="items-modal-close-btn text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <ul class="items-modal-list space-y-2">
+            <!-- Items will be populated here -->
+        </ul>
+    </div>
 {% endif %}
 
 <script>
+const per_orders = {{ per_orders_json|tojson }};
 let cart = [];
 let selectedClient = null;
 let modalClients = [];
 
+function openViewPerOrderModal(orderId) {
+    const modal = document.getElementById('view-per-order-modal');
+    const modalBody = document.getElementById('view-per-order-modal-body');
+    const order = per_orders.find(o => o._id.$oid === orderId);
+
+    if (order) {
+        let itemsHtml = '';
+        for (const item of order.items) {
+            itemsHtml += `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4">
+                        <div class="text-sm font-medium text-gray-900">${item.product_name}</div>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-900">${item.quantity}</td>
+                    <td class="px-6 py-4 text-sm text-gray-900">UGX ${item.unit_price.toLocaleString()}</td>
+                    <td class="px-6 py-4 text-sm font-medium text-gray-900">UGX ${item.total_price.toLocaleString()}</td>
+                </tr>
+            `;
+        }
+
+        modalBody.innerHTML = `
+            <div class="space-y-6">
+                <div class="bg-gradient-to-r from-blue-500 to-indigo-600 shadow-lg rounded-xl p-6 text-white">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+                        <div class="mb-4 md:mb-0">
+                            <h1 class="text-2xl md:text-3xl font-bold">Per Order ${order.order_number}</h1>
+                            <p class="text-blue-100 text-sm">Detailed per order management and tracking</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-xl shadow-md p-6 border border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                            <i class="fas fa-user text-blue-500 mr-2"></i>
+                            Customer Information
+                        </h3>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="text-sm font-medium text-gray-600">Name</label>
+                                <p class="text-gray-900 font-medium">${order.customer_name || 'Walk-in Customer'}</p>
+                            </div>
+                            ${order.customer_email ? `
+                            <div>
+                                <label class="text-sm font-medium text-gray-600">Email</label>
+                                <p class="text-gray-900">${order.customer_email}</p>
+                            </div>
+                            ` : ''}
+                            ${order.customer_phone ? `
+                            <div>
+                                <label class="text-sm font-medium text-gray-600">Phone</label>
+                                <p class="text-gray-900">${order.customer_phone}</p>
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-md p-6 border border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                            <i class="fas fa-receipt text-green-500 mr-2"></i>
+                            Order Summary
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Subtotal</span>
+                                <span class="font-medium">UGX ${order.subtotal.toLocaleString()}</span>
+                            </div>
+                            ${order.tax_total > 0 ? `
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Tax</span>
+                                <span class="font-medium">UGX ${order.tax_total.toLocaleString()}</span>
+                            </div>
+                            ` : ''}
+                            ${order.discount_total > 0 ? `
+                            <div class="flex justify-between text-red-600">
+                                <span>Discount</span>
+                                <span class="font-medium">-UGX ${order.discount_total.toLocaleString()}</span>
+                            </div>
+                            ` : ''}
+                            <div class="border-t pt-2">
+                                <div class="flex justify-between text-lg font-bold">
+                                    <span>Total</span>
+                                    <span>UGX ${order.total_amount.toLocaleString()}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-md border border-gray-200">
+                    <div class="p-6 border-b border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                            <i class="fas fa-shopping-cart text-indigo-500 mr-2"></i>
+                            Order Items (${order.items.length})
+                        </h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                ${itemsHtml}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+        modal.classList.remove('hidden');
+    } else {
+        alert('Order not found!');
+    }
+}
+
+function closeViewPerOrderModal() {
+    const modal = document.getElementById('view-per-order-modal');
+    modal.classList.add('hidden');
+}
 function openCreatePerOrderModal() {
     document.getElementById('create-per-order-modal').classList.remove('hidden');
     document.getElementById('modal-product-search').addEventListener('input', searchProductsInModal);
@@ -1153,6 +1429,391 @@ function closeItemDiscountModal() {
     document.getElementById('final-item-price').textContent = 'UGX 0';
 }
 </script>
+
+<script>
+function debounce(func, delay) {
+    let timeout;
+    return function(...args) {
+        const context = this;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), delay);
+    };
+}
+
+let currentPage = 1;
+let totalPages = 1;
+let isLoading = false;
+let allOrders = [];
+
+let currentItemModalCell = null; // Keep track of which cell the modal is in
+
+function clickOutsideHandler(event) {
+    const modal = document.getElementById('items-modal-instance');
+    // If the modal exists and the click was outside of it
+    if (modal && !modal.contains(event.target)) {
+        hideItemsModal();
+    }
+}
+
+function showOrderLoadingIndicator(rows = 5) {
+    const tableBody = document.querySelector('#per-orders-table-body');
+    if (!tableBody) return;
+
+    const skeletonRow = `
+        <tr class="animate-pulse">
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                    <div class="w-8 h-8 bg-gray-300 rounded-lg mr-3"></div>
+                    <div class="flex flex-col space-y-1">
+                        <div class="h-4 bg-gray-300 rounded w-24"></div>
+                        <div class="h-3 bg-gray-300 rounded w-16"></div>
+                    </div>
+                </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="space-y-1">
+                    <div class="h-4 bg-gray-300 rounded w-32"></div>
+                    <div class="h-3 bg-gray-300 rounded w-24"></div>
+                </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="h-4 bg-gray-300 rounded w-16"></div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="h-4 bg-gray-300 rounded w-24 font-bold"></div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="h-6 bg-gray-300 rounded-full w-24"></div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="h-4 bg-gray-300 rounded w-24"></div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-right">
+                <div class="flex items-center justify-end space-x-2">
+                    <div class="h-8 w-8 bg-gray-300 rounded-lg"></div>
+                    <div class="h-8 w-8 bg-gray-300 rounded-lg"></div>
+                    <div class="h-8 w-8 bg-gray-300 rounded-lg"></div>
+                </div>
+            </td>
+        </tr>
+    `;
+
+    tableBody.innerHTML = skeletonRow.repeat(rows);
+}
+
+function loadOrders(page = 1, append = false) {
+    if (isLoading) return;
+    isLoading = true;
+
+    if (append) {
+        const loadingMessage = document.querySelector('#loading-message');
+        if (loadingMessage) {
+            loadingMessage.style.display = 'block';
+        }
+    } else {
+        showOrderLoadingIndicator();
+    }
+
+    const params = new URLSearchParams({
+        page: page,
+        size: 10
+    });
+
+    const search = document.getElementById('search-orders').value;
+    const status = document.getElementById('status-filter').value;
+    const dateFrom = document.getElementById('date-from').value;
+    const dateTo = document.getElementById('date-to').value;
+
+    if (search) params.append('search', search);
+    if (status) params.append('status', status);
+    if (dateFrom) params.append('date_from', dateFrom);
+    if (dateTo) params.append('date_to', dateTo);
+
+    fetch(`/api/per-order/?${params.toString()}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            return response.json();
+        }
+        throw new Error('Failed to load orders');
+    })
+    .then(data => {
+        currentPage = data.page;
+        totalPages = data.total_pages;
+
+        if (append) {
+            allOrders = [...allOrders, ...(data.orders || [])];
+        } else {
+            allOrders = data.orders || [];
+        }
+
+        displayOrders(allOrders, data.total, currentPage, totalPages);
+
+        if (!append) {
+            loadOrderStats();
+        }
+    })
+    .catch(error => {
+        console.error('Error loading orders:', error);
+    })
+    .finally(() => {
+        isLoading = false;
+    });
+}
+
+function displayOrders(orders, total = 0, page = 1, totalPages = 1) {
+    const tableBody = document.querySelector('#per-orders-table-body');
+    const ordersCount = document.querySelector('#orders-count');
+    const paginationInfo = document.querySelector('#pagination-info');
+    const loadingMessage = document.querySelector('#loading-message');
+    const endMessage = document.querySelector('#end-message');
+
+    if (!tableBody) return;
+
+    if (ordersCount) {
+        ordersCount.textContent = `${total} order${total !== 1 ? 's' : ''} (showing ${orders.length})`;
+    }
+
+    if (paginationInfo) {
+        paginationInfo.textContent = `Page ${page} of ${totalPages}`;
+    }
+
+    if (loadingMessage) {
+        loadingMessage.style.display = 'none';
+    }
+    if (endMessage) {
+        endMessage.style.display = page >= totalPages && orders.length > 0 ? 'block' : 'none';
+    }
+
+    if (orders.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+                    <div class="flex flex-col items-center">
+                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                            <i class="fas fa-shopping-cart text-gray-400 text-2xl"></i>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">No orders found</h3>
+                        <p class="text-sm text-gray-500">Orders will appear here when created.</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tableBody.innerHTML = orders.map(order => {
+        return `
+        <tr class="hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200">
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                    <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-receipt text-white text-xs"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-sm font-semibold text-gray-900">${order.order_number}</span>
+                    </div>
+                </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div>
+                    <div class="text-sm font-semibold text-gray-900">${order.customer_name}</div>
+                </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="relative">
+                    <button onclick="showItemsModal(event, '${order._id}')" class="flex items-center cursor-pointer hover:bg-gray-100 p-2 rounded-lg">
+                        <div class="w-6 h-6 bg-gray-100 rounded-md flex items-center justify-center mr-2">
+                            <i class="fas fa-box text-gray-600 text-xs"></i>
+                        </div>
+                        <span class="text-sm font-medium text-gray-900">${order.items.length} item${order.items.length !== 1 ? 's' : ''}</span>
+                    </button>
+                </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <span class="text-sm font-bold text-gray-900">UGX ${Math.round(order.total_amount).toLocaleString('en-UG')}</span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full ${getStatusClass(order.status)} w-fit">
+                    ${getStatusText(order.status)}
+                </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <div class="flex items-center">
+                    <i class="fas fa-calendar text-gray-400 mr-2 text-xs"></i>
+                    ${new Date(order.created_at).toLocaleDateString()}
+                </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-right">
+                <div class="flex items-center justify-end space-x-2">
+                    <button onclick="openViewPerOrderModal('${order._id.$oid}')" class="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-all duration-200" title="View Order">
+                        <i class="fas fa-eye text-sm"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>
+        `;
+    }).join('');
+}
+
+function getStatusClass(status) {
+    switch(status) {
+        case 'delivered': return 'bg-green-100 text-green-800';
+        case 'processing': return 'bg-blue-100 text-blue-800';
+        case 'pending': return 'bg-yellow-100 text-yellow-800';
+        case 'cancelled': return 'bg-red-100 text-red-800';
+        case 'returned': return 'bg-gray-100 text-gray-800';
+        default: return 'bg-gray-100 text-gray-800';
+    }
+}
+
+function getStatusText(status) {
+    return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+function getStatusText(status) {
+    return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+function showItemsModal(event, orderId) {
+    event.stopPropagation();
+
+    // Hide any existing modal first
+    hideItemsModal();
+
+    const order = allOrders.find(o => o._id === orderId);
+    if (!order) return;
+    const items = order.items;
+
+    const template = document.getElementById('items-modal-template');
+    if (!template) return;
+
+    const modal = template.cloneNode(true);
+    modal.id = 'items-modal-instance'; // Give it a unique ID
+    modal.classList.remove('hidden');
+
+    // Update modal title
+    const titleElement = modal.querySelector('.items-modal-title');
+    if (titleElement) {
+        titleElement.textContent = `Order #${order.order_number}`;
+    }
+
+    const cell = event.currentTarget.closest('td');
+    if (!cell) return;
+
+    // Keep track of the cell and set its position
+    currentItemModalCell = cell;
+    cell.style.position = 'relative';
+    cell.appendChild(modal);
+
+    // Populate list
+    const list = modal.querySelector('.items-modal-list'); // Select within the clone
+    if (list) {
+        list.innerHTML = '';
+        if (items && items.length > 0) {
+            items.forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'flex justify-between items-center text-sm';
+                const productName = item.product_name.length > 35 ? item.product_name.substring(0, 35) + '...' : item.product_name;
+                li.innerHTML = `
+                    <span class="text-gray-700" title="${item.product_name}">${productName}</span>
+                    <span class="font-semibold text-gray-900">Qty: ${item.quantity}</span>
+                `;
+                list.appendChild(li);
+            });
+        } else {
+            list.innerHTML = '<li class="text-gray-500 text-sm">No items in this order.</li>';
+        }
+    }
+
+    // Position it
+    modal.style.left = '100%';
+    modal.style.top = '0';
+    modal.style.marginLeft = '5px';
+
+    // Add listeners
+    modal.querySelector('.items-modal-close-btn').addEventListener('click', hideItemsModal);
+    setTimeout(() => {
+        document.addEventListener('click', clickOutsideHandler);
+    }, 0);
+}
+
+function hideItemsModal() {
+    const modal = document.getElementById('items-modal-instance');
+    if (modal) {
+        modal.remove();
+    }
+    if (currentItemModalCell) {
+        currentItemModalCell.style.position = '';
+        currentItemModalCell = null;
+    }
+    document.removeEventListener('click', clickOutsideHandler);
+}
+
+function loadOrderStats() {
+    fetch('/api/per-order/stats', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            return response.json();
+        }
+        throw new Error('Failed to load order statistics');
+    })
+    .then(stats => {
+        document.getElementById('total-orders').textContent = stats.total_orders.toLocaleString();
+        document.getElementById('pending-orders').textContent = stats.pending_orders.toLocaleString();
+        document.getElementById('delivered-orders').textContent = stats.delivered_orders.toLocaleString();
+        document.getElementById('total-revenue').textContent = `UGX ${Math.round(stats.total_revenue).toLocaleString('en-UG')}`;
+    })
+    .catch(error => {
+        console.error('Error loading order statistics:', error);
+        document.getElementById('total-orders').textContent = '0';
+        document.getElementById('pending-orders').textContent = '0';
+        document.getElementById('delivered-orders').textContent = '0';
+        document.getElementById('total-revenue').textContent = 'UGX 0';
+    });
+}
+
+function clearFilters() {
+    document.getElementById('search-orders').value = '';
+    document.getElementById('status-filter').value = '';
+    document.getElementById('date-from').value = '';
+    document.getElementById('date-to').value = '';
+    loadOrders();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadOrders();
+
+    document.getElementById('search-orders').addEventListener('input', debounce(function() {
+        loadOrders();
+    }, 300));
+
+    document.getElementById('status-filter').addEventListener('change', function() {
+        loadOrders();
+    });
+
+    document.getElementById('date-from').addEventListener('change', function() {
+        loadOrders();
+    });
+
+    document.getElementById('date-to').addEventListener('change', function() {
+        loadOrders();
+    });
+});
+
+</script>
+
 
 <style>
 @media print {
