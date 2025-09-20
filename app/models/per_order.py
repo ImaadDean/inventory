@@ -256,6 +256,7 @@ class PerOrderUpdate(BaseModel):
     customer_email: Optional[str] = Field(None, max_length=100)
     customer_phone: Optional[str] = Field(None, max_length=20)
     items: Optional[List[PerOrderItem]] = None
+    order_discount: Optional[float] = Field(None, ge=0)
     shipping_cost: Optional[float] = Field(None, ge=0)
     priority: Optional[PerOrderPriority] = None
     status: Optional[PerOrderStatus] = None

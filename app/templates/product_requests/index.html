@@ -452,6 +452,35 @@
     </div>
 </div>
 
+<!-- No Customer Confirmation Modal -->
+<div id="no-customer-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div class="px-4 py-3 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-t-lg">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-white">Confirm No Customer</h3>
+                    <button type="button" onclick="closeNoCustomerModal()" class="text-white hover:text-gray-200">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-4 space-y-4">
+                <p>You have not selected a customer. Do you want to save this request without a customer?</p>
+                <div class="flex justify-end space-x-2 pt-4 border-t">
+                    <button type="button" onclick="closeNoCustomerModal()" 
+                            class="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg">
+                        Cancel
+                    </button>
+                    <button type="button" id="confirm-no-customer"
+                            class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg">
+                        Save Anyway
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 let currentPage = 1;
 let currentSearch = '';
@@ -536,7 +565,7 @@ function displayRequests(requests, append) {
                 <div class="text-sm font-medium text-gray-900">${request.product_name}</div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900">${request.customer_name}</div>
+                <div class="text-sm text-gray-900">${request.customer_name || 'No Customer'}</div>
                 ${request.customer_contact ? `<div class="text-xs text-gray-500">${request.customer_contact}</div>` : ''}
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
@@ -798,8 +827,8 @@ async function editRequest(id) {
         document.getElementById('notes').value = request.notes || '';
         
         // Set customer info
-        document.getElementById('selected-customer').value = request.customer_name + (request.customer_contact ? ` (${request.customer_contact})` : '');
-        document.getElementById('customer-name').value = request.customer_name;
+        document.getElementById('selected-customer').value = (request.customer_name || '') + (request.customer_contact ? ` (${request.customer_contact})` : '');
+        document.getElementById('customer-name').value = request.customer_name || '';
         document.getElementById('customer-contact').value = request.customer_contact || '';
         
         document.getElementById('request-modal').classList.remove('hidden');
@@ -824,7 +853,7 @@ async function viewRequest(id) {
         const request = await response.json();
         
         document.getElementById('view-product-name').textContent = request.product_name;
-        document.getElementById('view-customer-name').textContent = request.customer_name;
+        document.getElementById('view-customer-name').textContent = request.customer_name || 'No Customer';
         document.getElementById('view-customer-contact').textContent = request.customer_contact || 'N/A';
         document.getElementById('view-status').textContent = request.status;
         document.getElementById('view-notes').textContent = request.notes || 'No notes';
@@ -877,6 +906,14 @@ function closeProductExistsModalAndClear() {
     document.getElementById('product-name').value = '';
 }
 
+function openNoCustomerModal() {
+    document.getElementById('no-customer-modal').classList.remove('hidden');
+}
+
+function closeNoCustomerModal() {
+    document.getElementById('no-customer-modal').classList.add('hidden');
+}
+
 function toggleRequestForm(disabled) {
     document.getElementById('selected-customer').disabled = disabled;
     document.getElementById('notes').disabled = disabled;
@@ -920,11 +957,6 @@ async function proceedWithSave() {
     
     const customerName = document.getElementById('customer-name').value;
     const customerContact = document.getElementById('customer-contact').value;
-    
-    if (!customerName) {
-        showToast('Please select a customer', 'error');
-        return;
-    }
 
     const requestData = {
         product_name: document.getElementById('product-name').value,
@@ -958,11 +990,21 @@ async function proceedWithSave() {
 
 document.getElementById('request-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    proceedWithSave();
+    const customerName = document.getElementById('customer-name').value;
+    if (!customerName && !document.getElementById('request-id').value) { // Only for new requests
+        openNoCustomerModal();
+    } else {
+        proceedWithSave();
+    }
 });
 
 document.getElementById('confirm-product-exists').addEventListener('click', () => {
     closeProductExistsModal();
+});
+
+document.getElementById('confirm-no-customer').addEventListener('click', () => {
+    closeNoCustomerModal();
+    proceedWithSave();
 });
 
 

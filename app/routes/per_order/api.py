@@ -14,6 +14,13 @@ from ...models.per_order import (
 )
 from ...utils.auth import get_current_user_hybrid_dependency
 from .utils import generate_per_order_number
+from ...models.sale import Sale, SaleItem
+from ...models.order import Order, OrderItem
+from pydantic import BaseModel
+import asyncio
+
+class ConfirmPayload(BaseModel):
+    payment_method: str
 
 router = APIRouter(
     prefix="/api/per-order",
@@ -55,6 +62,9 @@ async def list_per_orders(
     total = await db.per_orders.count_documents(query)
     per_orders = await db.per_orders.find(query).sort("created_at", -1).skip((page - 1) * size).limit(size).to_list(length=size)
 
+    for order in per_orders:
+        order['id'] = str(order['_id'])
+
     # Convert ObjectId to string for each order and nested items
     def convert_objectid_to_str(obj):
         if isinstance(obj, dict):
@@ -66,6 +76,9 @@ async def list_per_orders(
         return obj
 
     per_orders_serializable = [convert_objectid_to_str(order) for order in per_orders]
+
+    for order in per_orders_serializable:
+        order['id'] = order['_id']
 
     return {
         "orders": per_orders_serializable,
@@ -141,12 +154,14 @@ async def update_per_order(
         return existing_per_order
 
     # Recalculate totals if items or shipping cost changed
-    if 'items' in update_data or 'shipping_cost' in update_data:
+    if 'items' in update_data or 'shipping_cost' in update_data or 'order_discount' in update_data:
         items = update_data.get('items', existing_per_order.get('items', []))
         shipping_cost = update_data.get('shipping_cost', existing_per_order.get('shipping_cost', 0))
+        order_discount = update_data.get('order_discount', existing_per_order.get('order_discount', 0))
 
         subtotal = sum(item.get('total_price', 0) for item in items)
-        discount_total = sum(item.get('discount_amount', 0) for item in items)
+        item_discounts = sum(item.get('discount_amount', 0) for item in items)
+        discount_total = item_discounts + order_discount
         total_amount = subtotal - discount_total + shipping_cost
         
         update_data['subtotal'] = subtotal
@@ -176,6 +191,122 @@ async def update_per_order(
 
     updated_order = await db.per_orders.find_one({"_id": ObjectId(per_order_id)})
     return updated_order
+
+
+@router.post("/{per_order_id}/confirm", response_model=dict)
+async def confirm_per_order(
+    per_order_id: str,
+    payload: ConfirmPayload,
+    current_user: User = Depends(get_current_user_hybrid_dependency())
+):
+    db = await get_database()
+    
+    async with await db.client.start_session() as session:
+        async with session.start_transaction():
+            try:
+                # 1. Fetch the PerOrder
+                per_order = await db.per_orders.find_one({"_id": ObjectId(per_order_id)}, session=session)
+                if not per_order:
+                    raise HTTPException(status_code=404, detail="Per Order not found")
+
+                if per_order.get("status") == "confirmed":
+                    raise HTTPException(status_code=400, detail="Order already confirmed")
+
+                # 2. Decrement stock for all items
+                product_ids = [ObjectId(item["product_id"]) for item in per_order["items"]]
+                products_map = {p["_id"]: p async for p in db.products.find({"_id": {"$in": product_ids}}, session=session)}
+
+                product_updates = []
+                for item in per_order["items"]:
+                    product_id = ObjectId(item["product_id"])
+                    product = products_map.get(product_id)
+                    quantity_to_decrement = item["quantity"]
+
+                    if not product or product.get("stock_quantity", 0) < quantity_to_decrement:
+                        raise HTTPException(status_code=400, detail=f"Not enough stock for {item['product_name']}")
+
+                    product_updates.append(
+                        db.products.update_one(
+                            {"_id": product_id},
+                            {"$inc": {"stock_quantity": -quantity_to_decrement}},
+                            session=session
+                        )
+                    )
+                
+                if product_updates:
+                    await asyncio.gather(*product_updates)
+
+                # 3. Create Order document
+                order_items = [OrderItem(**item) for item in per_order["items"]]
+                new_order_obj = Order(
+                    order_number=f"ORD-{per_order['order_number']}",
+                    client_id=per_order.get("customer_id"),
+                    client_name=per_order["customer_name"],
+                    client_phone=per_order.get("customer_phone"),
+                    items=order_items,
+                    subtotal=per_order["subtotal"],
+                    discount=per_order["discount_total"],
+                    total=per_order["total_amount"],
+                    status="active",
+                    payment_status="pending",
+                    created_by=current_user.id,
+                    payment_method=payload.payment_method,
+                )
+                order_result = await db.orders.insert_one(new_order_obj.dict(by_alias=True), session=session)
+
+                # 4. Create Sale document
+                sale_items = [
+                    SaleItem(
+                        product_id=ObjectId(item["product_id"]),
+                        product_name=item["product_name"],
+                        sku=products_map.get(ObjectId(item["product_id"]), {}).get("sku", ""),
+                        quantity=item["quantity"],
+                        unit_price=item["unit_price"],
+                        cost_price=products_map.get(ObjectId(item["product_id"]), {}).get("cost_price", 0),
+                        total_price=item["total_price"],
+                        discount_amount=item.get("discount_amount", 0)
+                    ) for item in per_order["items"]
+                ]
+                new_sale_obj = Sale(
+                    sale_number=f"SALE-{per_order['order_number']}",
+                    customer_id=per_order.get("customer_id"),
+                    customer_name=per_order["customer_name"],
+                    cashier_id=current_user.id,
+                    cashier_name=current_user.full_name,
+                    items=sale_items,
+                    subtotal=per_order["subtotal"],
+                    discount_amount=per_order["discount_total"],
+                    total_amount=per_order["total_amount"],
+                    payment_method=payload.payment_method,
+                    payment_received=0,
+                    status="active",
+                )
+                sale_result = await db.sales.insert_one(new_sale_obj.dict(by_alias=True), session=session)
+
+                # 5. Update PerOrder status
+                await db.per_orders.update_one(
+                    {"_id": ObjectId(per_order_id)},
+                    {"$set": {
+                        "status": "confirmed",
+                        "order_id": order_result.inserted_id,
+                        "sale_id": sale_result.inserted_id
+                    }},
+                    session=session
+                )
+
+                return {
+                    "success": True,
+                    "message": "Order confirmed successfully",
+                    "order_id": str(order_result.inserted_id),
+                    "sale_id": str(sale_result.inserted_id)
+                }
+
+            except Exception as e:
+                await session.abort_transaction()
+                # Log the exception for debugging
+                import traceback
+                traceback.print_exc()
+                raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {e}")
 
 
 @router.get("/stats", response_model=dict)

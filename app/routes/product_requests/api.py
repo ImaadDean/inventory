@@ -38,8 +38,15 @@ async def create_product_request(
 
     created_request = await db.product_requests.find_one({"_id": result.inserted_id})
 
-    if created_request:
-        created_request["id"] = str(created_request["_id"])
+    if not created_request:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve created product request"
+        )
+
+    created_request["id"] = str(created_request["_id"])
+    created_request["created_by"] = str(created_request["created_by"])
+    created_request["created_by_username"] = current_user.username
 
     return ProductRequestResponse.model_validate(created_request)
 
@@ -138,3 +145,78 @@ async def get_product_request(
 
     # The aggregation pipeline already ensures 'id' and 'created_by' are strings
     return ProductRequestResponse.model_validate(request_data[0])
+
+@router.delete("/{request_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_product_request(
+    request_id: str,
+    current_user: User = Depends(get_current_user_hybrid_dependency())
+):
+    """Delete a product request"""
+    db = await get_database()
+
+    if not ObjectId.is_valid(request_id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid request ID"
+        )
+
+    result = await db.product_requests.delete_one({"_id": ObjectId(request_id)})
+
+    if result.deleted_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Product request not found"
+        )
+
+    return
+
+@router.put("/{request_id}", response_model=ProductRequestResponse)
+async def update_product_request(
+    request_id: str,
+    request_data: ProductRequestUpdate,
+    current_user: User = Depends(get_current_user_hybrid_dependency())
+):
+    """Update an existing product request"""
+    db = await get_database()
+
+    if not ObjectId.is_valid(request_id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid request ID"
+        )
+
+    # Prepare update data, excluding fields that shouldn't be updated directly
+    update_data = request_data.model_dump(exclude_unset=True)
+    
+    # Add updated_at timestamp
+    update_data["updated_at"] = kampala_to_utc(now_kampala())
+
+    result = await db.product_requests.update_one(
+        {"_id": ObjectId(request_id)},
+        {"$set": update_data}
+    )
+
+    if result.matched_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Product request not found"
+        )
+
+    updated_request = await db.product_requests.find_one({"_id": ObjectId(request_id)})
+
+    if not updated_request:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve updated product request"
+        )
+
+    # Ensure fields are correctly formatted for the response model
+    updated_request["id"] = str(updated_request["_id"])
+    updated_request["created_by"] = str(updated_request["created_by"])
+    # Fetch username if not already in the document or if it needs to be refreshed
+    if "created_by_username" not in updated_request or updated_request["created_by_username"] is None:
+        creator_user = await db.users.find_one({"_id": ObjectId(updated_request["created_by"])})
+        updated_request["created_by_username"] = creator_user["username"] if creator_user else "N/A"
+
+
+    return ProductRequestResponse.model_validate(updated_request)

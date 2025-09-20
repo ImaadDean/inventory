@@ -5,7 +5,7 @@ from ..models.product_request import ProductRequestStatus
 
 class ProductRequestCreate(BaseModel):
     product_name: str
-    customer_name: str
+    customer_name: Optional[str] = None
     customer_contact: Optional[str] = None
     notes: Optional[str] = None
 
@@ -19,7 +19,7 @@ class ProductRequestUpdate(BaseModel):
 class ProductRequestResponse(BaseModel):
     id: str
     product_name: str
-    customer_name: str
+    customer_name: Optional[str] = None
     customer_contact: Optional[str] = None
     status: ProductRequestStatus
     notes: Optional[str] = None
