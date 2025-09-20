@@ -489,6 +489,7 @@ let totalRequests = 0;
 let loadedRequestsCount = 0;
 let isLoading = false;
 let hasMoreRequests = true;
+let observer = null; // Global variable for IntersectionObserver
 
 // Load requests
 async function loadRequests(append = false) {
@@ -496,6 +497,11 @@ async function loadRequests(append = false) {
 
     isLoading = true;
     if (!append) {
+        // Disconnect observer on initial load or filter change
+        if (observer) {
+            observer.disconnect();
+            observer = null;
+        }
         loadedRequestsCount = 0;
         document.getElementById('requests-table-body').innerHTML = '';
         document.getElementById('end-of-requests').classList.add('hidden');
@@ -596,6 +602,28 @@ function displayRequests(requests, append) {
     `).join('');
     tbody.insertAdjacentHTML('beforeend', html);
     loadedRequestsCount += requests.length;
+
+    // Disconnect previous observer if exists
+    if (observer) {
+        observer.disconnect();
+    }
+
+    // If there are more pages, observe the last item
+    if (hasMoreRequests) {
+        const lastRow = tbody.lastElementChild; // Get the last <tr>
+        if (lastRow) {
+            observer = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting && !isLoading) {
+                    loadRequests(true); // Load next page
+                }
+            }, {
+                root: null, // Use the viewport as the root
+                rootMargin: '0px',
+                threshold: 0.1 // Trigger when 10% of the item is visible
+            });
+            observer.observe(lastRow);
+        }
+    }
 }
 
 function getStatusClass(status) {
@@ -1019,13 +1047,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === 'Enter') applyFilters();
     });
 
-    // Infinite scroll
-    window.addEventListener('scroll', () => {
-        if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100 && hasMoreRequests && !isLoading) {
-            loadRequests(true);
-        }
-    });
-
     // New customer form submission
     document.getElementById('new-customer-form').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -1078,15 +1099,45 @@ function showToast(message, type) {
     setTimeout(() => toast.remove(), 3000);
 }
 
-function showLoadingIndicator() {
+function showLoadingIndicator(rows = 5) {
     const tbody = document.getElementById('requests-table-body');
-    tbody.innerHTML = `
-        <tr>
-            <td colspan="6" class="px-4 py-8 text-center text-gray-500">
-                <i class="fas fa-spinner fa-spin mr-2"></i> Loading requests...
+    if (!tbody) return;
+
+    const skeletonRow = `
+        <tr class="animate-pulse">
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                    <div class="w-8 h-8 bg-gray-300 rounded-lg mr-3"></div>
+                    <div class="flex flex-col space-y-1">
+                        <div class="h-4 bg-gray-300 rounded w-24"></div>
+                        <div class="h-3 bg-gray-300 rounded w-16"></div>
+                    </div>
+                </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="space-y-1">
+                    <div class="h-4 bg-gray-300 rounded w-32"></div>
+                    <div class="h-3 bg-gray-300 rounded w-24"></div>
+                </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="h-4 bg-gray-300 rounded w-16"></div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="h-4 bg-gray-300 rounded w-24 font-bold"></div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="h-6 bg-gray-300 rounded-full w-24"></div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-right">
+                <div class="flex items-center justify-end space-x-2">
+                    <div class="h-8 w-8 bg-gray-300 rounded-lg"></div>
+                    <div class="h-8 w-8 bg-gray-300 rounded-lg"></div>
+                    <div class="h-8 w-8 bg-gray-300 rounded-lg"></div>
+                </div>
             </td>
         </tr>
     `;
+    tbody.innerHTML = skeletonRow.repeat(rows);
 }
 
 function showAutoLoadingRequestsIndicator() {

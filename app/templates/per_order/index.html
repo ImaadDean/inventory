@@ -859,6 +859,7 @@ let currentItemModalCell = null;
 let pendingBottleData = null;
 let currentDiscountItemId = null;
 let selectedPaymentMethod = null;
+let observer = null; // Global variable for IntersectionObserver
 
 // Functions
 function openCreatePerOrderModal() {
@@ -1814,13 +1815,18 @@ function loadOrders(page = 1, append = false) {
     if (isLoading) return;
     isLoading = true;
 
-    if (append) {
+    if (!append) {
+        // Disconnect observer on initial load or filter change
+        if (observer) {
+            observer.disconnect();
+            observer = null;
+        }
+        showOrderLoadingIndicator();
+    } else {
         const loadingMessage = document.querySelector('#loading-message');
         if (loadingMessage) {
             loadingMessage.style.display = 'block';
         }
-    } else {
-        showOrderLoadingIndicator();
     }
 
     const params = new URLSearchParams({
@@ -1872,6 +1878,15 @@ function loadOrders(page = 1, append = false) {
     })
     .finally(() => {
         isLoading = false;
+        const loadingMessage = document.querySelector('#loading-message');
+        const endMessage = document.querySelector('#end-message');
+
+        if (loadingMessage) {
+            loadingMessage.style.display = 'none';
+        }
+        if (endMessage) {
+            endMessage.style.display = currentPage >= totalPages && allOrders.length > 0 ? 'block' : 'none';
+        }
     });
 }
 
@@ -1879,10 +1894,11 @@ function displayOrders(orders, total = 0, page = 1, totalPages = 1) {
     const tableBody = document.querySelector('#per-orders-table-body');
     const ordersCount = document.querySelector('#orders-count');
     const paginationInfo = document.querySelector('#pagination-info');
-    const loadingMessage = document.querySelector('#loading-message');
-    const endMessage = document.querySelector('#end-message');
 
     if (!tableBody) return;
+
+    // Clear table before rendering all accumulated orders
+    tableBody.innerHTML = '';
 
     if (ordersCount) {
         ordersCount.textContent = `${total} order${total !== 1 ? 's' : ''} (showing ${orders.length})`;
@@ -1890,13 +1906,6 @@ function displayOrders(orders, total = 0, page = 1, totalPages = 1) {
 
     if (paginationInfo) {
         paginationInfo.textContent = `Page ${page} of ${totalPages}`;
-    }
-
-    if (loadingMessage) {
-        loadingMessage.style.display = 'none';
-    }
-    if (endMessage) {
-        endMessage.style.display = page >= totalPages && orders.length > 0 ? 'block' : 'none';
     }
 
     if (orders.length === 0) {
@@ -1916,7 +1925,7 @@ function displayOrders(orders, total = 0, page = 1, totalPages = 1) {
         return;
     }
 
-    tableBody.innerHTML = orders.map(order => {
+    const rowsHtml = orders.map(order => {
         return `
         <tr class="hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200">
             <td class="px-6 py-4 whitespace-nowrap">
@@ -1968,6 +1977,29 @@ function displayOrders(orders, total = 0, page = 1, totalPages = 1) {
         </tr>
         `;
     }).join('');
+    tableBody.insertAdjacentHTML('beforeend', rowsHtml);
+
+    // Disconnect previous observer if exists
+    if (observer) {
+        observer.disconnect();
+    }
+
+    // If there are more pages, observe the last item
+    if (currentPage < totalPages) {
+        const lastRow = tableBody.lastElementChild; // Get the last <tr>
+        if (lastRow) {
+            observer = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting && !isLoading) {
+                    loadOrders(currentPage + 1, true);
+                }
+            }, {
+                root: null, // Use the viewport as the root
+                rootMargin: '0px',
+                threshold: 0.1 // Trigger when 10% of the item is visible
+            });
+            observer.observe(lastRow);
+        }
+    }
 }
 
 function getStatusClass(status) {
@@ -2283,29 +2315,8 @@ async function confirmOrder() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    loadOrders();
-
-    document.getElementById('search-orders').addEventListener('input', debounce(function() {
-        loadOrders();
-    }, 300));
-
-    document.getElementById('status-filter').addEventListener('change', function() {
-        loadOrders();
-    });
-
-    document.getElementById('date-from').addEventListener('change', function() {
-        loadOrders();
-    });
-
-    document.getElementById('date-to').addEventListener('change', function() {
-        loadOrders();
-    });
-
-    const confirmBtn = document.getElementById('confirm-order-btn');
-    if (confirmBtn) {
-        confirmBtn.addEventListener('click', confirmOrder);
-    }
+document.addEventListener('DOMContentLoaded', () => {
+    loadOrders(); // Initial load
 });
 </script>
 <style>
