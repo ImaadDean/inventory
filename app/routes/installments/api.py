@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Depends, Query, Request
+from fastapi import APIRouter, HTTPException, status as fastapi_status, Depends, Query, Request
 from typing import Optional, List
 from datetime import datetime, timedelta
 import datetime as dt
@@ -79,7 +79,7 @@ async def create_installment(
         
         if remaining_amount <= 0:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=fastapi_status.HTTP_400_BAD_REQUEST,
                 detail="Remaining amount must be greater than 0"
             )
         
@@ -134,7 +134,7 @@ async def create_installment(
         
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=fastapi_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create installment: {str(e)}"
         )
 
@@ -153,14 +153,14 @@ async def get_installments(
         # Check if user has admin or manager role
         if current_user.role not in ['admin', 'inventory_manager']:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=fastapi_status.HTTP_403_FORBIDDEN,
                 detail="Insufficient permissions. Admin or Manager role required."
             )
 
         db = await get_database()
         
         # Build filter query
-        filter_query = {}
+        filter_query = {"total_amount": {"$gt": 0}}
         
         if status:
             filter_query["status"] = status
@@ -204,7 +204,7 @@ async def get_installments(
         
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=fastapi_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get installments: {str(e)}"
         )
 
@@ -216,20 +216,23 @@ async def get_installments_summary(current_user: User = Depends(get_current_user
         # Check if user has admin or manager role
         if current_user.role not in ['admin', 'inventory_manager']:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=fastapi_status.HTTP_403_FORBIDDEN,
                 detail="Insufficient permissions. Admin or Manager role required."
             )
 
         db = await get_database()
         
+        valid_installments_filter = {"total_amount": {"$gt": 0}}
+
         # Get counts by status
-        total_installments = await db.installments.count_documents({})
-        active_installments = await db.installments.count_documents({"status": InstallmentStatus.ACTIVE})
-        completed_installments = await db.installments.count_documents({"status": InstallmentStatus.COMPLETED})
+        total_installments = await db.installments.count_documents(valid_installments_filter)
+        active_installments = await db.installments.count_documents({**valid_installments_filter, "status": InstallmentStatus.ACTIVE})
+        completed_installments = await db.installments.count_documents({**valid_installments_filter, "status": InstallmentStatus.COMPLETED})
         
         # Get overdue installments
         current_date = kampala_to_utc(now_kampala())
         overdue_installments = await db.installments.count_documents({
+            **valid_installments_filter,
             "status": InstallmentStatus.ACTIVE,
             "payments": {
                 "$elemMatch": {
@@ -241,11 +244,21 @@ async def get_installments_summary(current_user: User = Depends(get_current_user
         
         # Calculate financial totals
         pipeline = [
-            {"$match": {"status": {"$in": [InstallmentStatus.ACTIVE, InstallmentStatus.COMPLETED]}}},
+            {"$match": {**valid_installments_filter, "status": {"$in": [InstallmentStatus.ACTIVE, InstallmentStatus.COMPLETED]}}},
+            {"$addFields": {
+                "total_paid": {
+                    "$add": ["$down_payment", {"$sum": "$payments.amount_paid"}]
+                }
+            }},
+            {"$addFields": {
+                "current_remaining": {
+                    "$subtract": ["$total_amount", "$total_paid"]
+                }
+            }},
             {"$group": {
                 "_id": None,
-                "total_amount_outstanding": {"$sum": "$remaining_amount"},
-                "total_amount_collected": {"$sum": "$down_payment"}
+                "total_amount_outstanding": {"$sum": "$current_remaining"},
+                "total_amount_collected": {"$sum": "$total_paid"}
             }}
         ]
         
@@ -273,7 +286,7 @@ async def get_installments_summary(current_user: User = Depends(get_current_user
         
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=fastapi_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get installments summary: {str(e)}"
         )
 
@@ -283,29 +296,33 @@ async def format_installment_response(installment_doc: dict, db) -> InstallmentR
     # Format payments
     payments = []
     for payment_data in installment_doc.get("payments", []):
-        # Ensure due_date is timezone-aware for comparison
-        due_date = payment_data["due_date"]
-        if due_date.tzinfo is None:
+        due_date = payment_data.get("due_date")
+        if due_date and due_date.tzinfo is None:
             # If naive datetime, assume it's UTC
             due_date = due_date.replace(tzinfo=dt.timezone.utc)
 
+        amount_due = payment_data.get("amount_due", 0)
+        amount_paid = payment_data.get("amount_paid", 0)
+        status = payment_data.get("status", PaymentStatus.PENDING)
+
         payment = InstallmentPaymentResponse(
-            payment_number=payment_data["payment_number"],
+            payment_number=payment_data.get("payment_number"),
             due_date=due_date,
-            amount_due=payment_data["amount_due"],
-            amount_paid=payment_data.get("amount_paid", 0),
+            amount_due=amount_due,
+            amount_paid=amount_paid,
             payment_date=payment_data.get("payment_date"),
-            status=payment_data.get("status", PaymentStatus.PENDING),
-            remaining_amount=payment_data["amount_due"] - payment_data.get("amount_paid", 0),
-            is_overdue=due_date < kampala_to_utc(now_kampala()) and payment_data.get("status") != PaymentStatus.PAID,
+            status=status,
+            remaining_amount=amount_due - amount_paid,
+            is_overdue=due_date < kampala_to_utc(now_kampala()) and status != PaymentStatus.PAID if due_date else False,
             notes=payment_data.get("notes")
         )
         payments.append(payment)
     
+    total_amount = installment_doc.get("total_amount", 0)
     # Calculate totals
     total_paid = installment_doc.get("down_payment", 0) + sum(p.amount_paid for p in payments)
-    total_remaining = max(0, installment_doc["total_amount"] - total_paid)
-    completion_percentage = (total_paid / installment_doc["total_amount"]) * 100 if installment_doc["total_amount"] > 0 else 0
+    total_remaining = max(0, total_amount - total_paid)
+    completion_percentage = (total_paid / total_amount) * 100 if total_amount > 0 else 0
     
     # Find next payment due
     next_payment_due = None
@@ -315,28 +332,28 @@ async def format_installment_response(installment_doc: dict, db) -> InstallmentR
             break
     
     # Find overdue payments
-    overdue_payments = [p for p in payments if p.is_overdue and p.status != PaymentStatus.PAID]
+    overdue_payments = [p for p in payments if p.is_overdue]
     
     return InstallmentResponse(
         id=str(installment_doc["_id"]),
-        installment_number=installment_doc["installment_number"],
-        order_number=installment_doc.get("order_number"),  # Include order_number from linked POS sale
+        installment_number=installment_doc.get("installment_number", ""),
+        order_number=installment_doc.get("order_number"),
         customer_id=str(installment_doc["customer_id"]) if installment_doc.get("customer_id") else None,
-        customer_name=installment_doc["customer_name"],
+        customer_name=installment_doc.get("customer_name", "N/A"),
         customer_phone=installment_doc.get("customer_phone"),
         customer_email=installment_doc.get("customer_email"),
         order_id=str(installment_doc["order_id"]) if installment_doc.get("order_id") else None,
-        items=installment_doc["items"],
-        total_amount=installment_doc["total_amount"],
+        items=installment_doc.get("items", []),
+        total_amount=total_amount,
         down_payment=installment_doc.get("down_payment", 0),
-        remaining_amount=installment_doc["remaining_amount"],
-        number_of_payments=installment_doc["number_of_payments"],
-        payment_frequency=installment_doc["payment_frequency"],
+        remaining_amount=installment_doc.get("remaining_amount", 0),
+        number_of_payments=installment_doc.get("number_of_payments", 0),
+        payment_frequency=installment_doc.get("payment_frequency", "monthly"),
         payments=payments,
-        status=installment_doc["status"],
-        created_by=str(installment_doc["created_by"]),
-        approved_by=str(installment_doc["approved_by"]) if installment_doc.get("approved_by") else None,
-        created_at=installment_doc["created_at"],
+        status=installment_doc.get("status", InstallmentStatus.ACTIVE),
+        created_by=str(installment_doc.get("created_by")) if installment_doc.get("created_by") else None,
+        approved_by=str(installment_doc.get("approved_by")) if installment_doc.get("approved_by") else None,
+        created_at=installment_doc.get("created_at", kampala_to_utc(now_kampala())),
         updated_at=installment_doc.get("updated_at"),
         completed_at=installment_doc.get("completed_at"),
         notes=installment_doc.get("notes"),
@@ -359,7 +376,7 @@ async def get_installment(
         # Check if user has admin or manager role
         if current_user.role not in ['admin', 'inventory_manager']:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=fastapi_status.HTTP_403_FORBIDDEN,
                 detail="Insufficient permissions. Admin or Manager role required."
             )
 
@@ -367,7 +384,7 @@ async def get_installment(
 
         if not ObjectId.is_valid(installment_id):
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=fastapi_status.HTTP_400_BAD_REQUEST,
                 detail="Invalid installment ID"
             )
 
@@ -375,7 +392,7 @@ async def get_installment(
 
         if not installment:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=fastapi_status.HTTP_404_NOT_FOUND,
                 detail="Installment not found"
             )
 
@@ -385,7 +402,7 @@ async def get_installment(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=fastapi_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get installment: {str(e)}"
         )
 
@@ -402,7 +419,7 @@ async def update_installment(
 
         if not ObjectId.is_valid(installment_id):
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=fastapi_status.HTTP_400_BAD_REQUEST,
                 detail="Invalid installment ID"
             )
 
@@ -410,7 +427,7 @@ async def update_installment(
         existing_installment = await db.installments.find_one({"_id": ObjectId(installment_id)})
         if not existing_installment:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=fastapi_status.HTTP_404_NOT_FOUND,
                 detail="Installment not found"
             )
 
@@ -445,7 +462,7 @@ async def update_installment(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=fastapi_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update installment: {str(e)}"
         )
 
@@ -461,7 +478,7 @@ async def record_payment(
         # Check if user has admin or manager role
         if current_user.role not in ['admin', 'inventory_manager']:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=fastapi_status.HTTP_403_FORBIDDEN,
                 detail="Access denied. Admin or Manager role required."
             )
 
@@ -469,7 +486,7 @@ async def record_payment(
 
         if not ObjectId.is_valid(installment_id):
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=fastapi_status.HTTP_400_BAD_REQUEST,
                 detail="Invalid installment ID"
             )
 
@@ -477,7 +494,7 @@ async def record_payment(
         installment = await db.installments.find_one({"_id": ObjectId(installment_id)})
         if not installment:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=fastapi_status.HTTP_404_NOT_FOUND,
                 detail="Installment not found"
             )
 
@@ -494,7 +511,7 @@ async def record_payment(
 
         if not payment_to_update:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=fastapi_status.HTTP_404_NOT_FOUND,
                 detail=f"Payment number {payment_data.payment_number} not found"
             )
 
@@ -655,7 +672,7 @@ async def record_payment(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=fastapi_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to record payment: {str(e)}"
         )
 
@@ -670,7 +687,7 @@ async def create_installment_from_pos(
         # Check if user has admin or manager role
         if current_user.role not in ['admin', 'inventory_manager']:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=fastapi_status.HTTP_403_FORBIDDEN,
                 detail="Insufficient permissions. Admin or Manager role required."
             )
 
@@ -685,7 +702,7 @@ async def create_installment_from_pos(
 
         if remaining_amount <= 0:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=fastapi_status.HTTP_400_BAD_REQUEST,
                 detail="Remaining amount must be greater than 0"
             )
 
@@ -821,7 +838,7 @@ async def create_installment_from_pos(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=fastapi_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create installment from POS: {str(e)}"
         )
 
@@ -836,7 +853,7 @@ async def get_installment_receipt(
         # Check if user has admin or manager role
         if current_user.role not in ['admin', 'inventory_manager']:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=fastapi_status.HTTP_403_FORBIDDEN,
                 detail="Insufficient permissions. Admin or Manager role required."
             )
 
@@ -844,7 +861,7 @@ async def get_installment_receipt(
 
         if not ObjectId.is_valid(installment_id):
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=fastapi_status.HTTP_400_BAD_REQUEST,
                 detail="Invalid installment ID"
             )
 
@@ -852,7 +869,7 @@ async def get_installment_receipt(
         installment = await db.installments.find_one({"_id": ObjectId(installment_id)})
         if not installment:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=fastapi_status.HTTP_404_NOT_FOUND,
                 detail="Installment not found"
             )
 
@@ -920,7 +937,7 @@ async def get_installment_receipt(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=fastapi_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate installment receipt: {str(e)}"
         )
 
@@ -936,7 +953,7 @@ async def cancel_installment(
 
         if not ObjectId.is_valid(installment_id):
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=fastapi_status.HTTP_400_BAD_REQUEST,
                 detail="Invalid installment ID"
             )
 
@@ -944,14 +961,14 @@ async def cancel_installment(
         installment = await db.installments.find_one({"_id": ObjectId(installment_id)})
         if not installment:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=fastapi_status.HTTP_404_NOT_FOUND,
                 detail="Installment not found"
             )
 
         # Check if installment can be cancelled
         if installment["status"] == InstallmentStatus.COMPLETED:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=fastapi_status.HTTP_400_BAD_REQUEST,
                 detail="Cannot cancel a completed installment"
             )
 
@@ -972,7 +989,7 @@ async def cancel_installment(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=fastapi_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to cancel installment: {str(e)}"
         )
 
@@ -987,7 +1004,7 @@ async def get_installment_discount_details(
         # Check if user has admin or manager role
         if current_user.role not in ['admin', 'inventory_manager']:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=fastapi_status.HTTP_403_FORBIDDEN,
                 detail="Insufficient permissions. Admin or Manager role required."
             )
 
@@ -995,7 +1012,7 @@ async def get_installment_discount_details(
 
         if not ObjectId.is_valid(installment_id):
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=fastapi_status.HTTP_400_BAD_REQUEST,
                 detail="Invalid installment ID"
             )
 
@@ -1003,7 +1020,7 @@ async def get_installment_discount_details(
         installment = await db.installments.find_one({"_id": ObjectId(installment_id)})
         if not installment:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=fastapi_status.HTTP_404_NOT_FOUND,
                 detail="Installment not found"
             )
 
@@ -1029,7 +1046,7 @@ async def get_installment_discount_details(
             quantity = item.get("quantity", 1)
             items_subtotal += unit_price * quantity
 
-        # If no explicit item discounts but there's a difference between subtotal and total,
+        # If no explicit item discounts but there's a difference between subtotal and total, 
         # treat it as an implied discount
         if item_discounts == 0 and items_subtotal > installment.get("total_amount", 0):
             implied_discount = items_subtotal - installment.get("total_amount", 0)
@@ -1096,6 +1113,6 @@ async def get_installment_discount_details(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=fastapi_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get discount details: {str(e)}"
         )
