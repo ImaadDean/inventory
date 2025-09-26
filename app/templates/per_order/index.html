@@ -935,7 +935,7 @@ async function addNewClient(event) {
     const clientData = { name, phone, address, city, country, notes };
 
     try {
-        const response = await fetch('/api/pos/customers/', {
+        const response = await fetch('/api/pos/customers', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(clientData)
