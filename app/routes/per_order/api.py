@@ -13,6 +13,7 @@ from ...models.per_order import (
     PerOrderPaymentStatus,
 )
 from ...utils.auth import get_current_user_hybrid_dependency
+from ...utils.counter import get_next_sequence_value
 from .utils import generate_per_order_number
 from ...models.sale import Sale, SaleItem
 from ...models.order import Order, OrderItem
@@ -267,8 +268,9 @@ async def confirm_per_order(
                         discount_amount=item.get("discount_amount", 0)
                     ) for item in per_order["items"]
                 ]
+                new_sale_number = await get_next_sequence_value("sale_number")
                 new_sale_obj = Sale(
-                    sale_number=f"SALE-{per_order['order_number']}",
+                    sale_number=f"SALE-{new_sale_number:06d}",
                     customer_id=per_order.get("customer_id"),
                     customer_name=per_order["customer_name"],
                     cashier_id=current_user.id,
