@@ -15,7 +15,7 @@ async def get_sales(
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=100),
     search: Optional[str] = Query(None),
-    status: Optional[str] = Query(None),
+    sale_status: Optional[str] = Query(None, alias="status"),
     client_id: Optional[str] = Query(None),
     date_from: Optional[date] = Query(None),
     date_to: Optional[date] = Query(None),
@@ -37,8 +37,8 @@ async def get_sales(
                 {"items.product_name": {"$regex": search, "$options": "i"}}
             ]
         
-        if status:
-            filter_query["status"] = status
+        if sale_status:
+            filter_query["status"] = sale_status
 
         if client_id:
             filter_query["customer_id"] = ObjectId(client_id)
@@ -109,6 +109,9 @@ async def get_sales(
                 if 'product_id' in item and isinstance(item['product_id'], ObjectId):
                     item['product_id'] = str(item['product_id'])
 
+            created_at = sale.get("created_at")
+            updated_at = sale.get("updated_at", created_at)
+
             sales.append({
                 "id": str(sale["_id"]),
                 "sale_number": sale["sale_number"],
@@ -127,8 +130,8 @@ async def get_sales(
                 "payment_received": sale.get("payment_received", 0),
                 "change_given": sale.get("change_given", 0),
                 "notes": sale.get("notes", ""),
-                "created_at": sale["created_at"].isoformat(),
-                "updated_at": sale.get("updated_at", sale["created_at"]).isoformat(),
+                "created_at": created_at.isoformat() if created_at else None,
+                "updated_at": updated_at.isoformat() if updated_at else None,
                 "cashier_id": str(sale.get("cashier_id", "")),
                 "cashier_name": cashier_name
             })
@@ -142,6 +145,8 @@ async def get_sales(
         }
         
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve sales: {str(e)}"
@@ -151,7 +156,7 @@ async def get_sales(
 @router.get("/stats")
 async def get_sales_stats(
     search: Optional[str] = Query(None),
-    status: Optional[str] = Query(None),
+    sale_status: Optional[str] = Query(None, alias="status"),
     client_id: Optional[str] = Query(None),
     date_from: Optional[date] = Query(None),
     date_to: Optional[date] = Query(None),
@@ -171,8 +176,8 @@ async def get_sales_stats(
                 {"notes": {"$regex": search, "$options": "i"}},
                 {"items.product_name": {"$regex": search, "$options": "i"}}
             ]
-        if status:
-            filter_query["status"] = status
+        if sale_status:
+            filter_query["status"] = sale_status
         if client_id:
             try:
                 filter_query["customer_id"] = ObjectId(client_id)

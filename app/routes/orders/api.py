@@ -167,7 +167,7 @@ async def get_orders(
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=100),
     search: Optional[str] = Query(None),
-    status: Optional[str] = Query(None),
+    order_status: Optional[str] = Query(None, alias="status"),
     order_type: Optional[str] = Query(None),
     client_id: Optional[str] = Query(None),
     date_from: Optional[date] = Query(None),
@@ -188,8 +188,8 @@ async def get_orders(
                 {"items.product_name": {"$regex": search, "$options": "i"}}
             ]
         
-        if status:
-            filter_query["status"] = status
+        if order_status:
+            filter_query["status"] = order_status
 
         if order_type:
             if order_type == "installment":
@@ -252,6 +252,9 @@ async def get_orders(
                 except Exception:
                     pass # Ignore if client_id is invalid or client not found
 
+            created_at = order.get("created_at")
+            updated_at = order.get("updated_at", created_at)
+
             orders.append({
                 "id": str(order["_id"]),
                 "order_number": order["order_number"],
@@ -270,8 +273,8 @@ async def get_orders(
                 "payment_method": order.get("payment_method", "cash"),
                 "payment_status": order.get("payment_status", "paid"),
                 "notes": order.get("notes", ""),
-                "created_at": order["created_at"].isoformat(),
-                "updated_at": order.get("updated_at", order["created_at"]).isoformat(),
+                "created_at": created_at.isoformat() if created_at else None,
+                "updated_at": updated_at.isoformat() if updated_at else None,
                 "created_by": str(order.get("created_by", "")),
                 "created_by_name": created_by_name
             })
