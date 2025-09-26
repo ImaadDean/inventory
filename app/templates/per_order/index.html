@@ -1562,14 +1562,18 @@ function closeConfirmOrderModal() {
 }
 
 async function confirmOrder() {
+    console.log('confirmOrder function called'); // New log
     if (!perOrderIdToConfirm) {
+        console.error('Error: perOrderIdToConfirm is not set.'); // New log
         alert('Error: No order selected for confirmation.');
         return;
     }
+    console.log(`Confirming order with ID: ${perOrderIdToConfirm}`); // New log
 
     const data = {
         payment_method: selectedPaymentMethod
     };
+    console.log('Sending data:', data); // New log
 
     try {
         // This endpoint is an assumption based on REST principles.
@@ -1578,18 +1582,22 @@ async function confirmOrder() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
+        console.log('Received response:', response); // New log
 
         if (response.ok) {
+            console.log('Order confirmed successfully'); // New log
             alert('Order confirmed successfully!');
             window.location.reload();
         } else {
             const errorData = await response.json();
+            console.error('Failed to confirm order:', errorData); // New log
             alert(`Error: ${errorData.detail || 'Failed to confirm order'}`);
         }
     } catch (error) {
         console.error('Error confirming order:', error);
         alert('An unexpected error occurred during confirmation.');
     } finally {
+        console.log('Closing confirm order modal'); // New log
         closeConfirmOrderModal();
     }
 }
@@ -2275,45 +2283,7 @@ function clearFilters() {
     loadOrders();
 }
 
-function openConfirmOrderModal(perOrderId) {
-    perOrderIdToConfirm = perOrderId;
-    document.getElementById('confirm-order-modal').classList.remove('hidden');
-}
 
-function closeConfirmOrderModal() {
-    perOrderIdToConfirm = null;
-    document.getElementById('confirm-order-modal').classList.add('hidden');
-}
-
-async function confirmOrder() {
-    if (!perOrderIdToConfirm) return;
-
-    const btn = document.getElementById('confirm-order-btn');
-    btn.disabled = true;
-    btn.innerHTML = '<div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mx-auto"></div>';
-
-    try {
-        const response = await fetch(`/api/per-order/${perOrderIdToConfirm}/confirm`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-        });
-
-        if (response.ok) {
-            const result = await response.json();
-            alert('Order confirmed successfully! New Order ID: ' + result.order_id);
-            window.location.href = '/orders/' + result.order_id; // Redirect to the new order page
-        } else {
-            const error = await response.json();
-            alert(`Error: ${error.detail || 'Failed to confirm order'}`);
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Confirm';
-        }
-    } catch (error) {
-        alert('An unexpected error occurred.');
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Confirm';
-    }
-}
 
 document.addEventListener('DOMContentLoaded', () => {
     loadOrders(); // Initial load
