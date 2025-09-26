@@ -2,9 +2,9 @@
 
 {% block title %}
     {% if per_order %}
-        Per Order {{ per_order.order_number }} - Inventory Management System
+        Pre-order {{ per_order.order_number }} - Inventory Management System
     {% else %}
-        Per Orders - Inventory Management System
+        Pre-orders - Inventory Management System
     {% endif %}
 {% endblock %}
 
@@ -19,11 +19,11 @@
                     <div class="flex items-center space-x-3 mb-2">
                         <a href="/per-order" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-3 py-2 rounded-lg flex items-center space-x-2 transition-all duration-200">
                             <i class="fas fa-arrow-left text-sm"></i>
-                            <span class="font-medium">Back to Per Orders</span>
+                            <span class="font-medium">Back to Pre-orders</span>
                         </a>
                     </div>
-                    <h1 class="text-2xl md:text-3xl font-bold">Per Order {{ per_order.order_number }}</h1>
-                    <p class="text-blue-100 text-sm">Detailed per order management and tracking</p>
+                    <h1 class="text-2xl md:text-3xl font-bold">Pre-order {{ per_order.order_number }}</h1>
+                    <p class="text-blue-100 text-sm">Detailed pre-order management and tracking</p>
                 </div>
                 <div class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-3">
                     <!-- Status Badge -->
@@ -185,7 +185,7 @@
         <div class="bg-gradient-to-r from-purple-500 to-indigo-600 shadow-lg rounded-xl p-4 text-white">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between">
                 <div class="mb-2 md:mb-0">
-                    <h1 class="text-xl md:text-2xl font-bold">Per Order Management</h1>
+                    <h1 class="text-xl md:text-2xl font-bold">Pre-order Management</h1>
                     <p class="text-purple-100 text-sm">Detailed order tracking and management</p>
                 </div>
                 <div class="flex space-x-2">
@@ -195,7 +195,7 @@
                     </button>
                     <button onclick="openCreatePerOrderModal()" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-3 py-2 rounded-lg flex items-center space-x-2 transition-all duration-200 text-sm">
                         <i class="fas fa-plus text-xs"></i>
-                        <span class="font-medium">New Per Order</span>
+                        <span class="font-medium">New Pre-order</span>
                     </button>
                 </div>
             </div>
@@ -301,7 +301,7 @@
                             <i class="fas fa-list text-white text-xs"></i>
                         </div>
                         <div>
-                            <h3 class="text-base font-semibold text-gray-900">Per Orders</h3>
+                            <h3 class="text-base font-semibold text-gray-900">Pre-orders</h3>
                             <div class="text-xs text-gray-600">
                                 <span id="orders-count">0 orders</span>
                             </div>
@@ -384,7 +384,7 @@
         </div>
     </div>
 
-    <!-- Create Per Order Modal -->
+    <!-- Create Pre-order Modal -->
     <div id="create-per-order-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50 overflow-y-auto">
         <div class="flex items-center justify-center min-h-screen p-4">
             <div class="bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[90vh] transform transition-all duration-300">
@@ -394,7 +394,7 @@
                             <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
                                 <i class="fas fa-plus-circle text-white text-xs"></i>
                             </div>
-                            <h3 class="text-base font-semibold text-white">Create New Per Order</h3>
+                            <h3 class="text-base font-semibold text-white">Create New Pre-order</h3>
                         </div>
                         <button type="button" onclick="closeCreatePerOrderModal()" class="text-white hover:text-gray-200 transition-colors duration-200">
                             <i class="fas fa-times text-sm"></i>
@@ -538,10 +538,10 @@
                                     </div>
                                     <div id="modal-summary" class="space-y-2 text-sm"></div>
                                     <button id="modal-create-btn" class="w-full mt-4 px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-700 text-white rounded-lg hover:from-purple-700 hover:to-indigo-800 font-semibold text-sm shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300">
-                                        <i class="fas fa-check-circle mr-2"></i>Create Per Order
+                                        <i class="fas fa-check-circle mr-2"></i>Create Pre-order
                                     </button>
                                     <button id="modal-update-btn" class="w-full mt-4 px-4 py-3 bg-gradient-to-r from-blue-600 to-sky-700 text-white rounded-lg hover:from-blue-700 hover:to-sky-800 font-semibold text-sm shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300 hidden">
-                                        <i class="fas fa-save mr-2"></i>Update Per Order
+                                        <i class="fas fa-save mr-2"></i>Update Pre-order
                                     </button>
                                 </div>
                             </div>
@@ -709,13 +709,13 @@
         </div>
     </div>
 
-        <!-- View Per Order Modal -->
+        <!-- View Pre-order Modal -->
     <div id="view-per-order-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50 overflow-y-auto">
         <div class="flex items-center justify-center min-h-screen p-4">
             <div id="view-per-order-modal-content" class="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] transform transition-all duration-300">
                 <div class="px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-t-xl">
                     <div class="flex items-center justify-between">
-                        <h3 id="view-per-order-modal-title" class="text-base font-semibold text-white">Per Order Details</h3>
+                        <h3 id="view-per-order-modal-title" class="text-base font-semibold text-white">Pre-order Details</h3>
                         <button type="button" onclick="closeViewPerOrderModal()" class="text-white hover:text-gray-200 transition-colors duration-200">
                             <i class="fas fa-times text-sm"></i>
                         </button>
@@ -902,7 +902,7 @@ function closeCreatePerOrderModal() {
     updateModalSummary();
 
     // Reset modal to create mode
-    document.querySelector('#create-per-order-modal h3').textContent = 'Create New Per Order';
+    document.querySelector('#create-per-order-modal h3').textContent = 'Create New Pre-order';
     document.getElementById('modal-create-btn').classList.remove('hidden');
     document.getElementById('modal-update-btn').classList.add('hidden');
     document.getElementById('modal-update-btn').onclick = null;
@@ -1388,7 +1388,7 @@ async function createPerOrderFromModal() {
         const newPerOrder = await response.json();
         window.location.href = `/per-order/${newPerOrder.id}`;
     } else {
-        alert('Failed to create per order');
+        alert('Failed to create pre-order');
     }
 }
 
@@ -1653,7 +1653,7 @@ function openEditPerOrderModal(orderId) {
     // Update modal for "Edit" mode
     const modalTitle = document.querySelector('#create-per-order-modal h3');
     if (modalTitle) {
-        modalTitle.textContent = 'Edit Per Order';
+        modalTitle.textContent = 'Edit Pre-order';
     } else {
         alert("Debug Error: The modal title element could not be found.");
         return;
@@ -1741,10 +1741,10 @@ async function updatePerOrderFromModal() {
     });
 
     if (response.ok) {
-        alert('Per Order updated successfully!');
+        alert('Pre-order updated successfully!');
         window.location.reload();
     } else {
-        alert('Failed to update per order');
+        alert('Failed to update pre-order');
     }
 }
 

@@ -267,8 +267,7 @@
                     <a href="/per-order" class="group flex items-center px-2 py-2 text-sm font-medium rounded-lg transition-all duration-200 {% if request.url.path.startswith('/per-order') %}text-white bg-gradient-to-r from-blue-500 to-indigo-600 shadow-md{% else %}text-gray-700 hover:bg-blue-50 hover:text-blue-700{% endif %}">
                         <div class="w-7 h-7 rounded-md flex items-center justify-center mr-2 transition-colors duration-200 {% if request.url.path.startswith('/per-order') %}bg-white bg-opacity-20{% else %}bg-gray-100 group-hover:bg-blue-100{% endif %}">
                             <i class="fas fa-clipboard-list text-xs {% if request.url.path.startswith('/per-order') %}text-white{% else %}text-gray-500 group-hover:text-blue-600{% endif %}"></i>
-                        </div>
-                        Per Orders
+                        Pre-orders
                     </a>
                     
                     <a href="/sales" class="group flex items-center px-2 py-2 text-sm font-medium rounded-lg transition-all duration-200 {% if request.url.path.startswith('/sales') %}text-white bg-gradient-to-r from-blue-500 to-indigo-600 shadow-md{% else %}text-gray-700 hover:bg-blue-50 hover:text-blue-700{% endif %}">
@@ -527,7 +526,7 @@
                                 <div class="w-7 h-7 rounded-md flex items-center justify-center mr-2 transition-colors duration-200 {% if request.url.path.startswith('/per-order') %}bg-white bg-opacity-20{% else %}bg-gray-100 group-hover:bg-blue-100{% endif %}">
                                     <i class="fas fa-clipboard-list text-xs {% if request.url.path.startswith('/per-order') %}text-white{% else %}text-gray-500 group-hover:text-blue-600{% endif %}"></i>
                                 </div>
-                                Per Orders
+                                Pre-orders
                             </a>
                             <a href="/sales" @click="sidebarOpen = false"
                                class="group flex items-center px-2 py-2 text-sm font-medium rounded-lg transition-all duration-200 {% if request.url.path.startswith('/sales') %}text-white bg-gradient-to-r from-blue-500 to-indigo-600 shadow-md{% else %}text-gray-700 hover:bg-blue-50 hover:text-blue-700{% endif %}">
