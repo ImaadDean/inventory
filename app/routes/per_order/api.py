@@ -19,6 +19,7 @@ from ...models.sale import Sale, SaleItem
 from ...models.order import Order, OrderItem
 from pydantic import BaseModel
 import asyncio
+from ...utils.sale_number_generator import generate_unique_sale_number
 
 class ConfirmPayload(BaseModel):
     payment_method: str
@@ -237,10 +238,12 @@ async def confirm_per_order(
                 if product_updates:
                     await asyncio.gather(*product_updates)
 
-                # 3. Create Order document
+                # 3. Create Order document with consistent numbering
+                order_count = await db.orders.count_documents({})
+                order_number = f"ORD-{order_count + 1:06d}"
                 order_items = [OrderItem(**item) for item in per_order["items"]]
                 new_order_obj = Order(
-                    order_number=f"ORD-{per_order['order_number']}",
+                    order_number=order_number,
                     client_id=per_order.get("customer_id"),
                     client_name=per_order["customer_name"],
                     client_phone=per_order.get("customer_phone"),
@@ -268,9 +271,9 @@ async def confirm_per_order(
                         discount_amount=item.get("discount_amount", 0)
                     ) for item in per_order["items"]
                 ]
-                new_sale_number = await get_next_sequence_value("sale_number")
+                sale_number = await generate_unique_sale_number(db)
                 new_sale_obj = Sale(
-                    sale_number=f"SALE-{new_sale_number:06d}",
+                    sale_number=sale_number,
                     customer_id=per_order.get("customer_id"),
                     customer_name=per_order["customer_name"],
                     cashier_id=current_user.id,

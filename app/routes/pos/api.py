@@ -13,6 +13,7 @@ from ...utils.timezone import now_kampala, kampala_to_utc
 from ...utils.decant_handler import process_decant_sale, calculate_decant_availability
 import uuid
 from ...utils.counter import get_next_sequence_value
+from ...utils.sale_number_generator import generate_unique_sale_number
 
 router = APIRouter(prefix="/api/pos", tags=["Point of Sale API"])
 
@@ -369,8 +370,7 @@ async def create_sale(sale_data: SaleCreate, current_user: User = Depends(get_cu
         db = await get_database()
 
         # Generate sale number
-        new_sale_number = await get_next_sequence_value("sale_number")
-        sale_number = f"SALE-{new_sale_number:06d}"
+        sale_number = await generate_unique_sale_number(db)
         # Calculate totals
         subtotal = 0
         sale_items = []
@@ -666,8 +666,7 @@ async def create_order(order_data: dict, current_user: User = Depends(get_curren
 
         # If order is paid, create a corresponding sale record
         if order_data.get("payment_method") != "not_paid":
-            new_sale_number = await get_next_sequence_value("sale_number")
-            sale_number = f"SALE-{new_sale_number:06d}"
+            sale_number = await generate_unique_sale_number(db)
 
             sale_items = []
             for item_data in order_data["items"]:
