@@ -20,51 +20,111 @@
     </div>
 
     <!-- Financial Summary Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-gray-600">Total Revenue</p>
-                    <p class="text-2xl font-bold text-green-600">UGX 0</p>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <!-- Total Revenue -->
+        <div class="bg-white overflow-hidden shadow-md rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+            <div class="p-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-gradient-to-r from-green-400 to-green-600 rounded-lg flex items-center justify-center shadow-md">
+                            <i class="fas fa-arrow-up text-white text-xs"></i>
+                        </div>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <dt class="text-xs font-medium text-gray-500 truncate">Total Revenue</dt>
+                        <dd class="text-base font-bold text-gray-900 mt-0.5">
+                            <span class="text-xs text-gray-500 font-medium">UGX</span>
+                            <span id="totalRevenue">0</span>
+                        </dd>
+                    </div>
                 </div>
-                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-arrow-up text-green-600 text-lg"></i>
+            </div>
+            <div class="bg-gradient-to-r from-green-50 to-green-100 px-4 py-2">
+                <div class="text-xs">
+                    <span class="text-green-700 font-medium">
+                        <span id="revenueGrowth">+0%</span> from last period
+                    </span>
                 </div>
             </div>
         </div>
 
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-gray-600">Total Expenses</p>
-                    <p class="text-2xl font-bold text-red-600">UGX 0</p>
+        <!-- Total Expenses -->
+        <div class="bg-white overflow-hidden shadow-md rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+            <div class="p-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-gradient-to-r from-red-400 to-red-600 rounded-lg flex items-center justify-center shadow-md">
+                            <i class="fas fa-arrow-down text-white text-xs"></i>
+                        </div>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <dt class="text-xs font-medium text-gray-500 truncate">Total Expenses</dt>
+                        <dd class="text-base font-bold text-gray-900 mt-0.5">
+                            <span class="text-xs text-gray-500 font-medium">UGX</span>
+                            <span id="totalExpenses">0</span>
+                        </dd>
+                    </div>
                 </div>
-                <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-arrow-down text-red-600 text-lg"></i>
+            </div>
+            <div class="bg-gradient-to-r from-red-50 to-red-100 px-4 py-2">
+                <div class="text-xs">
+                    <span class="text-red-700 font-medium">
+                        <span id="expensesGrowth">+0%</span> from last period
+                    </span>
                 </div>
             </div>
         </div>
 
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-gray-600">Net Profit</p>
-                    <p class="text-2xl font-bold text-blue-600">UGX 0</p>
+        <!-- Net Profit -->
+        <div class="bg-white overflow-hidden shadow-md rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+            <div class="p-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-gradient-to-r from-blue-400 to-blue-600 rounded-lg flex items-center justify-center shadow-md">
+                            <i class="fas fa-chart-line text-white text-xs"></i>
+                        </div>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <dt class="text-xs font-medium text-gray-500 truncate">Net Profit</dt>
+                        <dd class="text-base font-bold text-gray-900 mt-0.5">
+                            <span class="text-xs text-gray-500 font-medium">UGX</span>
+                            <span id="netProfit">0</span>
+                        </dd>
+                    </div>
                 </div>
-                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-chart-line text-blue-600 text-lg"></i>
+            </div>
+            <div class="bg-gradient-to-r from-blue-50 to-blue-100 px-4 py-2">
+                <div class="text-xs">
+                    <span class="text-blue-700 font-medium">
+                        <span id="profitGrowth">+0%</span> from last period
+                    </span>
                 </div>
             </div>
         </div>
 
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-gray-600">Profit Margin</p>
-                    <p class="text-2xl font-bold text-purple-600">0%</p>
+        <!-- Profit Margin -->
+        <div class="bg-white overflow-hidden shadow-md rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+            <div class="p-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-gradient-to-r from-purple-400 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
+                            <i class="fas fa-percentage text-white text-xs"></i>
+                        </div>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <dt class="text-xs font-medium text-gray-500 truncate">Profit Margin</dt>
+                        <dd class="text-base font-bold text-gray-900 mt-0.5">
+                            <span id="profitMargin">0</span>
+                            <span class="text-xs text-gray-500 font-medium">%</span>
+                        </dd>
+                    </div>
                 </div>
-                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-percentage text-purple-600 text-lg"></i>
+            </div>
+            <div class="bg-gradient-to-r from-purple-50 to-purple-100 px-4 py-2">
+                <div class="text-xs">
+                    <span class="text-purple-700 font-medium">
+                        <span id="marginGrowth">+0%</span> from last period
+                    </span>
                 </div>
             </div>
         </div>
@@ -73,46 +133,59 @@
     <!-- Report Categories -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <!-- Profit & Loss -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all duration-300">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-lg font-semibold text-gray-900">Profit & Loss</h3>
                 <i class="fas fa-balance-scale text-blue-600 text-xl"></i>
             </div>
             <p class="text-sm text-gray-600 mb-4">Comprehensive P&L statement and analysis</p>
-            <button onclick="generatePLReport()" class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200">
+            <button onclick="generatePLReport()" class="w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg font-medium transition-all duration-200 transform hover:-translate-y-0.5">
                 Generate Report
             </button>
         </div>
 
         <!-- Expense Analysis -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all duration-300">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-lg font-semibold text-gray-900">Expense Analysis</h3>
                 <i class="fas fa-receipt text-red-600 text-xl"></i>
             </div>
             <p class="text-sm text-gray-600 mb-4">Detailed expense breakdown and trends</p>
-            <button onclick="generateExpenseReport()" class="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors duration-200">
+            <button onclick="generateExpenseReport()" class="w-full px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-lg font-medium transition-all duration-200 transform hover:-translate-y-0.5">
                 Generate Report
             </button>
         </div>
 
         <!-- Cash Flow -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all duration-300">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-lg font-semibold text-gray-900">Cash Flow</h3>
                 <i class="fas fa-water text-green-600 text-xl"></i>
             </div>
             <p class="text-sm text-gray-600 mb-4">Cash flow analysis and projections</p>
-            <button onclick="generateCashFlowReport()" class="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors duration-200">
+            <button onclick="generateCashFlowReport()" class="w-full px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg font-medium transition-all duration-200 transform hover:-translate-y-0.5">
                 Generate Report
             </button>
         </div>
     </div>
 
     <!-- Financial Chart -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">Financial Overview</h3>
-        <div class="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all duration-300">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Financial Overview</h3>
+            <div class="flex space-x-2 mt-2 md:mt-0">
+                <select id="chartPeriod" class="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
+                    <option value="7">Last 7 Days</option>
+                    <option value="30" selected>Last 30 Days</option>
+                    <option value="90">Last 90 Days</option>
+                    <option value="365">Last Year</option>
+                </select>
+                <button onclick="refreshChart()" class="px-3 py-1.5 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-md text-sm font-medium transition-all duration-200">
+                    <i class="fas fa-sync"></i>
+                </button>
+            </div>
+        </div>
+        <div class="h-64 flex items-center justify-center bg-gray-50 rounded-lg" id="chartContainer">
             <div class="text-center">
                 <i class="fas fa-chart-bar text-gray-400 text-4xl mb-2"></i>
                 <p class="text-gray-500">Financial chart will appear here</p>
@@ -120,19 +193,998 @@
             </div>
         </div>
     </div>
+    
+    <!-- Detailed Financial Data Sections -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Revenue Breakdown -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all duration-300">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Revenue Breakdown</h3>
+            <div class="space-y-4" id="revenueBreakdown">
+                <div class="text-center py-8">
+                    <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <i class="fas fa-spinner fa-spin text-gray-400 text-lg"></i>
+                    </div>
+                    <p class="text-gray-600 font-medium mb-1 text-sm">Loading revenue data...</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Expense Categories -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all duration-300">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Expense Categories</h3>
+            <div class="space-y-3" id="expenseCategories">
+                <div class="text-center py-8">
+                    <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <i class="fas fa-spinner fa-spin text-gray-400 text-lg"></i>
+                    </div>
+                    <p class="text-gray-600 font-medium mb-1 text-sm">Loading expense data...</p>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
-function generatePLReport() {
-    alert('Profit & Loss report generation coming soon!');
+// Toast notification function
+function showToast(message, type = 'info') {
+    const toastContainer = document.getElementById('toast-container') || document.createElement('div');
+    if (!document.getElementById('toast-container')) {
+        toastContainer.id = 'toast-container';
+        toastContainer.className = 'fixed top-4 right-4 z-50 space-y-2';
+        document.body.appendChild(toastContainer);
+    }
+    
+    const toast = document.createElement('div');
+    const bgGradient = type === 'success' ? 'bg-gradient-to-r from-green-500 to-emerald-600' :
+                      type === 'error' ? 'bg-gradient-to-r from-red-500 to-red-600' :
+                      'bg-gradient-to-r from-blue-500 to-indigo-600';
+    const icon = type === 'success' ? 'fas fa-check-circle' :
+                type === 'error' ? 'fas fa-exclamation-circle' :
+                'fas fa-info-circle';
+
+    toast.className = `${bgGradient} text-white px-4 py-3 rounded-xl shadow-lg transform transition-all duration-300 translate-x-full hover:shadow-xl`;
+    toast.innerHTML = `
+        <div class="flex items-center">
+            <div class="w-6 h-6 bg-white bg-opacity-20 rounded-md flex items-center justify-center mr-2">
+                <i class="${icon} text-white text-xs"></i>
+            </div>
+            <span class="font-medium text-sm">${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-3 w-5 h-5 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-md flex items-center justify-center text-white transition-all duration-200">
+                <i class="fas fa-times text-xs"></i>
+            </button>
+        </div>
+    `;
+    
+    toastContainer.appendChild(toast);
+
+    // Animate in
+    setTimeout(() => toast.classList.remove('translate-x-full'), 100);
+
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        toast.classList.add('translate-x-full');
+        setTimeout(() => toast.remove(), 300);
+    }, 5000);
 }
 
-function generateExpenseReport() {
-    alert('Expense analysis report generation coming soon!');
+// Format money function
+function formatMoney(value, showFull = false) {
+    if (value === 0) return '0';
+
+    const absValue = Math.abs(value);
+    const isNegative = value < 0;
+    const prefix = isNegative ? '-' : '';
+
+    if (showFull) {
+        // For tooltips, show full amount with commas
+        return prefix + absValue.toLocaleString();
+    }
+
+    if (absValue >= 1000000000) {
+        return prefix + (absValue / 1000000000).toFixed(1) + 'B';
+    } else if (absValue >= 1000000) {
+        return prefix + (absValue / 1000000).toFixed(1) + 'M';
+    } else if (absValue >= 1000) {
+        return prefix + (absValue / 1000).toFixed(1) + 'K';
+    } else {
+        return prefix + absValue.toLocaleString();
+    }
 }
 
-function generateCashFlowReport() {
-    alert('Cash flow report generation coming soon!');
+// Format percentage function
+function formatPercentage(value) {
+    return value.toFixed(2);
 }
+
+// Load financial summary data
+async function loadFinancialSummary() {
+    try {
+        const response = await fetch('/api/reports/financial-reports', {
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+        }
+
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to load financial data');
+        }
+
+        // Update summary cards
+        const financialData = data.data;
+        const sales = financialData.sales || {};
+        const expenses = financialData.expenses || [];
+        
+        // Calculate totals
+        const totalRevenue = sales.total_revenue || 0;
+        const totalCost = sales.total_cost || 0;
+        const totalExpensesAmount = expenses.reduce((sum, expense) => sum + (expense.total_amount || 0), 0);
+        const netProfit = financialData.net_profit || 0;
+        const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
+        
+        // Update DOM elements
+        document.getElementById('totalRevenue').textContent = formatMoney(totalRevenue);
+        document.getElementById('totalExpenses').textContent = formatMoney(totalExpensesAmount);
+        document.getElementById('netProfit').textContent = formatMoney(netProfit);
+        document.getElementById('profitMargin').textContent = formatPercentage(profitMargin);
+        
+        // Calculate growth percentages (comparing to previous period)
+        calculateGrowthPercentages();
+        
+        // Update revenue breakdown
+        updateRevenueBreakdown(sales);
+        
+        // Update expense categories
+        updateExpenseCategories(expenses);
+        
+        // Load chart data
+        loadFinancialChartData();
+        
+    } catch (error) {
+        console.error('Error loading financial summary:', error);
+        showToast('Error loading financial data: ' + error.message, 'error');
+    }
+}
+
+// Calculate growth percentages by comparing to previous period
+async function calculateGrowthPercentages() {
+    try {
+        // Get current period data
+        const currentResponse = await fetch('/api/reports/financial-reports', {
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!currentResponse.ok) return;
+        
+        const currentData = await currentResponse.json();
+        if (!currentData.success) return;
+        
+        const currentFinancialData = currentData.data;
+        const currentSales = currentFinancialData.sales || {};
+        const currentExpenses = currentFinancialData.expenses || [];
+        
+        const currentRevenue = currentSales.total_revenue || 0;
+        const currentExpensesAmount = currentExpenses.reduce((sum, expense) => sum + (expense.total_amount || 0), 0);
+        const currentNetProfit = currentFinancialData.net_profit || 0;
+        const currentProfitMargin = currentRevenue > 0 ? (currentNetProfit / currentRevenue) * 100 : 0;
+        
+        // Get previous period data (shift dates back by 30 days)
+        const fromDate = new Date();
+        fromDate.setDate(fromDate.getDate() - 60); // 60 days ago
+        const toDate = new Date();
+        toDate.setDate(toDate.getDate() - 30); // 30 days ago
+        
+        const prevResponse = await fetch(`/api/reports/financial-reports?from_date=${fromDate.toISOString().split('T')[0]}&to_date=${toDate.toISOString().split('T')[0]}`, {
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!prevResponse.ok) return;
+        
+        const prevData = await prevResponse.json();
+        if (!prevData.success) return;
+        
+        const prevFinancialData = prevData.data;
+        const prevSales = prevFinancialData.sales || {};
+        const prevExpenses = prevFinancialData.expenses || [];
+        
+        const prevRevenue = prevSales.total_revenue || 0;
+        const prevExpensesAmount = prevExpenses.reduce((sum, expense) => sum + (expense.total_amount || 0), 0);
+        const prevNetProfit = prevFinancialData.net_profit || 0;
+        const prevProfitMargin = prevRevenue > 0 ? (prevNetProfit / prevRevenue) * 100 : 0;
+        
+        // Calculate growth percentages
+        const revenueGrowth = prevRevenue > 0 ? ((currentRevenue - prevRevenue) / prevRevenue) * 100 : 0;
+        const expensesGrowth = prevExpensesAmount > 0 ? ((currentExpensesAmount - prevExpensesAmount) / prevExpensesAmount) * 100 : 0;
+        const profitGrowth = prevNetProfit > 0 ? ((currentNetProfit - prevNetProfit) / prevNetProfit) * 100 : 0;
+        const marginGrowth = prevProfitMargin > 0 ? (currentProfitMargin - prevProfitMargin) : 0;
+        
+        // Update growth indicators
+        document.getElementById('revenueGrowth').textContent = (revenueGrowth >= 0 ? '+' : '') + formatPercentage(revenueGrowth) + '%';
+        document.getElementById('expensesGrowth').textContent = (expensesGrowth >= 0 ? '+' : '') + formatPercentage(expensesGrowth) + '%';
+        document.getElementById('profitGrowth').textContent = (profitGrowth >= 0 ? '+' : '') + formatPercentage(profitGrowth) + '%';
+        document.getElementById('marginGrowth').textContent = (marginGrowth >= 0 ? '+' : '') + formatPercentage(marginGrowth) + '%';
+        
+        // Add color classes based on positive/negative values
+        document.getElementById('revenueGrowth').className = revenueGrowth >= 0 ? 'text-green-700 font-medium' : 'text-red-700 font-medium';
+        document.getElementById('expensesGrowth').className = expensesGrowth >= 0 ? 'text-red-700 font-medium' : 'text-green-700 font-medium';
+        document.getElementById('profitGrowth').className = profitGrowth >= 0 ? 'text-green-700 font-medium' : 'text-red-700 font-medium';
+        document.getElementById('marginGrowth').className = marginGrowth >= 0 ? 'text-green-700 font-medium' : 'text-red-700 font-medium';
+        
+    } catch (error) {
+        console.error('Error calculating growth percentages:', error);
+        // Fallback to 0% if calculation fails
+        document.getElementById('revenueGrowth').textContent = '+0.00%';
+        document.getElementById('expensesGrowth').textContent = '+0.00%';
+        document.getElementById('profitGrowth').textContent = '+0.00%';
+        document.getElementById('marginGrowth').textContent = '+0.00%';
+    }
+}
+
+// Update revenue breakdown section
+function updateRevenueBreakdown(sales) {
+    const container = document.getElementById('revenueBreakdown');
+    
+    if (!sales) {
+        container.innerHTML = `
+            <div class="text-center py-8">
+                <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <i class="fas fa-exclamation-circle text-gray-400 text-lg"></i>
+                </div>
+                <p class="text-gray-600 font-medium mb-1 text-sm">No revenue data available</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = `
+        <div class="space-y-4">
+            <div class="flex justify-between items-center pb-2 border-b border-gray-100">
+                <div class="flex items-center">
+                    <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                    <span class="text-sm font-medium text-gray-700">Total Revenue</span>
+                </div>
+                <span class="text-sm font-bold text-green-600">UGX ${formatMoney(sales.total_revenue || 0)}</span>
+            </div>
+            <div class="flex justify-between items-center pb-2 border-b border-gray-100">
+                <div class="flex items-center">
+                    <div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                    <span class="text-sm font-medium text-gray-700">Cost of Goods</span>
+                </div>
+                <span class="text-sm font-bold text-blue-600">UGX ${formatMoney(sales.total_cost || 0)}</span>
+            </div>
+            <div class="flex justify-between items-center pb-2 border-b border-gray-100">
+                <div class="flex items-center">
+                    <div class="w-3 h-3 bg-purple-500 rounded-full mr-2"></div>
+                    <span class="text-sm font-medium text-gray-700">Discounts</span>
+                </div>
+                <span class="text-sm font-bold text-purple-600">UGX ${formatMoney(sales.total_discounts || 0)}</span>
+            </div>
+        </div>
+    `;
+}
+
+// Update expense categories section
+function updateExpenseCategories(expenses) {
+    const container = document.getElementById('expenseCategories');
+    
+    if (!expenses || expenses.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-8">
+                <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <i class="fas fa-check-circle text-green-500 text-lg"></i>
+                </div>
+                <p class="text-gray-600 font-medium mb-1 text-sm">No expenses recorded</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Sort expenses by amount (descending)
+    const sortedExpenses = [...expenses].sort((a, b) => (b.total_amount || 0) - (a.total_amount || 0));
+    
+    // Calculate total for percentage calculations
+    const totalExpenses = sortedExpenses.reduce((sum, expense) => sum + (expense.total_amount || 0), 0);
+    
+    container.innerHTML = `
+        <div class="space-y-3">
+            ${sortedExpenses.map(expense => {
+                const amount = expense.total_amount || 0;
+                const percentage = totalExpenses > 0 ? (amount / totalExpenses) * 100 : 0;
+                return `
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center">
+                            <span class="text-sm font-medium text-gray-700">${expense._id || 'Uncategorized'}</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="text-sm font-bold text-gray-900 mr-2">UGX ${formatMoney(amount)}</span>
+                            <span class="text-xs text-gray-500">(${percentage.toFixed(1)}%)</span>
+                        </div>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-1.5">
+                        <div class="bg-gradient-to-r from-red-500 to-red-600 h-1.5 rounded-full" style="width: ${percentage}%"></div>
+                    </div>
+                `;
+            }).join('')}
+        </div>
+    `;
+}
+
+// Load financial chart data
+async function loadFinancialChartData() {
+    try {
+        // Show loading state
+        const chartContainer = document.getElementById('chartContainer');
+        chartContainer.innerHTML = `
+            <div class="flex items-center justify-center h-full">
+                <div class="text-center">
+                    <i class="fas fa-spinner fa-spin text-2xl text-blue-500 mb-2"></i>
+                    <p class="text-sm text-gray-600 font-medium">Loading financial data...</p>
+                </div>
+            </div>
+        `;
+        
+        // Get financial trends data for the last 30 days
+        const response = await fetch('/api/reports/sales-trends?days=30', {
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to load financial trends data');
+        }
+        
+        // Render chart with the data
+        renderFinancialChart(data.data);
+        
+    } catch (error) {
+        console.error('Error loading financial chart data:', error);
+        // Show error state
+        const chartContainer = document.getElementById('chartContainer');
+        chartContainer.innerHTML = `
+            <div class="flex items-center justify-center h-full">
+                <div class="text-center">
+                    <i class="fas fa-exclamation-circle text-red-500 text-2xl mb-2"></i>
+                    <p class="text-sm text-gray-600 font-medium">Error loading chart data</p>
+                    <p class="text-xs text-gray-500 mt-1">${error.message}</p>
+                </div>
+            </div>
+        `;
+    }
+}
+
+// Render financial chart using ApexCharts
+function renderFinancialChart(chartData) {
+    const chartContainer = document.getElementById('chartContainer');
+    
+    // Clear container and prepare for chart
+    chartContainer.innerHTML = '<div id="financialChart" class="w-full h-full"></div>';
+    
+    // Check if ApexCharts is available
+    if (typeof ApexCharts === 'undefined') {
+        chartContainer.innerHTML = `
+            <div class="flex items-center justify-center h-full">
+                <div class="text-center">
+                    <i class="fas fa-chart-bar text-gray-400 text-4xl mb-2"></i>
+                    <p class="text-gray-500">Chart library not loaded</p>
+                </div>
+            </div>
+        `;
+        return;
+    }
+    
+    // Destroy existing chart if it exists
+    if (window.financialChartInstance) {
+        window.financialChartInstance.destroy();
+    }
+    
+    // Prepare data for the chart
+    const dates = chartData.dates || [];
+    const revenue = chartData.revenue || [];
+    const profit = chartData.profit || [];
+    
+    // Create new chart
+    const options = {
+        series: [
+            {
+                name: 'Revenue',
+                data: revenue
+            },
+            {
+                name: 'Profit',
+                data: profit
+            }
+        ],
+        chart: {
+            type: 'area',
+            height: '100%',
+            toolbar: {
+                show: false
+            },
+            zoom: {
+                enabled: false
+            },
+            animations: {
+                enabled: true,
+                easing: 'easeinout',
+                speed: 800
+            }
+        },
+        dataLabels: {
+            enabled: false
+        },
+        stroke: {
+            curve: 'smooth',
+            width: 3
+        },
+        fill: {
+            type: 'gradient',
+            gradient: {
+                shadeIntensity: 1,
+                opacityFrom: 0.3,
+                opacityTo: 0.05,
+                stops: [0, 90, 100]
+            }
+        },
+        xaxis: {
+            categories: dates,
+            labels: {
+                style: {
+                    colors: '#6B7280',
+                    fontSize: '12px'
+                }
+            },
+            axisBorder: {
+                show: false
+            },
+            axisTicks: {
+                show: false
+            }
+        },
+        yaxis: {
+            labels: {
+                style: {
+                    colors: '#6B7280',
+                    fontSize: '12px'
+                },
+                formatter: function(value) {
+                    return 'UGX ' + formatMoney(value);
+                }
+            }
+        },
+        grid: {
+            borderColor: 'rgba(0, 0, 0, 0.06)',
+            strokeDashArray: 0,
+            xaxis: {
+                lines: {
+                    show: false
+                }
+            },
+            yaxis: {
+                lines: {
+                    show: true
+                }
+            }
+        },
+        markers: {
+            size: 5,
+            hover: {
+                size: 7
+            }
+        },
+        tooltip: {
+            theme: 'dark',
+            style: {
+                fontSize: '12px'
+            },
+            x: {
+                show: true
+            },
+            y: {
+                formatter: function(value) {
+                    return 'UGX ' + formatMoney(value);
+                }
+            }
+        },
+        colors: ['#10B981', '#3B82F6'],
+        legend: {
+            position: 'top',
+            horizontalAlign: 'right',
+            labels: {
+                colors: '#6B7280'
+            }
+        }
+    };
+    
+    window.financialChartInstance = new ApexCharts(document.querySelector("#financialChart"), options);
+    window.financialChartInstance.render();
+}
+
+// Generate Profit & Loss Report
+async function generatePLReport() {
+    try {
+        showToast('Generating Profit & Loss report...', 'info');
+        
+        // Get date range from selector or use default (last 30 days)
+        const days = document.getElementById('chartPeriod')?.value || 30;
+        const toDate = new Date();
+        const fromDate = new Date();
+        fromDate.setDate(toDate.getDate() - parseInt(days));
+        
+        const fromDateStr = fromDate.toISOString().split('T')[0];
+        const toDateStr = toDate.toISOString().split('T')[0];
+        
+        // Fetch P&L report data
+        const response = await fetch(`/api/reports/profit-loss-report?from_date=${fromDateStr}&to_date=${toDateStr}`, {
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to generate Profit & Loss report');
+        }
+        
+        // Display the P&L report in a modal or new section
+        displayPLReport(data.data);
+        
+    } catch (error) {
+        console.error('Error generating P&L report:', error);
+        showToast('Error generating Profit & Loss report: ' + error.message, 'error');
+    }
+}
+
+// Display Profit & Loss Report
+function displayPLReport(reportData) {
+    // Remove any existing modals
+    const existingModal = document.querySelector('.fixed.inset-0');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Create a modal or update a section with the report data
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+    modal.innerHTML = `
+        <div class="bg-white rounded-xl shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold text-gray-900">Profit & Loss Report</h2>
+                    <button onclick="this.closest('.fixed').remove()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <div class="mb-6">
+                    <p class="text-gray-600">Period: ${reportData.period.from} to ${reportData.period.to}</p>
+                    <p class="text-gray-600">Generated: ${new Date().toLocaleString()}</p>
+                </div>
+                
+                <!-- Summary Section -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-lg border border-green-200">
+                        <p class="text-sm text-green-700 font-medium">Total Revenue</p>
+                        <p class="text-2xl font-bold text-green-900">UGX ${formatMoney(reportData.summary.total_revenue)}</p>
+                    </div>
+                    <div class="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
+                        <p class="text-sm text-blue-700 font-medium">Gross Profit</p>
+                        <p class="text-2xl font-bold text-blue-900">UGX ${formatMoney(reportData.summary.gross_profit)}</p>
+                        <p class="text-xs text-blue-600">${reportData.summary.gross_profit_margin.toFixed(2)}% margin</p>
+                    </div>
+                    <div class="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-lg border border-purple-200">
+                        <p class="text-sm text-purple-700 font-medium">Net Profit</p>
+                        <p class="text-2xl font-bold text-purple-900">UGX ${formatMoney(reportData.summary.net_profit)}</p>
+                        <p class="text-xs text-purple-600">${reportData.summary.net_profit_margin.toFixed(2)}% margin</p>
+                    </div>
+                </div>
+                
+                <!-- Detailed Breakdown -->
+                <div class="space-y-4">
+                    <div class="border border-gray-200 rounded-lg">
+                        <div class="bg-gray-50 px-4 py-2 border-b border-gray-200">
+                            <h3 class="font-semibold text-gray-900">Revenue & Costs</h3>
+                        </div>
+                        <div class="p-4 space-y-3">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Total Revenue</span>
+                                <span class="font-medium">UGX ${formatMoney(reportData.summary.total_revenue)}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Cost of Goods Sold</span>
+                                <span class="font-medium">UGX ${formatMoney(reportData.summary.total_cost_of_goods)}</span>
+                            </div>
+                            <div class="flex justify-between border-t border-gray-200 pt-2">
+                                <span class="font-medium">Gross Profit</span>
+                                <span class="font-bold text-green-600">UGX ${formatMoney(reportData.summary.gross_profit)}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="border border-gray-200 rounded-lg">
+                        <div class="bg-gray-50 px-4 py-2 border-b border-gray-200">
+                            <h3 class="font-semibold text-gray-900">Deductions</h3>
+                        </div>
+                        <div class="p-4 space-y-3">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Discounts</span>
+                                <span class="font-medium">UGX ${formatMoney(reportData.summary.total_discounts)}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Taxes</span>
+                                <span class="font-medium">UGX ${formatMoney(reportData.summary.total_tax)}</span>
+                            </div>
+                            <div class="flex justify-between border-t border-gray-200 pt-2">
+                                <span class="font-medium">Profit Before Expenses</span>
+                                <span class="font-bold">UGX ${formatMoney(reportData.summary.gross_profit - reportData.summary.total_discounts - reportData.summary.total_tax)}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="border border-gray-200 rounded-lg">
+                        <div class="bg-gray-50 px-4 py-2 border-b border-gray-200">
+                            <h3 class="font-semibold text-gray-900">Expenses</h3>
+                        </div>
+                        <div class="p-4">
+                            ${reportData.expense_breakdown.length > 0 ? 
+                                `<div class="space-y-2">
+                                    ${reportData.expense_breakdown.map(expense => `
+                                        <div class="flex justify-between items-center">
+                                            <div>
+                                                <span class="font-medium">${expense.category}</span>
+                                                <span class="text-xs text-gray-500 ml-2">(${expense.count} items)</span>
+                                            </div>
+                                            <div class="text-right">
+                                                <div class="font-medium">UGX ${formatMoney(expense.amount)}</div>
+                                                <div class="text-xs text-gray-500">${expense.percentage.toFixed(2)}% of revenue</div>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                    <div class="flex justify-between border-t border-gray-200 pt-2 mt-2">
+                                        <span class="font-bold">Total Expenses</span>
+                                        <span class="font-bold">UGX ${formatMoney(reportData.summary.total_expenses)}</span>
+                                    </div>
+                                </div>` : 
+                                `<p class="text-gray-500 text-center py-4">No expenses recorded for this period</p>`
+                            }
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-lg border border-green-200">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h3 class="font-bold text-green-900">Net Profit</h3>
+                                <p class="text-sm text-green-700">After all expenses</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-2xl font-bold text-green-900">UGX ${formatMoney(reportData.summary.net_profit)}</p>
+                                <p class="text-sm text-green-700">${reportData.summary.net_profit_margin.toFixed(2)}% of revenue</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button onclick="this.closest('.fixed').remove()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                        Close
+                    </button>
+                    <button onclick="downloadPLReport(this)" class="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700" data-report='${JSON.stringify(reportData)}'>
+                        <i class="fas fa-download mr-2"></i>Download Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    showToast('Profit & Loss report generated successfully!', 'success');
+}
+
+// Download Profit & Loss Report (placeholder function)
+function downloadPLReport(button) {
+    const reportData = JSON.parse(button.getAttribute('data-report').replace(/&quot;/g, '"'));
+    showToast('Report download functionality coming soon!', 'info');
+}
+
+// Generate Expense Report
+async function generateExpenseReport() {
+    try {
+        showToast('Generating Expense analysis report...', 'info');
+        
+        // Get date range from selector or use default (last 30 days)
+        const days = document.getElementById('chartPeriod')?.value || 30;
+        const toDate = new Date();
+        const fromDate = new Date();
+        fromDate.setDate(toDate.getDate() - parseInt(days));
+        
+        const fromDateStr = fromDate.toISOString().split('T')[0];
+        const toDateStr = toDate.toISOString().split('T')[0];
+        
+        // Fetch expense report data
+        const response = await fetch(`/api/reports/financial-reports?from_date=${fromDateStr}&to_date=${toDateStr}`, {
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to generate Expense report');
+        }
+        
+        // Display the expense report in a modal
+        displayExpenseReport(data.data);
+        
+    } catch (error) {
+        console.error('Error generating expense report:', error);
+        showToast('Error generating Expense analysis report: ' + error.message, 'error');
+    }
+}
+
+// Display Expense Report
+function displayExpenseReport(reportData) {
+    // Remove any existing modals
+    const existingModal = document.querySelector('.fixed.inset-0');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Create a modal with the expense report data
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+    modal.innerHTML = `
+        <div class="bg-white rounded-xl shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold text-gray-900">Expense Analysis Report</h2>
+                    <button onclick="this.closest('.fixed').remove()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <div class="mb-6">
+                    <p class="text-gray-600">Period: ${reportData.period.from} to ${reportData.period.to}</p>
+                </div>
+                
+                <div class="border border-gray-200 rounded-lg">
+                    <div class="bg-gray-50 px-4 py-2 border-b border-gray-200">
+                        <h3 class="font-semibold text-gray-900">Expense Breakdown</h3>
+                    </div>
+                    <div class="p-4">
+                        ${reportData.expenses && reportData.expenses.length > 0 ? 
+                            `<div class="space-y-3">
+                                ${reportData.expenses.map(expense => `
+                                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                                        <div>
+                                            <span class="font-medium">${expense._id || 'Uncategorized'}</span>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="font-medium">UGX ${formatMoney(expense.total_amount)}</div>
+                                            <div class="text-xs text-gray-500">${expense.count} expenses</div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                                <div class="flex justify-between border-t border-gray-200 pt-3 mt-3">
+                                    <span class="font-bold">Total Expenses</span>
+                                    <span class="font-bold">UGX ${formatMoney(reportData.expenses.reduce((sum, exp) => sum + (exp.total_amount || 0), 0))}</span>
+                                </div>
+                            </div>` : 
+                            `<p class="text-gray-500 text-center py-4">No expenses recorded for this period</p>`
+                        }
+                    </div>
+                </div>
+                
+                <div class="mt-6 flex justify-end">
+                    <button onclick="this.closest('.fixed').remove()" class="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    showToast('Expense analysis report generated successfully!', 'success');
+}
+
+// Generate Cash Flow Report
+async function generateCashFlowReport() {
+    try {
+        showToast('Generating Cash flow report...', 'info');
+        
+        // Get date range from selector or use default (last 30 days)
+        const days = document.getElementById('chartPeriod')?.value || 30;
+        
+        // Fetch sales trends data for cash flow analysis
+        const response = await fetch(`/api/reports/sales-trends?days=${days}`, {
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to generate Cash flow report');
+        }
+        
+        // Display the cash flow report in a modal
+        displayCashFlowReport(data.data);
+        
+    } catch (error) {
+        console.error('Error generating cash flow report:', error);
+        showToast('Error generating Cash flow report: ' + error.message, 'error');
+    }
+}
+
+// Display Cash Flow Report
+function displayCashFlowReport(reportData) {
+    // Remove any existing modals
+    const existingModal = document.querySelector('.fixed.inset-0');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Calculate summary data
+    const totalRevenue = reportData.revenue.reduce((sum, val) => sum + val, 0);
+    const totalProfit = reportData.profit.reduce((sum, val) => sum + val, 0);
+    const totalExpenses = totalRevenue - totalProfit; // Simplified calculation
+    const netCashFlow = totalProfit; // Simplified calculation
+    
+    // Create a modal with the cash flow report data
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+    modal.innerHTML = `
+        <div class="bg-white rounded-xl shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold text-gray-900">Cash Flow Report</h2>
+                    <button onclick="this.closest('.fixed').remove()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <div class="mb-6">
+                    <p class="text-gray-600">Last ${reportData.dates?.length || 0} days</p>
+                </div>
+                
+                <div class="border border-gray-200 rounded-lg mb-6">
+                    <div class="bg-gray-50 px-4 py-2 border-b border-gray-200">
+                        <h3 class="font-semibold text-gray-900">Cash Flow Summary</h3>
+                    </div>
+                    <div class="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-lg border border-green-200">
+                            <p class="text-sm text-green-700 font-medium">Total Revenue</p>
+                            <p class="text-xl font-bold text-green-900">
+                                UGX ${formatMoney(totalRevenue)}
+                            </p>
+                        </div>
+                        <div class="bg-gradient-to-r from-red-50 to-red-100 p-4 rounded-lg border border-red-200">
+                            <p class="text-sm text-red-700 font-medium">Total Expenses</p>
+                            <p class="text-xl font-bold text-red-900">
+                                UGX ${formatMoney(totalExpenses)}
+                            </p>
+                        </div>
+                        <div class="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
+                            <p class="text-sm text-blue-700 font-medium">Net Cash Flow</p>
+                            <p class="text-xl font-bold text-blue-900">
+                                UGX ${formatMoney(netCashFlow)}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border border-gray-200 rounded-lg">
+                    <div class="bg-gray-50 px-4 py-2 border-b border-gray-200">
+                        <h3 class="font-semibold text-gray-900">Cash Flow Breakdown</h3>
+                    </div>
+                    <div class="p-4 space-y-3">
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                            <div>
+                                <span class="font-medium">Opening Balance</span>
+                            </div>
+                            <div class="text-right">
+                                <div class="font-medium">UGX ${formatMoney(0)}</div>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                            <div>
+                                <span class="font-medium">Total Revenue</span>
+                            </div>
+                            <div class="text-right">
+                                <div class="font-medium">UGX ${formatMoney(totalRevenue)}</div>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                            <div>
+                                <span class="font-medium">Total Expenses</span>
+                            </div>
+                            <div class="text-right">
+                                <div class="font-medium">UGX ${formatMoney(totalExpenses)}</div>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                            <div>
+                                <span class="font-medium">Closing Balance</span>
+                            </div>
+                            <div class="text-right">
+                                <div class="font-medium">UGX ${formatMoney(netCashFlow)}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex justify-end">
+                    <button onclick="this.closest('.fixed').remove()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    showToast('Cash flow report generated successfully!', 'success');
+}
+
+// Refresh chart
+function refreshChart() {
+    loadFinancialChartData();
+}
+
+// Initialize dashboard when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Load initial financial data
+    loadFinancialSummary();
+    
+    // Set up event listeners
+    const chartPeriodSelect = document.getElementById('chartPeriod');
+    if (chartPeriodSelect) {
+        chartPeriodSelect.addEventListener('change', refreshChart);
+    }
+});
 </script>
 {% endblock %}

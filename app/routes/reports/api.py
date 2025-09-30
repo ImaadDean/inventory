@@ -1271,6 +1271,145 @@ async def get_customer_purchase_history(
         }
 
 
+@reports_api_router.get("/profit-loss-report")
+async def get_profit_loss_report(
+    from_date: Optional[date] = Query(None),
+    to_date: Optional[date] = Query(None),
+    db=Depends(get_database)
+):
+    """
+    Generate a detailed Profit & Loss report with revenue, costs, expenses, and profit breakdown.
+    """
+    try:
+        from datetime import datetime, timedelta
+        from ...utils.timezone import now_kampala, kampala_to_utc, get_day_start, get_day_end
+        
+        # Set default date range if not provided (last 30 days)
+        if not from_date:
+            from_date = (now_kampala() - timedelta(days=30)).date()
+        if not to_date:
+            to_date = now_kampala().date()
+            
+        # Convert to datetime with timezone
+        from_datetime = get_day_start(datetime.combine(from_date, datetime.min.time()))
+        to_datetime = get_day_end(datetime.combine(to_date, datetime.max.time()))
+        from_utc = kampala_to_utc(from_datetime)
+        to_utc = kampala_to_utc(to_datetime)
+        
+        # Get sales data with detailed breakdown
+        sales_pipeline = [
+            {
+                "$match": {
+                    "created_at": {
+                        "$gte": from_utc,
+                        "$lte": to_utc
+                    },
+                    "status": "completed"
+                }
+            },
+            {
+                "$group": {
+                    "_id": None,
+                    "total_revenue": {"$sum": {"$ifNull": ["$total_amount", 0]}},
+                    "total_cost": {"$sum": {"$ifNull": ["$total_cost", 0]}},
+                    "total_profit": {"$sum": {"$ifNull": ["$total_profit", 0]}},
+                    "total_discounts": {"$sum": {"$ifNull": ["$discount_amount", 0]}},
+                    "total_tax": {"$sum": {"$ifNull": ["$tax_amount", 0]}},
+                    "total_orders": {"$sum": 1}
+                }
+            }
+        ]
+        
+        sales_result = await db.sales.aggregate(sales_pipeline).to_list(1)
+        sales_data = sales_result[0] if sales_result else {}
+        
+        # Get expenses data grouped by category
+        # Convert dates to datetime objects for MongoDB compatibility
+        expense_pipeline = [
+            {
+                "$match": {
+                    "date": {
+                        "$gte": datetime.combine(from_date, datetime.min.time()),
+                        "$lte": datetime.combine(to_date, datetime.max.time())
+                    }
+                }
+            },
+            {
+                "$group": {
+                    "_id": {"$ifNull": ["$category", "Uncategorized"]},
+                    "total_amount": {"$sum": {"$ifNull": ["$amount", 0]}},
+                    "count": {"$sum": 1}
+                }
+            },
+            {"$sort": {"total_amount": -1}}
+        ]
+        
+        expenses = await db.expenses.aggregate(expense_pipeline).to_list(None)
+        
+        # Calculate totals
+        total_revenue = sales_data.get("total_revenue", 0)
+        total_cost_of_goods = sales_data.get("total_cost", 0)
+        total_discounts = sales_data.get("total_discounts", 0)
+        total_tax = sales_data.get("total_tax", 0)
+        total_expenses = sum(expense.get("total_amount", 0) for expense in expenses)
+        
+        # Calculate profit metrics
+        gross_profit = total_revenue - total_cost_of_goods
+        net_profit_before_expenses = gross_profit - total_discounts - total_tax
+        net_profit = net_profit_before_expenses - total_expenses
+        
+        # Calculate margins
+        gross_profit_margin = (gross_profit / total_revenue * 100) if total_revenue > 0 else 0
+        net_profit_margin = (net_profit / total_revenue * 100) if total_revenue > 0 else 0
+        
+        # Format expense categories for the report
+        expense_categories = []
+        for expense in expenses:
+            category_name = expense.get("_id", "Uncategorized")
+            amount = expense.get("total_amount", 0)
+            percentage = (amount / total_revenue * 100) if total_revenue > 0 else 0
+            
+            expense_categories.append({
+                "category": category_name,
+                "amount": amount,
+                "percentage": percentage,
+                "count": expense.get("count", 0)
+            })
+        
+        return {
+            "success": True,
+            "data": {
+                "period": {
+                    "from": from_date.isoformat(),
+                    "to": to_date.isoformat()
+                },
+                "summary": {
+                    "total_revenue": total_revenue,
+                    "total_cost_of_goods": total_cost_of_goods,
+                    "gross_profit": gross_profit,
+                    "gross_profit_margin": gross_profit_margin,
+                    "total_discounts": total_discounts,
+                    "total_tax": total_tax,
+                    "total_expenses": total_expenses,
+                    "net_profit": net_profit,
+                    "net_profit_margin": net_profit_margin,
+                    "total_orders": sales_data.get("total_orders", 0)
+                },
+                "expense_breakdown": expense_categories,
+                "timestamp": now_kampala().isoformat()
+            }
+        }
+        
+    except Exception as e:
+        import traceback
+        print(f"Error in get_profit_loss_report: {str(e)}")
+        print(traceback.format_exc())
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+
 @reports_api_router.get("/financial-reports")
 async def get_financial_reports(
     from_date: Optional[date] = Query(None),
@@ -1281,8 +1420,8 @@ async def get_financial_reports(
     Get financial reports including profit, loss, and expenses.
     """
     try:
-        from datetime import datetime
-        from ...utils.timezone import kampala_to_utc, get_day_start, get_day_end
+        from datetime import datetime, timedelta
+        from ...utils.timezone import now_kampala, kampala_to_utc, get_day_start, get_day_end
         
         # Set default date range if not provided
         if not from_date:
@@ -1290,7 +1429,7 @@ async def get_financial_reports(
         if not to_date:
             to_date = now_kampala().date()
             
-        # Convert to datetime with timezone
+        # Convert to datetime with timezone for sales
         from_datetime = get_day_start(datetime.combine(from_date, datetime.min.time()))
         to_datetime = get_day_end(datetime.combine(to_date, datetime.max.time()))
         from_utc = kampala_to_utc(from_datetime)
@@ -1310,11 +1449,11 @@ async def get_financial_reports(
             {
                 "$group": {
                     "_id": None,
-                    "total_revenue": {"$sum": "$total_amount"},
-                    "total_cost": {"$sum": "$total_cost"},
-                    "total_profit": {"$sum": "$total_profit"},
-                    "total_discounts": {"$sum": "$discount_amount"},
-                    "total_tax": {"$sum": "$tax_amount"}
+                    "total_revenue": {"$sum": {"$ifNull": ["$total_amount", 0]}},
+                    "total_cost": {"$sum": {"$ifNull": ["$total_cost", 0]}},
+                    "total_profit": {"$sum": {"$ifNull": ["$total_profit", 0]}},
+                    "total_discounts": {"$sum": {"$ifNull": ["$discount_amount", 0]}},
+                    "total_tax": {"$sum": {"$ifNull": ["$tax_amount", 0]}}
                 }
             }
         ]
@@ -1322,20 +1461,20 @@ async def get_financial_reports(
         sales_result = await db.sales.aggregate(sales_pipeline).to_list(1)
         sales_data = sales_result[0] if sales_result else {}
         
-        # Get expenses
+        # Get expenses - using datetime objects for MongoDB compatibility
         expense_pipeline = [
             {
                 "$match": {
                     "date": {
-                        "$gte": from_datetime.date(),
-                        "$lte": to_datetime.date()
+                        "$gte": datetime.combine(from_date, datetime.min.time()),
+                        "$lte": datetime.combine(to_date, datetime.max.time())
                     }
                 }
             },
             {
                 "$group": {
-                    "_id": "$category",
-                    "total_amount": {"$sum": "$amount"},
+                    "_id": {"$ifNull": ["$category", "Uncategorized"]},
+                    "total_amount": {"$sum": {"$ifNull": ["$amount", 0]}},
                     "count": {"$sum": 1}
                 }
             },
@@ -1347,8 +1486,12 @@ async def get_financial_reports(
         # Calculate net profit
         total_revenue = sales_data.get("total_revenue", 0)
         total_cost = sales_data.get("total_cost", 0)
-        total_expenses = sum(expense["total_amount"] for expense in expenses)
+        total_discounts = sales_data.get("total_discounts", 0)
+        total_expenses = sum(expense.get("total_amount", 0) for expense in expenses)
         net_profit = total_revenue - total_cost - total_expenses
+        
+        # Calculate profit margin
+        profit_margin = (net_profit / total_revenue * 100) if total_revenue > 0 else 0
         
         return {
             "success": True,
@@ -1356,6 +1499,7 @@ async def get_financial_reports(
                 "sales": sales_data,
                 "expenses": expenses,
                 "net_profit": net_profit,
+                "profit_margin": profit_margin,
                 "period": {
                     "from": from_date.isoformat(),
                     "to": to_date.isoformat()
@@ -1364,6 +1508,9 @@ async def get_financial_reports(
         }
         
     except Exception as e:
+        import traceback
+        print(f"Error in get_financial_reports: {str(e)}")
+        print(traceback.format_exc())
         return {
             "success": False,
             "error": str(e)
