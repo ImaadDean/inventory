@@ -363,7 +363,72 @@
             </table>
         </div>
     </div>
-</div>
+
+    <!-- Low Stock Alerts -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 mt-6">
+        <div class="px-4 py-3 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <i class="fas fa-exclamation-triangle text-yellow-500 text-sm mr-2"></i>
+                    <h3 class="text-sm font-semibold text-gray-900">Low Stock Alerts</h3>
+                </div>
+                <button onclick="refreshLowStockAlerts()" class="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white rounded text-xs font-medium transition-all duration-200">
+                    <i class="fas fa-sync mr-1"></i>Refresh
+                </button>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                            <div class="flex items-center">
+                                <i class="fas fa-box mr-1 text-gray-400"></i>
+                                Product
+                            </div>
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                            <div class="flex items-center">
+                                <i class="fas fa-sort-numeric-up mr-1 text-gray-400"></i>
+                                Current Stock
+                            </div>
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                            <div class="flex items-center">
+                                <i class="fas fa-level-down-alt mr-1 text-gray-400"></i>
+                                Min Level
+                            </div>
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                            <div class="flex items-center">
+                                <i class="fas fa-info-circle mr-1 text-gray-400"></i>
+                                Status
+                            </div>
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                            <div class="flex items-center">
+                                <i class="fas fa-cogs mr-1 text-gray-400"></i>
+                                Action
+                            </div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="lowStockTableBody" class="bg-white divide-y divide-gray-200">
+                    <tr>
+                        <td colspan="5" class="px-4 py-8 text-center">
+                            <div class="flex flex-col items-center">
+                                <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                                    <i class="fas fa-exclamation-triangle text-gray-400 text-lg"></i>
+                                </div>
+                                <p class="text-gray-600 font-medium mb-1 text-sm">No Low Stock Data</p>
+                                <p class="text-xs text-gray-500">Refresh to load low stock alerts</p>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 
 <script>
 // ApexCharts instances
@@ -522,7 +587,8 @@ async function loadSalesData() {
 
 
     try {
-        const url = `/reports/api/sales-data?from_date=${fromDate}&to_date=${toDate}`;
+        // FIX: Corrected the API endpoint URL
+        const url = `/api/reports/sales-data?from_date=${fromDate}&to_date=${toDate}`;
         console.log('🔍 Fetching sales data from:', url);
         console.log('🔍 Current location:', window.location.href);
 
@@ -581,7 +647,9 @@ async function loadSalesData() {
                 if (totalProfitLoadingEl) totalProfitLoadingEl.classList.add('hidden');
             }
             if (profitMarginEl) {
-                profitMarginEl.textContent = `${data.summary.profit_margin}%`;
+                // Round profit margin to 2 decimal places
+                const roundedProfitMargin = Math.round(data.summary.profit_margin * 100) / 100;
+                profitMarginEl.textContent = `${roundedProfitMargin}%`;
                 if (profitMarginLoadingEl) profitMarginLoadingEl.classList.add('hidden');
             }
 
@@ -598,7 +666,9 @@ async function loadSalesData() {
             }
             if (growthRateEl) {
                 const growthRate = data.summary.growth_rate;
-                const growthText = `${growthRate > 0 ? '+' : ''}${growthRate}%`;
+                // Round growth rate to 2 decimal places
+                const roundedGrowthRate = Math.round(growthRate * 100) / 100;
+                const growthText = `${roundedGrowthRate > 0 ? '+' : ''}${roundedGrowthRate}%`;
                 growthRateEl.textContent = growthText;
 
                 // Update color based on growth rate
@@ -896,8 +966,14 @@ function updateSalesTrendChart(trendData) {
         // Destroy existing chart
         if (salesTrendChart) {
             console.log('📊 Destroying existing chart');
-            salesTrendChart.destroy();
-            salesTrendChart = null;
+            try {
+                salesTrendChart.destroy();
+                salesTrendChart = null;
+                console.log('✅ Chart destroyed successfully');
+            } catch (error) {
+                console.error('❌ Error destroying chart:', error);
+                salesTrendChart = null; // Force reset even if destroy fails
+            }
         }
 
         // Format labels for better display
@@ -1089,6 +1165,7 @@ function updateSalesTrendChart(trendData) {
             console.log('✅ Sales trend chart rendered successfully');
         }).catch((error) => {
             console.error('❌ Error rendering sales trend chart:', error);
+            showToast('Error rendering sales trend chart: ' + error.message, 'error');
         });
 
         console.log('✅ Sales trend chart created successfully');
@@ -1134,7 +1211,14 @@ function updateTopProductsChart(productsData) {
 
         // Destroy existing chart
         if (topProductsChart) {
-            topProductsChart.destroy();
+            try {
+                topProductsChart.destroy();
+                topProductsChart = null;
+                console.log('✅ Top products chart destroyed successfully');
+            } catch (error) {
+                console.error('❌ Error destroying top products chart:', error);
+                topProductsChart = null; // Force reset even if destroy fails
+            }
         }
 
         // Validate products data
@@ -1287,6 +1371,7 @@ function updateTopProductsChart(productsData) {
             console.log('✅ Top products chart rendered successfully');
         }).catch((error) => {
             console.error('❌ Error rendering top products chart:', error);
+            showToast('Error rendering top products chart: ' + error.message, 'error');
         });
 
         console.log('✅ Top products chart created successfully');
@@ -1355,7 +1440,137 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
+// Add new function to refresh low stock alerts
+async function refreshLowStockAlerts() {
+    console.log('🔄 Refreshing low stock alerts...');
+    
+    const tableBody = document.getElementById('lowStockTableBody');
+    if (!tableBody) {
+        console.error('❌ Low stock table body not found');
+        return;
+    }
+    
+    // Show loading state
+    tableBody.innerHTML = `
+        <tr>
+            <td colspan="5" class="px-4 py-8 text-center">
+                <div class="flex flex-col items-center">
+                    <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                        <i class="fas fa-spinner fa-spin text-gray-400 text-lg"></i>
+                    </div>
+                    <p class="text-gray-600 font-medium mb-1 text-sm">Loading Low Stock Alerts</p>
+                    <p class="text-xs text-gray-500">Please wait...</p>
+                </div>
+            </td>
+        </tr>
+    `;
+    
+    try {
+        const response = await fetch('/api/reports/inventory-reports', {
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+        }
+        
+        const data = await response.json();
+        console.log('📦 Low stock data loaded:', data);
+        
+        if (!data.success) {
+            throw new Error('API returned error: ' + (data.error || 'Unknown error'));
+        }
+        
+        // Update low stock table
+        updateLowStockTable(data.data.low_stock_products || []);
+        
+    } catch (error) {
+        console.error('❌ Error loading low stock data:', error);
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="5" class="px-4 py-8 text-center">
+                    <div class="flex flex-col items-center">
+                        <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-3">
+                            <i class="fas fa-exclamation-circle text-red-500 text-lg"></i>
+                        </div>
+                        <p class="text-red-600 font-medium mb-1 text-sm">Error Loading Data</p>
+                        <p class="text-xs text-gray-500">${error.message}</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }
+}
 
+// Update low stock table
+function updateLowStockTable(lowStockProducts) {
+    const tableBody = document.getElementById('lowStockTableBody');
+    if (!tableBody) return;
+    
+    if (!lowStockProducts || lowStockProducts.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="5" class="px-4 py-8 text-center">
+                    <div class="flex flex-col items-center">
+                        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-3">
+                            <i class="fas fa-check-circle text-green-500 text-lg"></i>
+                        </div>
+                        <p class="text-gray-600 font-medium mb-1 text-sm">All Stock Levels OK</p>
+                        <p class="text-xs text-gray-500">No low stock alerts at this time</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    // Clear existing rows
+    tableBody.innerHTML = '';
+    
+    // Add rows for each low stock product
+    lowStockProducts.forEach(product => {
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-gradient-to-r hover:from-gray-50 hover:to-yellow-50 transition-all duration-200';
+        row.innerHTML = `
+            <td class="px-4 py-3 whitespace-nowrap">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 h-10 w-10">
+                        <div class="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                            <i class="fas fa-box text-gray-500"></i>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <div class="text-sm font-medium text-gray-900">${product.name || 'Unknown Product'}</div>
+                        <div class="text-sm text-gray-500">Brand: ${product.brand || 'N/A'}</div>
+                    </div>
+                </div>
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap">
+                <div class="text-sm text-gray-900 font-medium">${product.stock_quantity}</div>
+                <div class="text-sm text-gray-500">${product.category_name || 'Uncategorized'}</div>
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap">
+                <div class="text-sm text-gray-900">10</div>
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                    Low Stock
+                </span>
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium">
+                <button class="inline-flex items-center px-3 py-1 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white rounded text-xs font-medium transition-all duration-200">
+                    <i class="fas fa-plus mr-1"></i>Restock
+                </button>
+            </td>
+        `;
+        tableBody.appendChild(row);
+    });
+}
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
@@ -1484,4 +1699,5 @@ document.getElementById('quickSelect').addEventListener('change', function() {
     }
 });
 </script>
+</div>
 {% endblock %}

@@ -86,7 +86,17 @@ class Product(BaseModel):
 
     @property
     def sku(self) -> Optional[str]:
-        return self.brand
+        """Generate SKU based on brand and name"""
+        if self.brand and self.name:
+            # Create a simple SKU from first 3 letters of brand and first 3 letters of name
+            brand_part = self.brand[:3].upper() if len(self.brand) >= 3 else self.brand.upper()
+            name_part = self.name[:3].upper() if len(self.name) >= 3 else self.name.upper()
+            return f"{brand_part}{name_part}"
+        elif self.brand:
+            return self.brand.upper()
+        elif self.name:
+            return self.name[:6].upper() if len(self.name) >= 6 else self.name.upper()
+        return None
 
     # Perfume-specific fields
     bottle_size_ml: Optional[float] = Field(None, gt=0, description="Size of each bottle in ml (e.g., 100ml)")

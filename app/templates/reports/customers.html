@@ -25,7 +25,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-600">Total Customers</p>
-                    <p class="text-2xl font-bold text-blue-600">0</p>
+                    <p class="text-2xl font-bold text-blue-600" id="totalCustomers">0</p>
                 </div>
                 <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                     <i class="fas fa-users text-blue-600 text-lg"></i>
@@ -37,7 +37,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-600">New This Month</p>
-                    <p class="text-2xl font-bold text-green-600">0</p>
+                    <p class="text-2xl font-bold text-green-600" id="newThisMonth">0</p>
                 </div>
                 <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                     <i class="fas fa-user-plus text-green-600 text-lg"></i>
@@ -49,7 +49,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-600">Active Customers</p>
-                    <p class="text-2xl font-bold text-purple-600">0</p>
+                    <p class="text-2xl font-bold text-purple-600" id="activeCustomers">0</p>
                 </div>
                 <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
                     <i class="fas fa-heart text-purple-600 text-lg"></i>
@@ -61,7 +61,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-600">Avg. Order Value</p>
-                    <p class="text-2xl font-bold text-orange-600">UGX 0</p>
+                    <p class="text-2xl font-bold text-orange-600" id="avgOrderValue">UGX 0</p>
                 </div>
                 <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
                     <i class="fas fa-dollar-sign text-orange-600 text-lg"></i>
@@ -109,30 +109,575 @@
         </div>
     </div>
 
+    <!-- Top Customers Report Section -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-6 hidden" id="topCustomersSection">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Top Customers Report</h3>
+            <button onclick="closeTopCustomersReport()" class="px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-lg text-sm font-medium transition-all duration-200">
+                <i class="fas fa-times mr-2"></i>Close
+            </button>
+        </div>
+        <div class="overflow-x-auto rounded-lg border border-gray-200">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Customer</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Phone</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Total Purchases</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Total Orders</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Avg. Order Value</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200" id="topCustomersTableBody">
+                    <tr>
+                        <td colspan="5" class="px-4 py-8 text-center">
+                            <div class="flex flex-col items-center">
+                                <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                                    <i class="fas fa-spinner fa-spin text-gray-400 text-lg"></i>
+                                </div>
+                                <p class="text-gray-600 font-medium mb-1 text-sm">Loading top customers data...</p>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Customer Segments Report Section -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-6 hidden" id="segmentsSection">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Customer Segments Report</h3>
+            <button onclick="closeSegmentsReport()" class="px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-lg text-sm font-medium transition-all duration-200">
+                <i class="fas fa-times mr-2"></i>Close
+            </button>
+        </div>
+        <div class="overflow-x-auto rounded-lg border border-gray-200">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Segment</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Customer Count</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Total Value</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200" id="segmentsTableBody">
+                    <tr>
+                        <td colspan="3" class="px-4 py-8 text-center">
+                            <div class="flex flex-col items-center">
+                                <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                                    <i class="fas fa-spinner fa-spin text-gray-400 text-lg"></i>
+                                </div>
+                                <p class="text-gray-600 font-medium mb-1 text-sm">Loading customer segments data...</p>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Purchase History Report Section -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-6 hidden" id="purchaseHistorySection">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Purchase History Report</h3>
+            <button onclick="closePurchaseHistoryReport()" class="px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-lg text-sm font-medium transition-all duration-200">
+                <i class="fas fa-times mr-2"></i>Close
+            </button>
+        </div>
+        <div class="overflow-x-auto rounded-lg border border-gray-200">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Order ID</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Customer</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Amount</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Items</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200" id="purchaseHistoryTableBody">
+                    <tr>
+                        <td colspan="5" class="px-4 py-8 text-center">
+                            <div class="flex flex-col items-center">
+                                <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                                    <i class="fas fa-spinner fa-spin text-gray-400 text-lg"></i>
+                                </div>
+                                <p class="text-gray-600 font-medium mb-1 text-sm">Loading purchase history data...</p>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <!-- Customer Analytics Chart -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-6" id="analyticsChartSection">
         <h3 class="text-lg font-semibold text-gray-900 mb-4">Customer Analytics</h3>
-        <div class="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-            <div class="text-center">
-                <i class="fas fa-chart-area text-gray-400 text-4xl mb-2"></i>
-                <p class="text-gray-500">Customer analytics chart will appear here</p>
-                <p class="text-sm text-gray-400">Generate a report to view data</p>
+        <div class="h-64 relative">
+            <div id="customerAnalyticsChart" class="w-full h-full"></div>
+            <div id="customerAnalyticsPlaceholder" class="absolute inset-0 flex items-center justify-center bg-gray-50 rounded-lg">
+                <div class="text-center">
+                    <i class="fas fa-chart-area text-gray-400 text-4xl mb-2"></i>
+                    <p class="text-gray-500">Customer analytics chart will appear here</p>
+                    <p class="text-sm text-gray-400">Generate a report to view data</p>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-function generateTopCustomersReport() {
-    alert('Top customers report generation coming soon!');
+// Global variables
+let customerAnalyticsChart = null;
+
+// Format money function
+function formatMoney(value, showFull = false) {
+    if (value === 0) return 'UGX 0';
+
+    const absValue = Math.abs(value);
+    const isNegative = value < 0;
+    const prefix = isNegative ? '-UGX ' : 'UGX ';
+
+    if (showFull) {
+        return prefix + absValue.toLocaleString();
+    }
+
+    if (absValue >= 1000000000) {
+        return prefix + (absValue / 1000000000).toFixed(1) + 'B';
+    } else if (absValue >= 1000000) {
+        return prefix + (absValue / 1000000).toFixed(1) + 'M';
+    } else if (absValue >= 1000) {
+        return prefix + (absValue / 1000).toFixed(1) + 'K';
+    } else {
+        return prefix + absValue.toLocaleString();
+    }
 }
 
-function generateSegmentationReport() {
-    alert('Customer segmentation report generation coming soon!');
+// Toast notification function
+function showToast(message, type = 'info') {
+    const toastContainer = document.getElementById('toast-container') || document.createElement('div');
+    if (!document.getElementById('toast-container')) {
+        toastContainer.id = 'toast-container';
+        toastContainer.className = 'fixed top-4 right-4 z-50 space-y-2';
+        document.body.appendChild(toastContainer);
+    }
+    
+    const toast = document.createElement('div');
+    const bgGradient = type === 'success' ? 'bg-gradient-to-r from-green-500 to-emerald-600' :
+                      type === 'error' ? 'bg-gradient-to-r from-red-500 to-red-600' :
+                      'bg-gradient-to-r from-blue-500 to-indigo-600';
+    const icon = type === 'success' ? 'fas fa-check-circle' :
+                type === 'error' ? 'fas fa-exclamation-circle' :
+                'fas fa-info-circle';
+
+    toast.className = `${bgGradient} text-white px-4 py-3 rounded-xl shadow-lg transform transition-all duration-300 translate-x-full hover:shadow-xl`;
+    toast.innerHTML = `
+        <div class="flex items-center">
+            <div class="w-6 h-6 bg-white bg-opacity-20 rounded-md flex items-center justify-center mr-2">
+                <i class="${icon} text-white text-xs"></i>
+            </div>
+            <span class="font-medium text-sm">${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-3 w-5 h-5 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-md flex items-center justify-center text-white transition-all duration-200">
+                <i class="fas fa-times text-xs"></i>
+            </button>
+        </div>
+    `;
+    
+    toastContainer.appendChild(toast);
+
+    // Animate in
+    setTimeout(() => toast.classList.remove('translate-x-full'), 100);
+
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        toast.classList.add('translate-x-full');
+        setTimeout(() => toast.remove(), 300);
+    }, 5000);
 }
 
-function generatePurchaseHistoryReport() {
-    alert('Purchase history report generation coming soon!');
+// Load customer summary data
+async function loadCustomerSummary() {
+    try {
+        const response = await fetch('/api/reports/customer-reports', {
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+        }
+
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to load customer data');
+        }
+        
+        // Update summary cards
+        const stats = data.data.statistics || {};
+        
+        document.getElementById('totalCustomers').textContent = stats.total_customers || 0;
+        document.getElementById('newThisMonth').textContent = stats.new_this_month || 0;
+        document.getElementById('activeCustomers').textContent = stats.active_customers || 0;
+        document.getElementById('avgOrderValue').textContent = formatMoney(stats.avg_order_value || 0);
+        
+    } catch (error) {
+        console.error('Error loading customer summary:', error);
+        showToast('Error loading customer summary: ' + error.message, 'error');
+    }
 }
+
+// Generate top customers report
+async function generateTopCustomersReport() {
+    try {
+        // Hide other sections
+        document.getElementById('segmentsSection').classList.add('hidden');
+        document.getElementById('purchaseHistorySection').classList.add('hidden');
+        
+        // Show top customers section
+        const section = document.getElementById('topCustomersSection');
+        section.classList.remove('hidden');
+        
+        // Scroll to section
+        section.scrollIntoView({ behavior: 'smooth' });
+        
+        // Load data
+        const response = await fetch('/api/reports/customer-reports/top-customers?limit=10', {
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+        }
+
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to load top customers data');
+        }
+        
+        const tableBody = document.getElementById('topCustomersTableBody');
+        if (!tableBody) return;
+        
+        if (!data.data || data.data.length === 0) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="px-4 py-8 text-center">
+                        <div class="flex flex-col items-center">
+                            <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-3">
+                                <i class="fas fa-check-circle text-green-500 text-lg"></i>
+                            </div>
+                            <p class="text-gray-600 font-medium mb-1 text-sm">No Customer Data</p>
+                            <p class="text-xs text-gray-500">No customers found</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        tableBody.innerHTML = data.data.map(customer => `
+            <tr class="hover:bg-gradient-to-r hover:from-gray-50 hover:to-purple-50 transition-all duration-200">
+                <td class="px-4 py-3 whitespace-nowrap">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center mr-3">
+                            <i class="fas fa-user text-gray-500"></i>
+                        </div>
+                        <div>
+                            <div class="text-sm font-medium text-gray-900">${customer.name}</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${customer.phone || 'N/A'}</div>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                    <div class="text-sm font-medium text-green-600">${formatMoney(customer.total_purchases)}</div>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${customer.total_orders}</div>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                    <div class="text-sm font-medium text-blue-600">${formatMoney(customer.avg_order_value)}</div>
+                </td>
+            </tr>
+        `).join('');
+        
+        showToast('Top customers report generated successfully!', 'success');
+        
+    } catch (error) {
+        console.error('Error generating top customers report:', error);
+        const tableBody = document.getElementById('topCustomersTableBody');
+        if (tableBody) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="px-4 py-8 text-center">
+                        <div class="flex flex-col items-center">
+                            <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-3">
+                                <i class="fas fa-exclamation-circle text-red-500 text-lg"></i>
+                            </div>
+                            <p class="text-red-600 font-medium mb-1 text-sm">Error Loading Data</p>
+                            <p class="text-xs text-gray-500">${error.message}</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+        showToast('Error generating top customers report: ' + error.message, 'error');
+    }
+}
+
+// Close top customers report
+function closeTopCustomersReport() {
+    document.getElementById('topCustomersSection').classList.add('hidden');
+}
+
+// Generate customer segmentation report
+async function generateSegmentationReport() {
+    try {
+        // Hide other sections
+        document.getElementById('topCustomersSection').classList.add('hidden');
+        document.getElementById('purchaseHistorySection').classList.add('hidden');
+        
+        // Show segments section
+        const section = document.getElementById('segmentsSection');
+        section.classList.remove('hidden');
+        
+        // Scroll to section
+        section.scrollIntoView({ behavior: 'smooth' });
+        
+        // Load data
+        const response = await fetch('/api/reports/customer-reports/segments', {
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+        }
+
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to load customer segments data');
+        }
+        
+        const tableBody = document.getElementById('segmentsTableBody');
+        if (!tableBody) return;
+        
+        if (!data.data || data.data.length === 0) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="3" class="px-4 py-8 text-center">
+                        <div class="flex flex-col items-center">
+                            <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-3">
+                                <i class="fas fa-check-circle text-green-500 text-lg"></i>
+                            </div>
+                            <p class="text-gray-600 font-medium mb-1 text-sm">No Segments Data</p>
+                            <p class="text-xs text-gray-500">No customer segments found</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        tableBody.innerHTML = data.data.map(segment => {
+            let segmentClass = 'bg-gray-100 text-gray-800';
+            let segmentIcon = 'fas fa-user';
+            
+            switch(segment._id) {
+                case 'VIP':
+                    segmentClass = 'bg-purple-100 text-purple-800';
+                    segmentIcon = 'fas fa-crown';
+                    break;
+                case 'Premium':
+                    segmentClass = 'bg-blue-100 text-blue-800';
+                    segmentIcon = 'fas fa-star';
+                    break;
+                case 'Regular':
+                    segmentClass = 'bg-green-100 text-green-800';
+                    segmentIcon = 'fas fa-user-check';
+                    break;
+                case 'Active':
+                    segmentClass = 'bg-yellow-100 text-yellow-800';
+                    segmentIcon = 'fas fa-user-clock';
+                    break;
+                case 'Inactive':
+                    segmentClass = 'bg-red-100 text-red-800';
+                    segmentIcon = 'fas fa-user-slash';
+                    break;
+            }
+            
+            return `
+                <tr class="hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 transition-all duration-200">
+                    <td class="px-4 py-3 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center mr-3">
+                                <i class="${segmentIcon} text-gray-500"></i>
+                            </div>
+                            <div>
+                                <div class="text-sm font-medium text-gray-900">${segment._id}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${segment.count}</div>
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap">
+                        <div class="text-sm font-medium text-green-600">${formatMoney(segment.total_value)}</div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+        
+        showToast('Customer segments report generated successfully!', 'success');
+        
+    } catch (error) {
+        console.error('Error generating customer segments report:', error);
+        const tableBody = document.getElementById('segmentsTableBody');
+        if (tableBody) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="3" class="px-4 py-8 text-center">
+                        <div class="flex flex-col items-center">
+                            <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-3">
+                                <i class="fas fa-exclamation-circle text-red-500 text-lg"></i>
+                            </div>
+                            <p class="text-red-600 font-medium mb-1 text-sm">Error Loading Data</p>
+                            <p class="text-xs text-gray-500">${error.message}</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+        showToast('Error generating customer segments report: ' + error.message, 'error');
+    }
+}
+
+// Close segments report
+function closeSegmentsReport() {
+    document.getElementById('segmentsSection').classList.add('hidden');
+}
+
+// Generate purchase history report
+async function generatePurchaseHistoryReport() {
+    try {
+        // Hide other sections
+        document.getElementById('topCustomersSection').classList.add('hidden');
+        document.getElementById('segmentsSection').classList.add('hidden');
+        
+        // Show purchase history section
+        const section = document.getElementById('purchaseHistorySection');
+        section.classList.remove('hidden');
+        
+        // Scroll to section
+        section.scrollIntoView({ behavior: 'smooth' });
+        
+        // Load data (last 30 days)
+        const response = await fetch('/api/reports/customer-reports/purchase-history?days=30', {
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+        }
+
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to load purchase history data');
+        }
+        
+        const tableBody = document.getElementById('purchaseHistoryTableBody');
+        if (!tableBody) return;
+        
+        if (!data.data || data.data.length === 0) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="px-4 py-8 text-center">
+                        <div class="flex flex-col items-center">
+                            <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-3">
+                                <i class="fas fa-check-circle text-green-500 text-lg"></i>
+                            </div>
+                            <p class="text-gray-600 font-medium mb-1 text-sm">No Purchase History</p>
+                            <p class="text-xs text-gray-500">No purchases found in the last 30 days</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        tableBody.innerHTML = data.data.map(record => `
+            <tr class="hover:bg-gradient-to-r hover:from-gray-50 hover:to-green-50 transition-all duration-200">
+                <td class="px-4 py-3 whitespace-nowrap">
+                    <div class="text-sm font-medium text-blue-600">#${record.sale_number}</div>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${record.customer_name || 'Walk-in Customer'}</div>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${record.created_at}</div>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                    <div class="text-sm font-medium text-green-600">${formatMoney(record.total_amount)}</div>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${record.items_count}</div>
+                </td>
+            </tr>
+        `).join('');
+        
+        showToast('Purchase history report generated successfully!', 'success');
+        
+    } catch (error) {
+        console.error('Error generating purchase history report:', error);
+        const tableBody = document.getElementById('purchaseHistoryTableBody');
+        if (tableBody) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="px-4 py-8 text-center">
+                        <div class="flex flex-col items-center">
+                            <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-3">
+                                <i class="fas fa-exclamation-circle text-red-500 text-lg"></i>
+                            </div>
+                            <p class="text-red-600 font-medium mb-1 text-sm">Error Loading Data</p>
+                            <p class="text-xs text-gray-500">${error.message}</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+        showToast('Error generating purchase history report: ' + error.message, 'error');
+    }
+}
+
+// Close purchase history report
+function closePurchaseHistoryReport() {
+    document.getElementById('purchaseHistorySection').classList.add('hidden');
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Load initial customer summary data
+    loadCustomerSummary();
+});
 </script>
 {% endblock %}

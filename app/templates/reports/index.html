@@ -1,238 +1,587 @@
 {% extends "base.html" %}
 
-{% block title %}Reports & Analytics{% endblock %}
+{% block title %}Reports Dashboard - Inventory Management System{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-6">
-
+<div class="space-y-6 animate-fade-in">
     <!-- Header -->
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold text-gray-800">Reports & Analytics</h1>
-        <div class="flex items-center space-x-2">
-            <button class="bg-blue-500 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-600 transition duration-200">
-                <i class="fas fa-download mr-2"></i>
-                Export All Data
+    <div class="bg-gradient-to-r from-blue-600 to-indigo-700 shadow-lg rounded-xl p-6 text-white">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div class="mb-4 md:mb-0">
+                <h1 class="text-2xl md:text-3xl font-bold">📊 Reports Dashboard</h1>
+                <p class="text-blue-100 text-sm mt-1">Comprehensive business analytics and reporting</p>
+            </div>
+            <div class="flex space-x-2">
+                <button onclick="refreshAllReports()" class="px-4 py-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg text-white text-sm font-medium transition-all duration-200">
+                    <i class="fas fa-sync mr-2"></i>Refresh All
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reports Overview Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Sales Reports Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all duration-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Sales Reports</p>
+                    <p class="text-xl font-bold text-blue-600 mt-1">View Details</p>
+                </div>
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-chart-line text-blue-600 text-lg"></i>
+                </div>
+            </div>
+            <div class="mt-4">
+                <a href="/reports/sales" class="w-full inline-flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors duration-200">
+                    <i class="fas fa-arrow-right mr-2"></i>Go to Sales
+                </a>
+            </div>
+        </div>
+
+        <!-- Inventory Reports Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all duration-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Inventory Reports</p>
+                    <p class="text-xl font-bold text-green-600 mt-1">View Details</p>
+                </div>
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-boxes text-green-600 text-lg"></i>
+                </div>
+            </div>
+            <div class="mt-4">
+                <a href="/reports/inventory" class="w-full inline-flex items-center justify-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors duration-200">
+                    <i class="fas fa-arrow-right mr-2"></i>Go to Inventory
+                </a>
+            </div>
+        </div>
+
+        <!-- Customer Reports Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all duration-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Customer Reports</p>
+                    <p class="text-xl font-bold text-purple-600 mt-1">View Details</p>
+                </div>
+                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-users text-purple-600 text-lg"></i>
+                </div>
+            </div>
+            <div class="mt-4">
+                <a href="/reports/customers" class="w-full inline-flex items-center justify-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-colors duration-200">
+                    <i class="fas fa-arrow-right mr-2"></i>Go to Customers
+                </a>
+            </div>
+        </div>
+
+        <!-- Financial Reports Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all duration-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Financial Reports</p>
+                    <p class="text-xl font-bold text-orange-600 mt-1">View Details</p>
+                </div>
+                <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-file-invoice-dollar text-orange-600 text-lg"></i>
+                </div>
+            </div>
+            <div class="mt-4">
+                <a href="/reports/financial" class="w-full inline-flex items-center justify-center px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium transition-colors duration-200">
+                    <i class="fas fa-arrow-right mr-2"></i>Go to Financial
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats Section -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Quick Stats</h3>
+            <div class="flex items-center space-x-2">
+                <select id="quickStatsPeriod" class="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
+                    <option value="today">Today</option>
+                    <option value="week" selected>This Week</option>
+                    <option value="month">This Month</option>
+                    <option value="year">This Year</option>
+                </select>
+                <button onclick="loadQuickStats()" class="px-3 py-1.5 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-md text-sm font-medium transition-all duration-200">
+                    <i class="fas fa-sync"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Total Revenue -->
+            <div class="bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-money-bill-wave text-white"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-xs text-green-700 font-medium">Total Revenue</p>
+                        <p class="text-lg font-bold text-green-900 mt-1" id="totalRevenue">UGX 0</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Total Orders -->
+            <div class="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-shopping-cart text-white"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-xs text-blue-700 font-medium">Total Orders</p>
+                        <p class="text-lg font-bold text-blue-900 mt-1" id="totalOrders">0</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Total Products -->
+            <div class="bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-box text-white"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-xs text-purple-700 font-medium">Total Products</p>
+                        <p class="text-lg font-bold text-purple-900 mt-1" id="totalProducts">0</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Total Customers -->
+            <div class="bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg p-4 border border-orange-200">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-users text-white"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-xs text-orange-700 font-medium">Total Customers</p>
+                        <p class="text-lg font-bold text-orange-900 mt-1" id="totalCustomers">0</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Recent Sales -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">Recent Sales</h3>
+                <a href="/reports/sales" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                    View All <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+            <div class="overflow-x-auto rounded-lg border border-gray-200">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Order ID</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Customer</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Amount</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200" id="recentSalesTable">
+                        <tr>
+                            <td colspan="4" class="px-4 py-8 text-center">
+                                <div class="flex flex-col items-center">
+                                    <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                                        <i class="fas fa-spinner fa-spin text-gray-400 text-lg"></i>
+                                    </div>
+                                    <p class="text-gray-600 font-medium mb-1 text-sm">Loading recent sales...</p>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Low Stock Alerts -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">Low Stock Alerts</h3>
+                <a href="/reports/inventory" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                    View All <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+            <div class="overflow-x-auto rounded-lg border border-gray-200">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Product</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Current Stock</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200" id="lowStockTable">
+                        <tr>
+                            <td colspan="4" class="px-4 py-8 text-center">
+                                <div class="flex flex-col items-center">
+                                    <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                                        <i class="fas fa-spinner fa-spin text-gray-400 text-lg"></i>
+                                    </div>
+                                    <p class="text-gray-600 font-medium mb-1 text-sm">Loading stock alerts...</p>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Toast notification function
+function showToast(message, type = 'info') {
+    const toastContainer = document.getElementById('toast-container') || document.createElement('div');
+    if (!document.getElementById('toast-container')) {
+        toastContainer.id = 'toast-container';
+        toastContainer.className = 'fixed top-4 right-4 z-50 space-y-2';
+        document.body.appendChild(toastContainer);
+    }
+    
+    const toast = document.createElement('div');
+    const bgGradient = type === 'success' ? 'bg-gradient-to-r from-green-500 to-emerald-600' :
+                      type === 'error' ? 'bg-gradient-to-r from-red-500 to-red-600' :
+                      'bg-gradient-to-r from-blue-500 to-indigo-600';
+    const icon = type === 'success' ? 'fas fa-check-circle' :
+                type === 'error' ? 'fas fa-exclamation-circle' :
+                'fas fa-info-circle';
+
+    toast.className = `${bgGradient} text-white px-4 py-3 rounded-xl shadow-lg transform transition-all duration-300 translate-x-full hover:shadow-xl`;
+    toast.innerHTML = `
+        <div class="flex items-center">
+            <div class="w-6 h-6 bg-white bg-opacity-20 rounded-md flex items-center justify-center mr-2">
+                <i class="${icon} text-white text-xs"></i>
+            </div>
+            <span class="font-medium text-sm">${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-3 w-5 h-5 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-md flex items-center justify-center text-white transition-all duration-200">
+                <i class="fas fa-times text-xs"></i>
             </button>
         </div>
-    </div>
+    `;
+    
+    toastContainer.appendChild(toast);
 
-    <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-        <!-- Today Stats -->
-        <div class="bg-white p-6 rounded-lg shadow">
-            <h3 class="text-lg font-bold text-gray-800 mb-4">Today</h3>
-            <div class="space-y-2">
-                <div class="flex justify-between items-center">
-                    <p class="text-gray-500 text-sm">Orders</p>
-                    <p id="today-orders" class="text-lg font-bold text-gray-800">0</p>
-                </div>
-                <div class="flex justify-between items-center">
-                    <p class="text-gray-500 text-sm">Revenue</p>
-                    <p id="today-revenue" class="text-lg font-bold text-gray-800">UGX 0.00</p>
-                </div>
-                <div class="flex justify-between items-center">
-                    <p class="text-gray-500 text-sm">Profit</p>
-                    <p id="today-profit" class="text-lg font-bold text-gray-800">UGX 0.00</p>
-                </div>
-                <div class="flex justify-between items-center">
-                    <p class="text-gray-500 text-sm">Customers</p>
-                    <p id="today-customers" class="text-lg font-bold text-gray-800">0</p>
-                </div>
-            </div>
-        </div>
-        <!-- This Week Stats -->
-        <div class="bg-white p-6 rounded-lg shadow">
-            <h3 class="text-lg font-bold text-gray-800 mb-4">This Week</h3>
-            <div class="space-y-2">
-                <div class="flex justify-between items-center">
-                    <p class="text-gray-500 text-sm">Orders</p>
-                    <p id="week-orders" class="text-lg font-bold text-gray-800">0</p>
-                </div>
-                <div class="flex justify-between items-center">
-                    <p class="text-gray-500 text-sm">Revenue</p>
-                    <p id="week-revenue" class="text-lg font-bold text-gray-800">UGX 0.00</p>
-                </div>
-                <div class="flex justify-between items-center">
-                    <p class="text-gray-500 text-sm">Profit</p>
-                    <p id="week-profit" class="text-lg font-bold text-gray-800">UGX 0.00</p>
-                </div>
-                <div class="flex justify-between items-center">
-                    <p class="text-gray-500 text-sm">Customers</p>
-                    <p id="week-customers" class="text-lg font-bold text-gray-800">0</p>
-                </div>
-            </div>
-        </div>
-        <!-- This Month Stats -->
-        <div class="bg-white p-6 rounded-lg shadow">
-            <h3 class="text-lg font-bold text-gray-800 mb-4">This Month</h3>
-            <div class="space-y-2">
-                <div class="flex justify-between items-center">
-                    <p class="text-gray-500 text-sm">Orders</p>
-                    <p id="month-orders" class="text-lg font-bold text-gray-800">0</p>
-                </div>
-                <div class="flex justify-between items-center">
-                    <p class="text-gray-500 text-sm">Revenue</p>
-                    <p id="month-revenue" class="text-lg font-bold text-gray-800">UGX 0.00</p>
-                </div>
-                <div class="flex justify-between items-center">
-                    <p class="text-gray-500 text-sm">Profit</p>
-                    <p id="month-profit" class="text-lg font-bold text-gray-800">UGX 0.00</p>
-                </div>
-                <div class="flex justify-between items-center">
-                    <p class="text-gray-500 text-sm">Customers</p>
-                    <p id="month-customers" class="text-lg font-bold text-gray-800">0</p>
-                </div>
-            </div>
-        </div>
-        <!-- All Time Stats -->
-        <div class="bg-white p-6 rounded-lg shadow">
-            <h3 class="text-lg font-bold text-gray-800 mb-4">All Time</h3>
-            <div class="space-y-2">
-                <div class="flex justify-between items-center">
-                    <p class="text-gray-500 text-sm">Total Orders</p>
-                    <p id="total-orders" class="text-lg font-bold text-gray-800">0</p>
-                </div>
-                <div class="flex justify-between items-center">
-                    <p class="text-gray-500 text-sm">Incomplete</p>
-                    <p id="incomplete-orders" class="text-lg font-bold text-gray-800">0</p>
-                </div>
-                <div class="flex justify-between items-center">
-                    <p class="text-gray-500 text-sm">Products</p>
-                    <p id="total-products" class="text-lg font-bold text-gray-800">0</p>
-                </div>
-                <div class="flex justify-between items-center">
-                    <p class="text-gray-500 text-sm">Customers</p>
-                    <p id="total-customers" class="text-lg font-bold text-gray-800">0</p>
-                </div>
-            </div>
-        </div>
-    </div>
+    // Animate in
+    setTimeout(() => toast.classList.remove('translate-x-full'), 100);
 
-    <!-- Main Chart -->
-    <div class="bg-white p-6 rounded-lg shadow mb-6">
-        <h2 class="text-xl font-bold text-gray-800 mb-4">Sales Trends (Last 30 Days)</h2>
-        <div id="sales-chart"></div>
-    </div>
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        toast.classList.add('translate-x-full');
+        setTimeout(() => toast.remove(), 300);
+    }, 5000);
+}
 
-    <!-- Report Categories -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-        <a href="/reports/sales" class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition duration-200 flex items-center">
-            <i class="fas fa-file-invoice-dollar text-blue-500 text-3xl"></i>
-            <div class="ml-4">
-                <h3 class="text-lg font-bold text-gray-800">Sales Reports</h3>
-                <p class="text-gray-500 text-sm">Detailed sales analysis</p>
-            </div>
-        </a>
-        <a href="/reports/inventory" class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition duration-200 flex items-center">
-            <i class="fas fa-boxes text-green-500 text-3xl"></i>
-            <div class="ml-4">
-                <h3 class="text-lg font-bold text-gray-800">Inventory Reports</h3>
-                <p class="text-gray-500 text-sm">Stock levels and valuation</p>
-            </div>
-        </a>
-        <a href="/reports/customers" class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition duration-200 flex items-center">
-            <i class="fas fa-users text-yellow-500 text-3xl"></i>
-            <div class="ml-4">
-                <h3 class="text-lg font-bold text-gray-800">Customer Reports</h3>
-                <p class="text-gray-500 text-sm">Customer analytics</p>
-            </div>
-        </a>
-        <a href="/reports/financial" class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition duration-200 flex items-center">
-            <i class="fas fa-piggy-bank text-red-500 text-3xl"></i>
-            <div class="ml-4">
-                <h3 class="text-lg font-bold text-gray-800">Financial Reports</h3>
-                <p class="text-gray-500 text-sm">Profit, loss, and expenses</p>
-            </div>
-        </a>
-    </div>
+// Format money function
+function formatMoney(value, showFull = false) {
+    if (value === 0) return 'UGX 0';
 
-</div>
-{% endblock %}
+    const absValue = Math.abs(value);
+    const isNegative = value < 0;
+    const prefix = isNegative ? '-UGX ' : 'UGX ';
 
-{% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Fetch data and update cards
-        fetch('/api/reports/stats')
-            .then(response => response.json())
-            .then(data => {
-                debugger;
-                console.log('Stats data:', data);
-                // Today
-                document.getElementById('today-orders').textContent = data.today.orders;
-                document.getElementById('today-revenue').textContent = `UGX ${data.today.revenue}`;
-                document.getElementById('today-profit').textContent = `UGX ${data.today.profit}`;
-                document.getElementById('today-customers').textContent = data.today.customers;
+    if (showFull) {
+        return prefix + absValue.toLocaleString();
+    }
 
-                // This Week
-                document.getElementById('week-orders').textContent = data.week.orders;
-                document.getElementById('week-revenue').textContent = `UGx ${data.week.revenue}`;
-                document.getElementById('week-profit').textContent = `UGX ${data.week.profit}`;
-                document.getElementById('week-customers').textContent = data.week.customers;
+    if (absValue >= 1000000000) {
+        return prefix + (absValue / 1000000000).toFixed(1) + 'B';
+    } else if (absValue >= 1000000) {
+        return prefix + (absValue / 1000000).toFixed(1) + 'M';
+    } else if (absValue >= 1000) {
+        return prefix + (absValue / 1000).toFixed(1) + 'K';
+    } else {
+        return prefix + absValue.toLocaleString();
+    }
+}
 
-                // This Month
-                document.getElementById('month-orders').textContent = data.month.orders;
-                document.getElementById('month-revenue').textContent = `UGX ${data.month.revenue}`;
-                document.getElementById('month-profit').textContent = `UGX ${data.month.profit}`;
-                document.getElementById('month-customers').textContent = data.month.customers;
+// Load quick stats
+async function loadQuickStats() {
+    try {
+        const period = document.getElementById('quickStatsPeriod').value;
+        const response = await fetch(`/api/reports/stats`, {
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
 
-                // All Time
-                document.getElementById('total-orders').textContent = data.total.orders;
-                document.getElementById('incomplete-orders').textContent = data.total.incomplete_orders;
-                document.getElementById('total-products').textContent = data.total.products;
-                document.getElementById('total-customers').textContent = data.total.customers;
-            });
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+        }
 
-        // Fetch sales trend data and render chart
-        fetch('/api/reports/sales-data')
-            .then(response => response.json())
-            .then(data => {
-                console.log('Sales data:', data);
-                if (data.success) {
-                    const salesTrend = data.chart_data.sales_trend;
-                    var options = {
-                        chart: {
-                            type: 'area',
-                            height: 350,
-                            toolbar: {
-                                show: false
-                            }
-                        },
-                        series: [{
-                            name: 'Sales',
-                            data: salesTrend.revenue
-                        }],
-                        xaxis: {
-                            categories: salesTrend.labels
-                        },
-                        dataLabels: {
-                            enabled: false
-                        },
-                        stroke: {
-                            curve: 'smooth'
-                        },
-                        fill: {
-                            type: 'gradient',
-                            gradient: {
-                                shadeIntensity: 1,
-                                opacityFrom: 0.7,
-                                opacityTo: 0.9,
-                                stops: [0, 90, 100]
-                            }
-                        },
-                        tooltip: {
-                            x: {
-                                format: 'dd/MM/yy HH:mm'
-                            },
-                        },
-                    };
+        const data = await response.json();
+        
+        if (!data) {
+            throw new Error('No data received');
+        }
+        
+        // Update stats based on selected period
+        let stats = data.today;
+        if (period === 'week') stats = data.week;
+        else if (period === 'month') stats = data.month;
+        else if (period === 'year') stats = data.total;
+        
+        // Update DOM elements
+        const totalRevenueEl = document.getElementById('totalRevenue');
+        const totalOrdersEl = document.getElementById('totalOrders');
+        const totalProductsEl = document.getElementById('totalProducts');
+        const totalCustomersEl = document.getElementById('totalCustomers');
+        
+        if (totalRevenueEl) totalRevenueEl.textContent = formatMoney(stats.revenue || stats.total_revenue || 0);
+        if (totalOrdersEl) totalOrdersEl.textContent = (stats.orders || stats.total_orders || 0).toLocaleString();
+        if (totalProductsEl) totalProductsEl.textContent = (data.total?.products || 0).toLocaleString();
+        if (totalCustomersEl) totalCustomersEl.textContent = (data.total?.customers || 0).toLocaleString();
+        
+    } catch (error) {
+        console.error('Error loading quick stats:', error);
+        showToast('Error loading quick stats: ' + error.message, 'error');
+    }
+}
 
-                    var chart = new ApexCharts(document.querySelector("#sales-chart"), options);
-                    chart.render();
-                }
-            })
-            .catch(error => console.error('Error fetching sales data:', error));
-    });
+// Load recent sales
+async function loadRecentSales() {
+    try {
+        // Calculate date range for last 7 days in Kampala timezone
+        const now = new Date();
+        // Convert to Kampala timezone (UTC+3)
+        const kampalaOffset = 3 * 60; // 3 hours in minutes
+        const localOffset = now.getTimezoneOffset();
+        const kampalaTime = new Date(now.getTime() + (kampalaOffset + localOffset) * 60000);
+        
+        const sevenDaysAgo = new Date(kampalaTime);
+        sevenDaysAgo.setDate(kampalaTime.getDate() - 7);
+        
+        // Format dates as YYYY-MM-DD
+        const formatDate = (date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+        
+        const fromDate = formatDate(sevenDaysAgo);
+        const toDate = formatDate(kampalaTime);
+        
+        // Debug output
+        console.log('Date range:', { fromDate, toDate });
+        
+        const response = await fetch(`/api/reports/sales-data?from_date=${fromDate}&to_date=${toDate}`, {
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+        }
+
+        const data = await response.json();
+        console.log('Sales data response:', data);
+        
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to load sales data');
+        }
+        
+        const tableBody = document.getElementById('recentSalesTable');
+        if (!tableBody) return;
+        
+        if (!data.sales_data || data.sales_data.length === 0) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="4" class="px-4 py-8 text-center">
+                        <div class="flex flex-col items-center">
+                            <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-3">
+                                <i class="fas fa-check-circle text-green-500 text-lg"></i>
+                            </div>
+                            <p class="text-gray-600 font-medium mb-1 text-sm">No Recent Sales</p>
+                            <p class="text-xs text-gray-500">No sales recorded in the last 7 days</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        // Show only the 5 most recent sales
+        const recentSales = data.sales_data.slice(0, 5);
+        
+        tableBody.innerHTML = recentSales.map(sale => `
+            <tr class="hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 transition-all duration-200">
+                <td class="px-4 py-3 whitespace-nowrap">
+                    <div class="text-sm font-medium text-blue-600">#${sale.order_id}</div>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${sale.customer}</div>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                    <div class="text-sm font-medium text-green-600">${formatMoney(sale.amount)}</div>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        <i class="fas fa-check-circle mr-1"></i>Completed
+                    </span>
+                </td>
+            </tr>
+        `).join('');
+        
+    } catch (error) {
+        console.error('Error loading recent sales:', error);
+        const tableBody = document.getElementById('recentSalesTable');
+        if (tableBody) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="4" class="px-4 py-8 text-center">
+                        <div class="flex flex-col items-center">
+                            <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-3">
+                                <i class="fas fa-exclamation-circle text-red-500 text-lg"></i>
+                            </div>
+                            <p class="text-red-600 font-medium mb-1 text-sm">Error Loading Data</p>
+                            <p class="text-xs text-gray-500">${error.message}</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+        showToast('Error loading recent sales: ' + error.message, 'error');
+    }
+}
+
+// Load low stock alerts
+async function loadLowStockAlerts() {
+    try {
+        const response = await fetch(`/api/reports/inventory-reports`, {
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+        }
+
+        const data = await response.json();
+        console.log('Inventory data response:', data);
+        
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to load inventory data');
+        }
+        
+        const tableBody = document.getElementById('lowStockTable');
+        if (!tableBody) return;
+        
+        if (!data.data || !data.data.low_stock_products || data.data.low_stock_products.length === 0) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="4" class="px-4 py-8 text-center">
+                        <div class="flex flex-col items-center">
+                            <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-3">
+                                <i class="fas fa-check-circle text-green-500 text-lg"></i>
+                            </div>
+                            <p class="text-gray-600 font-medium mb-1 text-sm">All Stock Levels OK</p>
+                            <p class="text-xs text-gray-500">No low stock alerts at this time</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        // Show only the 5 lowest stock items
+        const lowStockItems = data.data.low_stock_products.slice(0, 5);
+        console.log('Low stock items:', lowStockItems);
+        
+        tableBody.innerHTML = lowStockItems.map(product => `
+            <tr class="hover:bg-gradient-to-r hover:from-gray-50 hover:to-yellow-50 transition-all duration-200">
+                <td class="px-4 py-3 whitespace-nowrap">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 h-10 w-10">
+                            <div class="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                                <i class="fas fa-box text-gray-500"></i>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <div class="text-sm font-medium text-gray-900">${product.name}</div>
+                            <div class="text-sm text-gray-500">${product.brand || 'N/A'}</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                    <div class="text-sm text-gray-900 font-medium">${product.stock_quantity}</div>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                        <i class="fas fa-exclamation-triangle mr-1"></i>Low Stock
+                    </span>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm font-medium">
+                    <button class="inline-flex items-center px-3 py-1 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white rounded text-xs font-medium transition-all duration-200">
+                        <i class="fas fa-plus mr-1"></i>Restock
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+        
+    } catch (error) {
+        console.error('Error loading low stock alerts:', error);
+        const tableBody = document.getElementById('lowStockTable');
+        if (tableBody) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="4" class="px-4 py-8 text-center">
+                        <div class="flex flex-col items-center">
+                            <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-3">
+                                <i class="fas fa-exclamation-circle text-red-500 text-lg"></i>
+                            </div>
+                            <p class="text-red-600 font-medium mb-1 text-sm">Error Loading Data</p>
+                            <p class="text-xs text-gray-500">${error.message}</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+        showToast('Error loading low stock alerts: ' + error.message, 'error');
+    }
+}
+
+// Refresh all reports
+async function refreshAllReports() {
+    showToast('Refreshing all reports...', 'info');
+    
+    // Load all data sections
+    await Promise.all([
+        loadQuickStats(),
+        loadRecentSales(),
+        loadLowStockAlerts()
+    ]);
+    
+    showToast('All reports refreshed successfully!', 'success');
+}
+
+// Initialize dashboard when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Load initial data
+    refreshAllReports();
+    
+    // Set up event listeners
+    const periodSelect = document.getElementById('quickStatsPeriod');
+    if (periodSelect) {
+        periodSelect.addEventListener('change', loadQuickStats);
+    }
+});
 </script>
 {% endblock %}
