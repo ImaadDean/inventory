@@ -15,8 +15,8 @@ from ...models.per_order import (
 from ...utils.auth import get_current_user_hybrid_dependency
 from ...utils.counter import get_next_sequence_value
 from .utils import generate_per_order_number
-from ...models.sale import Sale, SaleItem
-from ...models.order import Order, OrderItem
+from ...models.sale import Sale, SaleItem, PaymentMethod
+from ...models.order import Order, OrderItem, OrderPaymentMethod
 from pydantic import BaseModel
 import asyncio
 from ...utils.sale_number_generator import generate_unique_sale_number
@@ -242,6 +242,24 @@ async def confirm_per_order(
                 order_count = await db.orders.count_documents({})
                 order_number = f"ORD-{order_count + 1:06d}"
                 order_items = [OrderItem(**item) for item in per_order["items"]]
+                
+                # Set payment status based on payment method
+                payment_status = "paid" if payload.payment_method != "not_paid" else "pending"
+                
+                # Set order status based on payment method
+                order_status = "completed" if payload.payment_method != "not_paid" else "active"
+                
+                # Convert payment method string to enum
+                try:
+                    payment_method_enum = OrderPaymentMethod(payload.payment_method)
+                except ValueError:
+                    payment_method_enum = OrderPaymentMethod.CASH  # Default to cash if invalid
+                
+                # Ensure all required fields have values
+                tax_amount = per_order.get("tax_total", 0)
+                paid_amount = per_order["total_amount"] if payload.payment_method != "not_paid" else 0
+                balance = 0 if payload.payment_method != "not_paid" else per_order["total_amount"]
+                
                 new_order_obj = Order(
                     order_number=order_number,
                     client_id=per_order.get("customer_id"),
@@ -249,12 +267,15 @@ async def confirm_per_order(
                     client_phone=per_order.get("customer_phone"),
                     items=order_items,
                     subtotal=per_order["subtotal"],
+                    tax=tax_amount,
                     discount=per_order["discount_total"],
                     total=per_order["total_amount"],
-                    status="active",
-                    payment_status="pending",
+                    paid_amount=paid_amount,
+                    balance=balance,
+                    status=order_status,
+                    payment_status=payment_status,
                     created_by=current_user.id,
-                    payment_method=payload.payment_method,
+                    payment_method=payment_method_enum,
                 )
                 order_result = await db.orders.insert_one(new_order_obj.dict(by_alias=True), session=session)
 
@@ -272,6 +293,20 @@ async def confirm_per_order(
                     ) for item in per_order["items"]
                 ]
                 sale_number = await generate_unique_sale_number(db)
+                
+                # Set payment received based on payment method
+                payment_received = per_order["total_amount"] if payload.payment_method != "not_paid" else 0
+                change_given = 0  # Assuming no change for pre-orders
+                
+                # Set sale status based on payment method
+                sale_status = "completed" if payload.payment_method != "not_paid" else "active"
+                
+                # Convert payment method string to enum
+                try:
+                    payment_method_enum = PaymentMethod(payload.payment_method)
+                except ValueError:
+                    payment_method_enum = PaymentMethod.CASH  # Default to cash if invalid
+                
                 new_sale_obj = Sale(
                     sale_number=sale_number,
                     customer_id=per_order.get("customer_id"),
@@ -282,9 +317,10 @@ async def confirm_per_order(
                     subtotal=per_order["subtotal"],
                     discount_amount=per_order["discount_total"],
                     total_amount=per_order["total_amount"],
-                    payment_method=payload.payment_method,
-                    payment_received=0,
-                    status="active",
+                    payment_method=payment_method_enum,
+                    payment_received=payment_received,
+                    change_given=change_given,
+                    status=sale_status,
                 )
                 sale_result = await db.sales.insert_one(new_sale_obj.dict(by_alias=True), session=session)
 

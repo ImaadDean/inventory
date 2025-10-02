@@ -31,6 +31,14 @@ class PerOrderPaymentStatus(str, Enum):
     FAILED = "failed"
 
 
+class PerOrderPaymentMethod(str, Enum):
+    CASH = "cash"
+    CARD = "card"
+    MOBILE_MONEY = "mobile_money"
+    BANK_TRANSFER = "bank_transfer"
+    NOT_PAID = "not_paid"
+
+
 class PerOrderItem(BaseModel):
     """Individual item within a per order"""
     product_id: str
@@ -60,7 +68,7 @@ class PerOrderShipping(BaseModel):
 
 class PerOrderPayment(BaseModel):
     """Payment information for per order"""
-    method: str = Field(..., max_length=50)  # e.g., "cash", "card", "mobile_money", "bank_transfer"
+    method: PerOrderPaymentMethod
     reference: Optional[str] = Field(None, max_length=100)
     amount: float = Field(..., ge=0)
     currency: str = Field(default="UGX", max_length=3)

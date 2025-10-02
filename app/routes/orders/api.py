@@ -507,6 +507,15 @@ async def get_order(order_id: str):
             except:
                 created_by_name = "Staff Member"
 
+        # Ensure all required fields are present with default values
+        created_at = order.get("created_at")
+        if not created_at:
+            created_at = datetime.utcnow()
+            
+        updated_at = order.get("updated_at")
+        if not updated_at:
+            updated_at = created_at
+
         return {
             "id": str(order["_id"]),
             "order_number": order["order_number"],
@@ -516,7 +525,7 @@ async def get_order(order_id: str):
             "client_phone": order.get("client_phone", ""),
             "items": order["items"],
             "subtotal": order["subtotal"],
-            "tax": order["tax"],
+            "tax": order.get("tax", 0),  # Default to 0 if missing
             "discount": order.get("discount", 0),
             "total": order["total"],
             "paid_amount": order.get("paid_amount", 0),
@@ -525,8 +534,8 @@ async def get_order(order_id: str):
             "payment_method": order.get("payment_method", "cash"),
             "payment_status": order.get("payment_status", "paid"),
             "notes": order.get("notes", ""),
-            "created_at": order["created_at"].isoformat(),
-            "updated_at": order.get("updated_at", order["created_at"]).isoformat(),
+            "created_at": created_at.isoformat() if created_at else datetime.utcnow().isoformat(),
+            "updated_at": updated_at.isoformat() if updated_at else created_at.isoformat(),
             "created_by": str(order.get("created_by", "")),
             "created_by_name": created_by_name
         }

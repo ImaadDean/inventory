@@ -22,6 +22,15 @@ class OrderPaymentStatus(str, Enum):
     REFUNDED = "refunded"
 
 
+class OrderPaymentMethod(str, Enum):
+    CASH = "cash"
+    CARD = "card"
+    MOBILE_MONEY = "mobile_money"
+    BANK_TRANSFER = "bank_transfer"
+    NOT_PAID = "not_paid"
+    INSTALLMENT = "installment"
+
+
 class OrderItem(BaseModel):
     """Individual item within an order"""
     product_id: str
@@ -56,7 +65,7 @@ class Order(BaseModel):
     
     # Status and payment
     status: OrderStatus = OrderStatus.PENDING
-    payment_method: str = Field(..., max_length=50)
+    payment_method: OrderPaymentMethod
     payment_status: OrderPaymentStatus = OrderPaymentStatus.PENDING
     
     # Installment information (if applicable)

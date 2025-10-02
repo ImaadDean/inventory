@@ -2813,7 +2813,7 @@ function generateOrderDetailsHTML(order) {
                         ` : ''}
                         <div class="flex justify-between">
                             <span class="text-sm font-medium text-gray-600">Payment Method:</span>
-                            <span class="text-sm text-gray-900">${order.payment_method === 'cash' ? 'Cash' : order.payment_method === 'mobile_money' ? 'Mobile Money' : 'Card'}</span>
+                            <span class="text-sm text-gray-900">${getPaymentMethodText(order.payment_method)}</span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-sm font-medium text-gray-600">Payment Status:</span>
