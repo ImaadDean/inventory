@@ -1000,13 +1000,14 @@ function displaySearchResultsInModal(products) {
         if (product.is_perfume_with_decants && product.decant) {
             let decantOption = '';
             if (product.has_opened_bottle && product.opened_bottle_decants > 0) {
+                const decantPrice = product.decant && product.decant.decant_price ? product.decant.decant_price : 0;
                 decantOption = `
-                    <div class="group bg-white hover:bg-purple-50 cursor-pointer border border-gray-200 rounded-lg p-2" onclick="addToCart('${product.id}', '${product.name.replace(/'/g, "\'") } (${product.decant.decant_size_ml}ml Decant)', ${product.decant.decant_price}, '${product.sku}-DECANT', ${product.opened_bottle_decants}, true)">
+                    <div class="group bg-white hover:bg-purple-50 cursor-pointer border border-gray-200 rounded-lg p-2" onclick="addToCart('${product.id}', '${product.name.replace(/'/g, "\'") } (${product.decant && product.decant.decant_size_ml ? product.decant.decant_size_ml : ''}ml Decant)', ${decantPrice}, '${product.sku}-DECANT', ${product.opened_bottle_decants}, true)">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center">
                                 <i class="fas fa-vial text-purple-500 mr-2"></i>
                                 <div>
-                                    <p class="text-sm font-medium text-gray-900">Decant (${product.decant.decant_size_ml}ml)</p>
+                                    <p class="text-sm font-medium text-gray-900">Decant (${product.decant && product.decant.decant_size_ml ? product.decant.decant_size_ml : ''}ml)</p>
                                     <p class="text-xs text-green-600">
                                         <i class="fas fa-check-circle mr-1"></i>
                                         ${product.opened_bottle_decants} decants from opened bottle
@@ -1014,7 +1015,7 @@ function displaySearchResultsInModal(products) {
                                 </div>
                             </div>
                             <div class="text-right">
-                                <p class="font-bold text-sm text-purple-600">UGX ${product.decant.decant_price.toLocaleString()}</p>
+                                <p class="font-bold text-sm text-purple-600">UGX ${decantPrice.toLocaleString()}</p>
                                 <button class="bg-gradient-to-r from-purple-500 to-pink-600 text-white px-2 py-1 rounded text-xs font-medium">
                                     <i class="fas fa-plus mr-1"></i>Add Decant
                                 </button>
@@ -1023,8 +1024,10 @@ function displaySearchResultsInModal(products) {
                     </div>
                 `;
             } else if (product.can_open_new_bottle) {
+                const decantPrice = product.decant && product.decant.decant_price ? product.decant.decant_price : 0;
+                const decantSize = product.decant && product.decant.decant_size_ml ? product.decant.decant_size_ml : 0;
                 decantOption = `
-                    <div class="group bg-white hover:bg-orange-50 cursor-pointer border border-orange-200 rounded-lg p-2" onclick="confirmOpenNewBottle('${product.id}', '${product.name.replace(/'/g, "\'") }', ${product.bottle_size_ml}, ${product.decant.decant_size_ml}, ${product.decant.decant_price})">
+                    <div class="group bg-white hover:bg-orange-50 cursor-pointer border border-orange-200 rounded-lg p-2" onclick="confirmOpenNewBottle('${product.id}', '${product.name.replace(/'/g, "\'") }', ${product.bottle_size_ml}, ${decantSize}, ${decantPrice})">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center">
                                 <i class="fas fa-unlock text-orange-500 mr-2"></i>
@@ -1037,7 +1040,7 @@ function displaySearchResultsInModal(products) {
                                 </div>
                             </div>
                             <div class="text-right">
-                                <p class="font-bold text-sm text-orange-600">UGX ${product.decant.decant_price.toLocaleString()}</p>
+                                <p class="font-bold text-sm text-orange-600">UGX ${decantPrice.toLocaleString()}</p>
                                 <button class="bg-gradient-to-r from-orange-500 to-red-600 text-white px-2 py-1 rounded text-xs font-medium">
                                     <i class="fas fa-unlock mr-1"></i>Open & Add
                                 </button>
@@ -1048,19 +1051,20 @@ function displaySearchResultsInModal(products) {
             }
 
             let fullBottleOption = '';
+            const productPrice = product.price || 0;
             if (product.stock_quantity > 0) {
                 fullBottleOption = `
-                    <div class="group bg-white hover:bg-blue-50 cursor-pointer border border-gray-200 rounded-lg p-2" onclick='addToCart("${product.id}", "${product.name.replace(/'/g, "\'") } (Full Bottle)", ${product.price}, "${product.sku}", ${product.stock_quantity}, false)'>
+                    <div class="group bg-white hover:bg-blue-50 cursor-pointer border border-gray-200 rounded-lg p-2" onclick='addToCart("${product.id}", "${product.name.replace(/'/g, "\'") } (Full Bottle)", ${productPrice}, "${product.sku}", ${product.stock_quantity}, false)'>
                         <div class="flex items-center justify-between">
                             <div class="flex items-center">
                                 <i class="fas fa-wine-bottle text-blue-500 mr-2"></i>
                                 <div>
-                                    <p class="text-sm font-medium text-gray-900">Full Bottle (${product.bottle_size_ml}ml)</p>
+                                    <p class="text-sm font-medium text-gray-900">Full Bottle (${product.bottle_size_ml || 0}ml)</p>
                                     <p class="text-xs text-gray-500">${product.stock_quantity} bottles available</p>
                                 </div>
                             </div>
                             <div class="text-right">
-                                <p class="font-bold text-sm text-blue-600">UGX ${product.price.toLocaleString()}</p>
+                                <p class="font-bold text-sm text-blue-600">UGX ${productPrice.toLocaleString()}</p>
                                 <button class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-2 py-1 rounded text-xs font-medium">
                                     <i class="fas fa-plus mr-1"></i>Add Bottle
                                 </button>
@@ -1075,7 +1079,7 @@ function displaySearchResultsInModal(products) {
                             <div class="flex items-center">
                                 <i class="fas fa-wine-bottle text-gray-400 mr-2"></i>
                                 <div>
-                                    <p class="text-sm font-medium text-gray-500">Full Bottle (${product.bottle_size_ml}ml)</p>
+                                    <p class="text-sm font-medium text-gray-500">Full Bottle (${product.bottle_size_ml || 0}ml)</p>
                                     <p class="text-xs text-red-500">Out of Stock</p>
                                 </div>
                             </div>
@@ -1093,8 +1097,9 @@ function displaySearchResultsInModal(products) {
             `;
         }
 
+        const productPrice = product.price || 0;
         return `
-            <div class="group bg-gray-50 hover:bg-blue-50 border border-gray-200 rounded-lg p-3 cursor-pointer" onclick='addToCart("${product.id}", "${product.name.replace(/'/g, "\'") }", ${product.price}, "${product.sku}", ${product.stock_quantity}, false)'>
+            <div class="group bg-gray-50 hover:bg-blue-50 border border-gray-200 rounded-lg p-3 cursor-pointer" onclick='addToCart("${product.id}", "${product.name.replace(/'/g, "\'") }", ${productPrice}, "${product.sku}", ${product.stock_quantity}, false)'>
                 <div class="flex justify-between items-center">
                     <div class="flex-1">
                         <p class="font-semibold text-sm text-gray-800 group-hover:text-blue-800">${product.name || 'Unnamed Product'}</p>
@@ -1102,7 +1107,7 @@ function displaySearchResultsInModal(products) {
                         <p class="text-xs text-gray-500">${product.stock_quantity} ${product.unit || 'pcs'}</p>
                     </div>
                     <div class="text-right">
-                        <p class="font-bold text-sm text-blue-600 mb-1">UGX ${product.price.toLocaleString()}</p>
+                        <p class="font-bold text-sm text-blue-600 mb-1">UGX ${productPrice.toLocaleString()}</p>
                         <button class="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-3 py-1 rounded-lg text-xs font-medium shadow-sm hover:shadow-md transition-all duration-200 transform hover:scale-105">
                             Add
                         </button>
@@ -1405,7 +1410,7 @@ function confirmOpenNewBottle(productId, productName, bottleSizeMl, decantSizeMl
     document.getElementById('bottle-product-name').textContent = productName;
     document.getElementById('bottle-size').textContent = bottleSizeMl;
     document.getElementById('decant-size').textContent = decantSizeMl;
-    document.getElementById('decant-price').textContent = decantPrice.toLocaleString();
+    document.getElementById('decant-price').textContent = (decantPrice || 0).toLocaleString();
     document.getElementById('new-bottle-decants').textContent = Math.floor(bottleSizeMl / decantSizeMl);
     document.getElementById('open-bottle-modal').classList.remove('hidden');
 }
@@ -1443,8 +1448,8 @@ function toggleItemDiscount(cartItemId) {
 
     document.getElementById('discount-item-name').textContent = item.name;
     document.getElementById('discount-item-quantity').textContent = item.quantity;
-    document.getElementById('discount-item-price').textContent = item.price.toLocaleString();
-    document.getElementById('discount-item-subtotal').textContent = (item.price * item.quantity).toLocaleString();
+    document.getElementById('discount-item-price').textContent = (item.price || 0).toLocaleString();
+    document.getElementById('discount-item-subtotal').textContent = ((item.price || 0) * item.quantity).toLocaleString();
 
     if (item.discount_value > 0) {
         document.getElementById('item-discount-type').value = item.discount_type || 'fixed';
@@ -1482,8 +1487,8 @@ function calculateItemDiscount() {
 
     const finalPrice = itemSubtotal - discountAmount;
 
-    document.getElementById('calculated-discount').textContent = `UGX ${Math.round(discountAmount).toLocaleString()}`;
-    document.getElementById('final-item-price').textContent = `UGX ${Math.round(finalPrice).toLocaleString()}`;
+    document.getElementById('calculated-discount').textContent = `UGX ${Math.round(discountAmount || 0).toLocaleString()}`;
+    document.getElementById('final-item-price').textContent = `UGX ${Math.round(finalPrice || 0).toLocaleString()}`;
 }
 
 function applyItemDiscount() {
