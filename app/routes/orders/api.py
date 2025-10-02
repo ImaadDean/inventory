@@ -586,6 +586,13 @@ async def update_order_status(
             {"$set": update_data}
         )
 
+        # If order is being cancelled and has an associated sale, also cancel the sale
+        if new_status == "cancelled" and order.get("sale_id"):
+            await db.sales.update_one(
+                {"_id": order["sale_id"]},
+                {"$set": {"status": "cancelled", "updated_at": datetime.utcnow()}}
+            )
+
         if result.modified_count == 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

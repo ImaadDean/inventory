@@ -199,8 +199,9 @@ async def get_sales_stats(
             filter_query["payment_method"] = payment_method
 
         # Count sales using aggregation
+        # Include all sales in total count, but exclude cancelled sales from revenue and profit calculations
         pipeline = [
-            {"$match": filter_query},
+            {"$match": filter_query if filter_query else {}},
             {
                 "$group": {
                     "_id": None,
@@ -211,8 +212,24 @@ async def get_sales_stats(
                     "pending_sales": {
                         "$sum": {"$cond": [{"$eq": ["$status", "pending"]}, 1, 0]}
                     },
-                    "total_revenue": {"$sum": "$total_amount"},
-                    "total_profit": {"$sum": "$total_profit"}
+                    "total_revenue": {
+                        "$sum": {
+                            "$cond": [
+                                {"$ne": ["$status", "cancelled"]},
+                                "$total_amount",
+                                0
+                            ]
+                        }
+                    },
+                    "total_profit": {
+                        "$sum": {
+                            "$cond": [
+                                {"$ne": ["$status", "cancelled"]},
+                                "$total_profit",
+                                0
+                            ]
+                        }
+                    }
                 }
             }
         ]

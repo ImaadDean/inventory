@@ -723,6 +723,9 @@ function displayOrders(orders, total = 0, page = 1, totalPages = 1) {
                                 <i class="fas fa-plus-circle text-blue-500 mr-2"></i> Add Payment
                             </button>
                             ` : ''}
+                            <button onclick="showReturnOrderModal('${order.id}')" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700 flex items-center">
+                                <i class="fas fa-undo text-red-500 mr-2"></i> Return Order
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -1087,86 +1090,320 @@ function renderEditOrderCart() {
             </div>
         `;
         updateEditOrderTotals();
+    } else {
+        const cartItems = editOrderCart.map(item => `
+            <div class="flex items-center justify-between py-2 border-b border-gray-200">
+                <div class="flex items-center">
+                    <img src="${item.image_url}" alt="${item.name}" class="w-12 h-12 rounded mr-3">
+                    <div>
+                        <p class="text-sm">${item.name}</p>
+                        <p class="text-xs text-gray-500">${item.quantity} x UGX ${item.price.toLocaleString()}</p>
+                    </div>
+                </div>
+                <div>
+                    <button onclick="removeItemFromEditOrder(${item.id})" class="text-sm text-red-500"><i class="fas fa-trash-alt"></i></button>
+                </div>
+            </div>
+        `).join('');
+        cartContainer.innerHTML = cartItems;
+        updateEditOrderTotals();
+    }
+}
+
+function addItemToEditOrder(itemId) {
+    if (currentOrderForEdit && currentOrderForEdit.items.some(item => item.id === itemId)) {
+        showToast('This item is already in the cart', 'error');
         return;
     }
 
-    cartContainer.innerHTML = editOrderCart.map((item, index) => {
-        const isDecant = item.name.toLowerCase().includes('decant');
-        const iconClass = isDecant ? 'fas fa-vial' : 'fas fa-box';
-        const bgColor = isDecant ? 'from-purple-500 to-pink-600' : 'from-blue-500 to-indigo-600';
-        const cartItemId = index; // Using index as cartItemId for simplicity in the modal
+    fetch(`/api/items/${itemId}`)
+        .then(response => response.json())
+        .then(item => {
+            editOrderCart.push({
+                id: item.id,
+                name: item.name,
+                price: item.price,
+                quantity: 1,
+                image_url: item.image_url
+            });
+            renderEditOrderCart();
+        })
+        .catch(error => {
+            console.error('Error fetching item details:', error);
+            showToast('Failed to add item to cart', 'error');
+        });
+}
 
-        return `
-        <div class="group bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 border border-purple-200 hover:border-purple-300 rounded-xl p-3 transition-all duration-200 shadow-sm hover:shadow-md">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center flex-1 mr-3">
-                    <div class="w-8 h-8 bg-gradient-to-r ${bgColor} rounded-lg flex items-center justify-center mr-3 shadow-sm">
-                        <i class="${iconClass} text-white text-xs"></i>
-                    </div>
-                    <div class="flex-1">
-                        <p class="font-semibold text-sm text-gray-900 group-hover:text-purple-900 mb-1">${item.name}</p>
-                        <div class="flex items-center space-x-3 text-xs text-gray-600">
-                            <span class="flex items-center">
-                                <i class="fas fa-barcode text-gray-400 mr-1"></i>
-                                ${item.sku || 'N/A'}
-                            </span>
-                            <span class="flex items-center">
-                                <i class="fas fa-tag text-gray-400 mr-1"></i>
-                                UGX ${item.price.toLocaleString()}
-                            </span>
-                            ${isDecant ? '<span class="bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-xs">Decant</span>' : ''}
+function removeItemFromEditOrder(itemId) {
+    editOrderCart = editOrderCart.filter(item => item.id !== itemId);
+    renderEditOrderCart();
+}
+
+function openEditOrderModal(orderId) {
+    // Close any open action menus
+    hideAllActionMenus();
+    
+    currentOrderForEdit = null;
+    editOrderCart = [];
+
+    fetch(`/api/orders/${orderId}`)
+        .then(response => response.json())
+        .then(order => {
+            currentOrderForEdit = order;
+            order.items.forEach(item => {
+                editOrderCart.push({
+                    id: item.id,
+                    name: item.name,
+                    price: item.price,
+                    quantity: item.quantity,
+                    image_url: item.image_url,
+                    discount_amount: item.discount_amount
+                });
+            });
+
+            document.getElementById('edit-order-id').textContent = `Order #${order.order_number}`;
+            document.getElementById('edit-order-client-name').value = order.client_name;
+            document.getElementById('edit-order-client-phone').value = order.client_phone;
+            document.getElementById('edit-order-client-email').value = order.client_email;
+            document.getElementById('edit-order-client-address').value = order.client_address;
+            document.getElementById('edit-order-discount-value').value = '';
+            document.getElementById('edit-order-discount-type').value = 'percentage';
+
+            renderEditOrderCart();
+
+            document.getElementById('edit-order-modal').classList.remove('hidden');
+        })
+        .catch(error => {
+            console.error('Error fetching order details:', error);
+            showToast('Failed to load order details', 'error');
+        });
+}
+
+function closeEditOrderModal() {
+    document.getElementById('edit-order-modal').classList.add('hidden');
+    currentOrderForEdit = null;
+    editOrderCart = [];
+}
+
+function handleEditOrderSubmit() {
+    if (!currentOrderForEdit) return;
+
+    const clientName = document.getElementById('edit-order-client-name').value.trim();
+    const clientPhone = document.getElementById('edit-order-client-phone').value.trim();
+    const clientEmail = document.getElementById('edit-order-client-email').value.trim();
+    const clientAddress = document.getElementById('edit-order-client-address').value.trim();
+
+    if (!clientName) {
+        showToast('Client name is required', 'error');
+        return;
+    }
+
+    const payload = {
+        client_name: clientName,
+        client_phone: clientPhone,
+        client_email: clientEmail,
+        client_address: clientAddress,
+        items: editOrderCart.map(item => ({
+            id: item.id,
+            quantity: item.quantity,
+            discount_amount: item.discount_amount
+        }))
+    };
+
+    fetch(`/api/orders/${currentOrderForEdit.id}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(errorData => {
+                throw new Error(errorData.detail || 'Failed to update order');
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        showToast('Order updated successfully!', 'success');
+        closeEditOrderModal();
+        loadOrders(); // Refresh the orders table
+    })
+    .catch(error => {
+        console.error('Error updating order:', error);
+        showToast(error.message || 'Failed to update order', 'error');
+    });
+}
+
+// Function to hide all action menus (can be called directly)
+function hideAllActionMenus() {
+    const actionMenus = document.querySelectorAll('[id^="action-menu-"]');
+    actionMenus.forEach(menu => {
+        menu.classList.add('hidden');
+    });
+}
+
+// Hide action menus when clicking outside
+document.addEventListener('click', function(event) {
+    hideActionMenu(event);
+});
+
+// Return/Cancel Order Functions
+let currentOrderForReturn = null;
+
+function showReturnOrderModal(orderId) {
+    // Close any open action menus
+    hideAllActionMenus();
+    
+    // Fetch order details
+    fetch(`/api/orders/${orderId}`)
+        .then(response => response.json())
+        .then(order => {
+            currentOrderForReturn = order;
+            
+            // Populate modal with order details
+            document.getElementById('return-order-number').textContent = `Order #${order.order_number}`;
+            document.getElementById('return-client-name').textContent = order.client_name;
+            document.getElementById('return-order-date').textContent = new Date(order.created_at).toLocaleDateString();
+            document.getElementById('return-order-total').textContent = `UGX ${Math.round(order.total).toLocaleString('en-UG')}`;
+            
+            // Populate client information
+            document.getElementById('return-client-full-name').textContent = order.client_name || '-';
+            document.getElementById('return-client-phone').textContent = order.client_phone || '-';
+            document.getElementById('return-client-email').textContent = order.client_email || '-';
+            document.getElementById('return-client-address').textContent = order.client_address || '-';
+            
+            // Always show phone number if it exists, otherwise hide the field
+            // Check multiple possible field names for phone number
+            const phoneNumber = order.client_phone || order.phone || order.clientPhoneNumber || order.client_phonenumber || '';
+            const phoneContainer = document.getElementById('phone-container');
+            if (phoneNumber && phoneNumber.trim() !== '' && phoneNumber !== '-') {
+                document.getElementById('return-client-phone').textContent = phoneNumber;
+                phoneContainer.style.display = 'block';
+            } else {
+                phoneContainer.style.display = 'none';
+            }
+            
+            // Only show email if it exists
+            const emailContainer = document.getElementById('email-container');
+            if (order.client_email && order.client_email.trim() !== '' && order.client_email !== '-') {
+                document.getElementById('return-client-email').textContent = order.client_email;
+                emailContainer.style.display = 'block';
+            } else {
+                emailContainer.style.display = 'none';
+            }
+            
+            // Only show address if it exists
+            const addressContainer = document.getElementById('address-container');
+            if (order.client_address && order.client_address.trim() !== '' && order.client_address !== '-') {
+                document.getElementById('return-client-address').textContent = order.client_address;
+                addressContainer.style.display = 'block';
+            } else {
+                addressContainer.style.display = 'none';
+            }
+            
+            // Populate items information
+            const itemsContainer = document.getElementById('return-order-items');
+            const itemsCount = document.getElementById('return-items-count');
+            
+            if (order.items && order.items.length > 0) {
+                itemsCount.textContent = `${order.items.length} item${order.items.length !== 1 ? 's' : ''}`;
+                
+                const itemsHtml = order.items.map(item => `
+                    <div class="flex justify-between items-center py-2 border-b border-green-100">
+                        <div class="flex-1">
+                            <div class="font-medium text-gray-800 text-sm">${item.product_name || item.name}</div>
+                            <div class="text-xs text-gray-600">Brand: ${item.brand || 'N/A'} | Qty: ${item.quantity}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm font-medium text-gray-900">UGX ${Math.round(item.total_price || item.total || (item.unit_price * item.quantity)).toLocaleString('en-UG')}</div>
+                            <div class="text-xs text-gray-500">${item.quantity} × UGX ${Math.round(item.unit_price || item.price).toLocaleString('en-UG')}</div>
                         </div>
                     </div>
-                </div>
-                <div class="flex items-center space-x-2">
-                    <div class="flex items-center bg-white rounded-lg border border-purple-200 shadow-sm">
-                        <button onclick="updateEditOrderCartQuantity(${cartItemId}, ${item.quantity - 1})"
-                                class="w-7 h-7 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-l-lg text-xs font-medium transition-all duration-200 flex items-center justify-center">
-                            <i class="fas fa-minus"></i>
-                        </button>
-                        <span class="text-sm font-bold px-3 py-1 bg-white text-gray-900 min-w-[2rem] text-center">${item.quantity}</span>
-                        <button onclick="updateEditOrderCartQuantity(${cartItemId}, ${item.quantity + 1})"
-                                class="w-7 h-7 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-r-lg text-xs font-medium transition-all duration-200 flex items-center justify-center">
-                            <i class="fas fa-plus"></i>
-                        </button>
-                    </div>
-                    <button onclick="removeFromEditOrderCart(${cartItemId})"
-                            class="w-7 h-7 bg-gradient-to-r from-gray-500 to-gray-600 hover:from-red-500 hover:to-red-600 text-white rounded-lg text-xs font-medium transition-all duration-200 flex items-center justify-center shadow-sm hover:shadow-md"
-                            title="Remove item">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="mt-2 pt-2 border-t border-purple-200">
-                <div class="flex items-center justify-between mb-2">
-                    <div class="flex items-center space-x-2">
-                        <button onclick="toggleItemDiscount(${cartItemId})"
-                                class="text-xs px-2 py-1 rounded-md transition-all duration-200 ${item.discount_amount > 0 ? 'bg-green-100 text-green-700 border border-green-300' : 'bg-gray-100 text-gray-600 border border-gray-300'} hover:bg-green-200">
-                            <i class="fas fa-percent mr-1"></i>
-                            ${item.discount_amount > 0 ? 'Edit Discount' : 'Add Discount'}
-                        </button>
-                        ${item.discount_amount > 0 ? `
-                        <span class="text-xs text-green-600 font-medium">
-                            -UGX ${item.discount_amount.toLocaleString()}
-                        </span>
-                        ` : ''}
-                    </div>
-                    <div class="text-right">
-                        <span class="text-xs text-gray-600">Item Total:</span>
-                        ${item.discount_amount > 0 ? `
-                        <div class="text-xs text-gray-500 line-through">UGX ${(item.price * item.quantity).toLocaleString()}</div>
-                        <div class="text-sm font-bold text-purple-600">UGX ${((item.price * item.quantity) - item.discount_amount).toLocaleString()}</div>
-                        ` : `
-                        <div class="text-sm font-bold text-purple-600">UGX ${(item.price * item.quantity).toLocaleString()}</div>
-                        `}
-                    </div>
-                </div>
-            </div>
-        </div>
-        `;
-    }).join('');
-    updateEditOrderTotals();
+                `).join('');
+                
+                itemsContainer.innerHTML = itemsHtml;
+            } else {
+                itemsCount.textContent = '0 items';
+                itemsContainer.innerHTML = '<div class="text-center py-2 text-gray-500 text-sm">No items found</div>';
+            }
+            
+            // Clear form fields
+            document.getElementById('return-reason').value = '';
+            
+            // Show modal
+            document.getElementById('return-order-modal').classList.remove('hidden');
+        })
+        .catch(error => {
+            console.error('Error fetching order details:', error);
+            showToast('Failed to load order details', 'error');
+        });
 }
+
+function closeReturnOrderModal() {
+    document.getElementById('return-order-modal').classList.add('hidden');
+    currentOrderForReturn = null;
+}
+
+function processReturnOrder() {
+    if (!currentOrderForReturn) {
+        showToast('No order selected', 'error');
+        return;
+    }
+    
+    const reason = document.getElementById('return-reason').value.trim();
+    
+    if (!reason) {
+        showToast('Please provide a reason', 'error');
+        return;
+    }
+    
+    const payload = {
+        action_type: 'return',
+        reason: reason
+    };
+    
+    // Show loading state
+    const submitBtn = document.querySelector('#return-order-modal .flex.justify-end button:last-child');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin text-xs mr-1"></i>Processing...';
+    submitBtn.disabled = true;
+    
+    fetch(`/api/orders/${currentOrderForReturn.id}/status`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: 'cancelled', reason: payload.reason })
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(errorData => {
+                throw new Error(errorData.detail || 'Failed to process return/cancel');
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        showToast('Order cancelled successfully!', 'success');
+        closeReturnOrderModal();
+        loadOrders(); // Refresh the orders table
+    })
+    .catch(error => {
+        console.error('Error processing return/cancel:', error);
+        showToast(error.message || 'Failed to process return/cancel', 'error');
+    })
+    .finally(() => {
+        // Restore button state
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+}
+
+// Load orders on page load
+// This function was causing syntax errors and has been removed
+// The correct renderEditOrderCart function is defined elsewhere in the file
 
 function updateEditOrderCartQuantity(cartItemId, newQuantity) {
     if (newQuantity <= 0) {
@@ -2805,6 +3042,14 @@ document.addEventListener('click', function(event) {
             closeExportModal();
         }
     }
+    
+    // Don't hide if clicking on the action menu button itself
+    if (event.target.closest('button[onclick^="showActionMenu"]')) {
+        return;
+    }
+    
+    // Hide action menus when clicking outside
+    hideActionMenu(event);
 });
 </script>
 
@@ -3240,7 +3485,110 @@ document.addEventListener('click', function(event) {
     </div>
 </div>
 
+<!-- Return/Cancel Order Modal -->
+<div id="return-order-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300">
+            <div class="px-4 py-3 bg-gradient-to-r from-red-500 to-red-600 rounded-t-xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-2">
+                            <i class="fas fa-undo text-white text-xs"></i>
+                        </div>
+                        <h3 class="text-base font-semibold text-white">Return Order</h3>
+                    </div>
+                    <button type="button" onclick="closeReturnOrderModal()" class="text-white hover:text-gray-200 transition-colors duration-200">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-4">
+                <div class="mb-4">
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                        <div class="flex items-center mb-2">
+                            <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>
+                            <span class="text-sm font-semibold text-red-800">Order Return Information</span>
+                        </div>
+                        <p class="text-xs text-red-700">
+                            This action will return the order and restore the stock quantities of the products included in it. 
+                            Please provide a reason for the return.
+                        </p>
+                    </div>
+                    
+                    <div class="bg-gray-50 rounded-lg p-3 mb-4">
+                        <div class="flex items-center mb-2">
+                            <i class="fas fa-box text-gray-500 mr-2"></i>
+                            <span class="text-sm font-semibold text-gray-800" id="return-order-number">Order #</span>
+                        </div>
+                        <div class="text-xs text-gray-600 space-y-1">
+                            <div>Client: <span id="return-client-name" class="font-medium">-</span></div>
+                            <div>Date: <span id="return-order-date" class="font-medium">-</span></div>
+                            <div>Total: <span id="return-order-total" class="font-medium">UGX 0</span></div>
+                        </div>
+                    </div>
 
+                    <!-- Client Information Section -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                        <div class="flex items-center mb-2">
+                            <i class="fas fa-user text-blue-500 mr-2"></i>
+                            <span class="text-sm font-semibold text-blue-800">Client Information</span>
+                        </div>
+                        <div class="text-xs text-gray-600 space-y-1">
+                            <div>Name: <span id="return-client-full-name" class="font-medium">-</span></div>
+                            <div id="phone-container">Phone: <span id="return-client-phone" class="font-medium">-</span></div>
+                            <div id="email-container" style="display: none;">Email: <span id="return-client-email" class="font-medium">-</span></div>
+                            <div id="address-container" style="display: none;">Address: <span id="return-client-address" class="font-medium">-</span></div>
+                        </div>
+                    </div>
 
+                    <!-- Order Items Section -->
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center">
+                                <i class="fas fa-list text-green-500 mr-2"></i>
+                                <span class="text-sm font-semibold text-green-800">Order Items</span>
+                            </div>
+                            <span id="return-items-count" class="text-xs bg-green-200 text-green-800 px-2 py-1 rounded-full">0 items</span>
+                        </div>
+                        <div id="return-order-items" class="max-h-40 overflow-y-auto">
+                            <!-- Items will be populated here -->
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">Reason *</label>
+                        <textarea id="return-reason" rows="3" placeholder="Enter reason for return"
+                                  class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"></textarea>
+                    </div>
+
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                        <div class="flex items-start">
+                            <div class="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center mr-2 mt-0.5 flex-shrink-0">
+                                <i class="fas fa-info text-white text-xs"></i>
+                            </div>
+                            <div class="text-xs text-red-800">
+                                <p class="font-medium mb-1">Important Information</p>
+                                <ul class="text-xs space-y-0.5">
+                                    <li>• Returning an order will restore product quantities to inventory</li>
+                                    <li>• Refunds will be processed according to payment method</li>
+                                    <li>• This action cannot be undone</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="closeReturnOrderModal()" class="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200">
+                        <i class="fas fa-times mr-1"></i>Cancel
+                    </button>
+                    <button type="button" onclick="processReturnOrder()" class="px-3 py-2 text-xs font-medium text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
+                        <i class="fas fa-undo mr-1"></i>Process Return
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 {% endblock %}
