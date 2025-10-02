@@ -11,6 +11,8 @@ from ...models.per_order import (
     PerOrderStatus,
     PerOrderStatusHistory,
     PerOrderPaymentStatus,
+    PerOrderPayment,
+    PerOrderPaymentMethod
 )
 from ...utils.auth import get_current_user_hybrid_dependency
 from ...utils.counter import get_next_sequence_value
@@ -75,12 +77,28 @@ async def list_per_orders(
             return [convert_objectid_to_str(elem) for elem in obj]
         elif isinstance(obj, ObjectId):
             return str(obj)
+        elif hasattr(obj, 'value'):  # Handle enum values
+            return obj.value
         return obj
 
     per_orders_serializable = [convert_objectid_to_str(order) for order in per_orders]
 
     for order in per_orders_serializable:
         order['id'] = order['_id']
+        
+        # Ensure payments are properly serialized
+        if 'payments' in order and isinstance(order['payments'], list):
+            for payment in order['payments']:
+                if isinstance(payment, dict) and 'method' in payment:
+                    # Handle both enum and string cases
+                    if hasattr(payment['method'], 'value'):
+                        payment['method'] = payment['method'].value
+                    elif not isinstance(payment['method'], str):
+                        payment['method'] = str(payment['method'])
+                    
+                    # Ensure amount_received is included if present
+                    if 'amount_received' not in payment and 'amount' in payment:
+                        payment['amount_received'] = payment['amount']
 
     return {
         "orders": per_orders_serializable,
@@ -121,6 +139,31 @@ async def create_per_order(
             )
         ]
     )
+
+    # Add payment information if provided
+    if per_order_in.payment:
+        payment_method_str = per_order_in.payment.method
+        # Convert string to enum
+        try:
+            payment_method_enum = PerOrderPaymentMethod(payment_method_str)
+        except ValueError:
+            payment_method_enum = PerOrderPaymentMethod.NOT_PAID
+        
+        # Create a payment record
+        payment_record = PerOrderPayment(
+            method=payment_method_enum,
+            amount=total_amount,
+            amount_received=per_order_in.payment.amount_received,  # Add this
+            change=per_order_in.payment.change,  # Add this
+            currency="UGX",
+            status=PerOrderPaymentStatus.PENDING,
+            reference=per_order_in.payment.reference
+        )
+        new_per_order.payments.append(payment_record)
+        
+        # Update payment status based on method
+        if payment_method_str != "not_paid":
+            new_per_order.payment_status = PerOrderPaymentStatus.PAID
 
     # Insert into database
     result = await db.per_orders.insert_one(new_per_order.dict(by_alias=True))
@@ -171,6 +214,47 @@ async def update_per_order(
         update_data['total_amount'] = total_amount
 
     update_data['updated_at'] = datetime.utcnow()
+
+    # Handle payment information
+    if 'payment' in update_data and update_data['payment'] is not None:
+        payment_info = update_data['payment']
+        payment_method_str = payment_info['method']
+        
+        # Convert string to enum
+        try:
+            payment_method_enum = PerOrderPaymentMethod(payment_method_str)
+        except ValueError:
+            payment_method_enum = PerOrderPaymentMethod.NOT_PAID
+        
+        # Create a payment record
+        payment_record = PerOrderPayment(
+            method=payment_method_enum,
+            amount=update_data.get('total_amount', existing_per_order.get('total_amount', 0)),
+            amount_received=payment_info.get('amount_received'),
+            change=payment_info.get('change'),
+            currency="UGX",
+            status=PerOrderPaymentStatus.PAID if payment_method_str != "not_paid" else PerOrderPaymentStatus.PENDING,
+        )
+        
+        # Update payment status based on method
+        if 'payment_status' in update_data:
+            update_data['payment_status'] = update_data['payment_status']
+        elif payment_method_str != "not_paid":
+            update_data['payment_status'] = PerOrderPaymentStatus.PAID
+        else:
+            update_data['payment_status'] = PerOrderPaymentStatus.PENDING
+            
+        # Replace payments array with the new payment
+        update_data['payments'] = [payment_record.dict()]
+    elif 'payment' in update_data and update_data['payment'] is None:
+        # If payment is explicitly set to None, clear payments
+        update_data['payments'] = []
+        update_data['payment_status'] = PerOrderPaymentStatus.PENDING
+
+    # Preserve payment information when not updating
+    elif 'payments' not in update_data and 'payments' in existing_per_order:
+        update_data['payments'] = existing_per_order['payments']
+        update_data['payment_status'] = existing_per_order.get('payment_status', PerOrderPaymentStatus.PENDING)
 
     # Handle status history
     if 'status' in update_data and update_data['status'] != existing_per_order.get('status'):

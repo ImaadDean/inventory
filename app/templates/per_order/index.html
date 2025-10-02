@@ -111,24 +111,43 @@
                 <div class="space-y-3">
                     <div class="flex justify-between">
                         <span class="text-gray-600">Subtotal</span>
-                        <span class="font-medium">UGX {{ "{:,.0f}".format(per_order.subtotal) }}</span>
+                        <span class="font-medium">UGX ${order.subtotal.toLocaleString()}</span>
                     </div>
-                    {% if per_order.tax_total > 0 %}
+                    ${order.tax_total > 0 ? `
                     <div class="flex justify-between">
                         <span class="text-gray-600">Tax</span>
-                        <span class="font-medium">UGX {{ "{:,.0f}".format(per_order.tax_total) }}</span>
+                        <span class="font-medium">UGX ${order.tax_total.toLocaleString()}</span>
                     </div>
-                    {% endif %}
-                    {% if per_order.discount_total > 0 %}
+                    ` : ''}
+                    ${order.discount_total > 0 ? `
                     <div class="flex justify-between text-red-600">
                         <span>Discount</span>
-                        <span class="font-medium">-UGX {{ "{:,.0f}".format(per_order.discount_total) }}</span>
+                        <span class="font-medium">-UGX ${order.discount_total.toLocaleString()}</span>
                     </div>
-                    {% endif %}
+                    ` : ''}
+                    <!-- Payment Method -->
+                    ${order.payments && order.payments.length > 0 ? `
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Payment Method</span>
+                        <span class="font-medium">
+                            ${(() => {
+                                const payment = order.payments[0];
+                                switch(payment.method) {
+                                    case 'cash': return 'Cash';
+                                    case 'card': return 'Card';
+                                    case 'mobile_money': return 'Mobile Money';
+                                    case 'bank_transfer': return 'Bank Transfer';
+                                    case 'not_paid': return 'Not Paid';
+                                    default: return payment.method.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                                }
+                            })()}
+                        </span>
+                    </div>
+                    ` : ''}
                     <div class="border-t pt-2">
                         <div class="flex justify-between text-lg font-bold">
                             <span>Total</span>
-                            <span>UGX {{ "{:,.0f}".format(per_order.total_amount) }}</span>
+                            <span>UGX ${order.total_amount.toLocaleString()}</span>
                         </div>
                     </div>
                 </div>
@@ -485,6 +504,53 @@
                                     <div id="modal-selected-client" class="hidden mt-2 p-3 bg-gradient-to-r from-teal-50 to-cyan-50 border border-teal-200 rounded-lg"></div>
                                 </div>
                             </div>
+                                                                <div class="bg-white shadow-md rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 mt-4">
+                                        <div class="px-4 py-3 bg-gradient-to-r from-indigo-500 to-purple-600">
+                                            <div class="flex items-center">
+                                                <div class="w-7 h-7 bg-white bg-opacity-20 rounded-md flex items-center justify-center mr-2">
+                                                    <i class="fas fa-credit-card text-white text-sm"></i>
+                                                </div>
+                                                <div>
+                                                    <h3 class="text-sm font-semibold text-white">Payment</h3>
+                                                    <p class="text-indigo-100 text-xs">Select payment method</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="p-4">
+                                            <div class="space-y-4">
+                                                <!-- Payment Method -->
+                                                <div>
+                                                    <label class="block text-xs font-semibold text-gray-700 mb-2">Payment Method</label>
+                                                    <select id="modal-payment-method" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200">
+                                                        <option value="cash">Cash</option>
+                                                        <option value="mobile_money">Mobile Money</option>
+                                                        <option value="not_paid">Not Paid</option>
+                                                    </select>
+                                                </div>
+
+                                                <!-- Amount Received (for cash payments) -->
+                                                <div id="modal-cash-payment-fields">
+                                                    <label class="block text-xs font-semibold text-gray-700 mb-2">Amount Received</label>
+                                                    <input type="number" id="modal-amount-received" placeholder="0" min="0" step="0.01"
+                                                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200">
+
+                                                    <!-- Payment status message -->
+                                                    <div id="modal-payment-status" class="text-xs mt-1 hidden">
+                                                        <span class="text-red-600">
+                                                            <i class="fas fa-exclamation-circle mr-1"></i>
+                                                            <span id="modal-payment-status-text">Insufficient amount</span>
+                                                        </span>
+                                                    </div>
+
+                                                    <div class="flex justify-between items-center p-2 bg-indigo-50 rounded-lg mt-2">
+                                                        <span class="text-gray-600 text-sm font-medium">Change:</span>
+                                                        <span id="modal-change" class="text-sm font-bold text-gray-900">UGX 0</span>
+                                                    </div>
+                                                </div>
+
+                                            </div>
+                                        </div>
+                                    </div>
                             <!-- Order Summary -->
                             <div class="bg-white shadow-md rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300">
                                 <div class="px-4 py-3 bg-gradient-to-r from-orange-500 to-red-600">
@@ -874,6 +940,31 @@ function openCreatePerOrderModal() {
     document.getElementById('modal-discount-toggle').addEventListener('change', toggleModalDiscount);
     document.getElementById('modal-discount-type').addEventListener('change', updateModalSummary);
     document.getElementById('modal-discount-value').addEventListener('input', updateModalSummary);
+    
+    // Set up payment modal
+    setupPaymentModal();
+    
+    // Initialize payment method to cash by default
+    const paymentMethodSelect = document.getElementById('modal-payment-method');
+    if (paymentMethodSelect) {
+        paymentMethodSelect.value = 'cash';
+        // Trigger change event to show cash payment fields
+        paymentMethodSelect.dispatchEvent(new Event('change'));
+    }
+    
+    // Add event listener for process preorder button
+    const processPreorderBtn = document.getElementById('modal-process-preorder');
+    if (processPreorderBtn) {
+        processPreorderBtn.addEventListener('click', processPreorderPayment);
+    }
+}
+
+function openAddClientModal() {
+    document.getElementById('add-client-modal').classList.remove('hidden');
+}
+
+function closeAddClientModal() {
+    document.getElementById('add-client-modal').classList.add('hidden');
 }
 
 function toggleModalDiscount() {
@@ -1339,9 +1430,200 @@ function updateModalSummary() {
     `;
 }
 
-async function createPerOrderFromModal() {
+// Payment Modal Functions
+function setupPaymentModal() {
+    const paymentMethodSelect = document.getElementById('modal-payment-method');
+    const cashPaymentFields = document.getElementById('modal-cash-payment-fields');
+    const amountReceivedInput = document.getElementById('modal-amount-received');
+    const changeElement = document.getElementById('modal-change');
+    const paymentStatus = document.getElementById('modal-payment-status');
+    
+    // Set up event listeners
+    if (paymentMethodSelect) {
+        paymentMethodSelect.addEventListener('change', function() {
+            if (this.value === 'cash') {
+                cashPaymentFields.style.display = 'block';
+            } else {
+                cashPaymentFields.style.display = 'none';
+                if (paymentStatus) {
+                    paymentStatus.classList.add('hidden');
+                }
+            }
+        });
+    }
+    
+    if (amountReceivedInput) {
+        amountReceivedInput.addEventListener('input', calculateChange);
+    }
+}
+
+function calculateChange() {
+    const amountReceived = parseFloat(document.getElementById('modal-amount-received').value) || 0;
+    const total = calculateOrderTotal();
+    const change = amountReceived - total;
+    const changeElement = document.getElementById('modal-change');
+    const paymentStatus = document.getElementById('modal-payment-status');
+    const paymentStatusText = document.getElementById('modal-payment-status-text');
+    
+    if (changeElement) {
+        changeElement.textContent = `UGX ${Math.max(0, change).toLocaleString()}`;
+    }
+    
+    if (paymentStatus && paymentStatusText) {
+        if (change < 0) {
+            paymentStatusText.textContent = 'Insufficient amount';
+            paymentStatus.classList.remove('hidden');
+        } else {
+            paymentStatus.classList.add('hidden');
+        }
+    }
+}
+
+function calculateOrderTotal() {
+    const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
+    const itemDiscounts = cart.reduce((acc, item) => acc + (item.discount_amount || 0), 0);
+
+    const discountToggle = document.getElementById('modal-discount-toggle');
+    const discountType = document.getElementById('modal-discount-type').value;
+    const discountValue = parseFloat(document.getElementById('modal-discount-value').value) || 0;
+
+    let orderDiscount = 0;
+    if (discountToggle && discountToggle.checked && discountValue > 0) {
+        const discountableAmount = subtotal - itemDiscounts;
+        if (discountType === 'percentage') {
+            orderDiscount = (discountableAmount * discountValue) / 100;
+        } else {
+            orderDiscount = Math.min(discountValue, discountableAmount);
+        }
+    }
+
+    const totalDiscount = itemDiscounts + orderDiscount;
+    return subtotal - totalDiscount;
+}
+
+function processPreorderPayment() {
+    // Get payment method
+    const paymentMethod = document.getElementById('modal-payment-method').value;
+    const total = calculateOrderTotal();
+    
+    // If cash payment, validate amount received
+    if (paymentMethod === 'cash') {
+        const amountReceived = parseFloat(document.getElementById('modal-amount-received').value) || 0;
+        if (amountReceived < total) {
+            alert('Insufficient amount received');
+            return;
+        }
+    }
+    
+    // Process the preorder with payment information
+    createPerOrderFromModal(true); // Pass true to indicate payment processing
+}
+
+async function createPerOrderFromModal(withPayment = false) {
     if (cart.length === 0) {
         alert('Cart is empty');
+        return;
+    }
+
+    // Show loading state on the create button
+    const createBtn = document.getElementById('modal-create-btn');
+    const originalBtnContent = createBtn.innerHTML;
+    createBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating...';
+    createBtn.disabled = true;
+
+    try {
+        const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
+        const itemDiscounts = cart.reduce((acc, item) => acc + (item.discount_amount || 0), 0);
+
+        const discountToggle = document.getElementById('modal-discount-toggle');
+        const discountType = document.getElementById('modal-discount-type').value;
+        const discountValue = parseFloat(document.getElementById('modal-discount-value').value) || 0;
+
+        let orderDiscount = 0;
+        if (discountToggle.checked && discountValue > 0) {
+            const discountableAmount = subtotal - itemDiscounts;
+            if (discountType === 'percentage') {
+                orderDiscount = (discountableAmount * discountValue) / 100;
+            } else {
+                orderDiscount = Math.min(discountValue, discountableAmount);
+            }
+        }
+
+        const totalDiscount = itemDiscounts + orderDiscount;
+        const total = subtotal - totalDiscount;
+        
+        // Get payment method
+        const paymentMethod = document.getElementById('modal-payment-method').value;
+        let paymentData = { method: paymentMethod };
+        
+        // If cash payment, validate amount received
+        if (paymentMethod === 'cash') {
+            const amountReceived = parseFloat(document.getElementById('modal-amount-received').value) || 0;
+            if (amountReceived < total) {
+                alert('Insufficient amount received');
+                return;
+            }
+            paymentData.amount_received = amountReceived;
+            paymentData.change = amountReceived - total;
+        }
+
+        const perOrderData = {
+            customer_id: selectedClient ? selectedClient.id : null,
+            customer_name: selectedClient ? selectedClient.name : "Walk-in Customer",
+            customer_phone: selectedClient ? selectedClient.phone : null,
+            items: cart.map(item => ({
+                product_id: item.id,
+                product_name: item.name,
+                product_sku: item.sku,
+                quantity: item.quantity,
+                unit_price: item.price,
+                total_price: item.price * item.quantity,
+                discount_amount: item.discount_amount || 0,
+                tax_amount: 0,
+                is_decant: item.isDecant
+            })),
+            shipping_cost: 0,
+            discount_total: totalDiscount,
+            payment: paymentData // Include payment data in the order
+        };
+
+        const response = await fetch('/api/per-order/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(perOrderData)
+        });
+
+        if (response.ok) {
+            const newPerOrder = await response.json();
+            // Get the order ID (could be in 'id' or '_id' field)
+            const orderId = newPerOrder.id || newPerOrder._id;
+            
+            // Instead of redirecting to a confirmation page, just reload the page to show the new order
+            window.location.href = '/per-order';
+        } else {
+            alert('Failed to create pre-order');
+        }
+    } catch (error) {
+        console.error('Error creating pre-order:', error);
+        alert('An unexpected error occurred while creating the pre-order.');
+    } finally {
+        // Restore the original button state
+        createBtn.innerHTML = originalBtnContent;
+        createBtn.disabled = false;
+    }
+}
+
+async function updatePerOrderFromModal() {
+    const updateButton = document.getElementById('modal-update-btn');
+    const orderId = updateButton.dataset.orderId;
+
+    if (!orderId) {
+        alert('Error: Could not find Order ID to update.');
+        return;
+    }
+
+    if (cart.length === 0) {
+        alert('Cart cannot be empty');
         return;
     }
 
@@ -1353,7 +1635,7 @@ async function createPerOrderFromModal() {
     const discountValue = parseFloat(document.getElementById('modal-discount-value').value) || 0;
 
     let orderDiscount = 0;
-    if (discountToggle.checked && discountValue > 0) {
+    if (discountToggle && discountToggle.checked && discountValue > 0) {
         const discountableAmount = subtotal - itemDiscounts;
         if (discountType === 'percentage') {
             orderDiscount = (discountableAmount * discountValue) / 100;
@@ -1363,9 +1645,27 @@ async function createPerOrderFromModal() {
     }
 
     const totalDiscount = itemDiscounts + orderDiscount;
+    const total = subtotal - totalDiscount;
+    
+    // Get payment method
+    const paymentMethod = document.getElementById('modal-payment-method').value;
+    let paymentData = null;
+    
+    // If we have a payment method other than 'not_paid', include payment data
+    if (paymentMethod && paymentMethod !== 'not_paid') {
+        paymentData = { method: paymentMethod };
+        
+        // If cash payment, include amount received and calculate change
+        if (paymentMethod === 'cash') {
+            const amountReceived = parseFloat(document.getElementById('modal-amount-received').value) || 0;
+            if (amountReceived > 0) {
+                paymentData.amount_received = amountReceived;
+                paymentData.change = amountReceived - total;
+            }
+        }
+    }
 
     const perOrderData = {
-        customer_id: selectedClient ? selectedClient.id : null,
         customer_name: selectedClient ? selectedClient.name : "Walk-in Customer",
         customer_phone: selectedClient ? selectedClient.phone : null,
         items: cart.map(item => ({
@@ -1376,24 +1676,28 @@ async function createPerOrderFromModal() {
             unit_price: item.price,
             total_price: item.price * item.quantity,
             discount_amount: item.discount_amount || 0,
-            tax_amount: 0,
-            is_decant: item.isDecant
+            tax_amount: 0
         })),
-        shipping_cost: 0,
-        discount_total: totalDiscount
+        order_discount: orderDiscount,
+        shipping_cost: 0
     };
+    
+    // Only include payment data if it exists
+    if (paymentData) {
+        perOrderData.payment = paymentData;
+    }
 
-    const response = await fetch('/api/per-order/', {
-        method: 'POST',
+    const response = await fetch(`/api/per-order/${orderId}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(perOrderData)
     });
 
     if (response.ok) {
-        const newPerOrder = await response.json();
-        window.location.href = `/per-order/${newPerOrder.id}`;
+        alert('Pre-order updated successfully!');
+        window.location.reload();
     } else {
-        alert('Failed to create pre-order');
+        alert('Failed to update pre-order');
     }
 }
 
@@ -1661,6 +1965,67 @@ function openEditPerOrderModal(orderId) {
         }
     } else {
         selectedClient = null;
+    }
+
+    // Pre-fill payment information if available
+    if (order.payments && order.payments.length > 0) {
+        const payment = order.payments[0]; // Use the first payment record
+        const paymentMethodSelect = document.getElementById('modal-payment-method');
+        const amountReceivedInput = document.getElementById('modal-amount-received');
+        const changeElement = document.getElementById('modal-change');
+        const paymentStatus = document.getElementById('modal-payment-status');
+        
+        if (paymentMethodSelect) {
+            // Convert payment method to match select options
+            let paymentMethodValue = payment.method;
+            if (typeof payment.method === 'object' && payment.method.value) {
+                paymentMethodValue = payment.method.value;
+            } else if (typeof payment.method !== 'string') {
+                paymentMethodValue = String(payment.method);
+            }
+            
+            // Set the payment method
+            paymentMethodSelect.value = paymentMethodValue;
+            
+            // Trigger change event to show/hide cash fields
+            paymentMethodSelect.dispatchEvent(new Event('change'));
+            
+            // If it's a cash payment, pre-fill amount received and change
+            if (paymentMethodValue === 'cash' && amountReceivedInput) {
+                // Pre-fill amount received if available
+                if (payment.amount_received !== undefined && payment.amount_received !== null) {
+                    amountReceivedInput.value = payment.amount_received;
+                    // Trigger input event to calculate change
+                    amountReceivedInput.dispatchEvent(new Event('input'));
+                }
+                
+                // Pre-fill change if available
+                if (changeElement && payment.change !== undefined && payment.change !== null) {
+                    changeElement.textContent = `UGX ${payment.change.toLocaleString()}`;
+                }
+            }
+            
+            // Show payment status if available
+            if (paymentStatus && payment.amount_received !== undefined && payment.amount_received !== null) {
+                const total = order.total_amount || 0;
+                if (payment.amount_received < total) {
+                    const statusText = document.getElementById('modal-payment-status-text');
+                    if (statusText) {
+                        statusText.textContent = `Insufficient amount. Need UGX ${(total - payment.amount_received).toLocaleString()} more`;
+                    }
+                    paymentStatus.classList.remove('hidden');
+                } else {
+                    paymentStatus.classList.add('hidden');
+                }
+            }
+        }
+    } else {
+        // Reset payment method to default if no payment info
+        const paymentMethodSelect = document.getElementById('modal-payment-method');
+        if (paymentMethodSelect) {
+            paymentMethodSelect.value = 'not_paid';
+            paymentMethodSelect.dispatchEvent(new Event('change'));
+        }
     }
 
     // Update modal for "Edit" mode
@@ -2105,10 +2470,41 @@ function openViewPerOrderModal(orderId) {
                                 <span class="font-medium">-UGX ${order.discount_total.toLocaleString()}</span>
                             </div>
                             ` : ''}
+                            <!-- Payment Information -->
+                            ${order.payments && order.payments.length > 0 ? `
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Payment Method</span>
+                                <span class="font-medium">
+                                    ${(() => {
+                                        const payment = order.payments[0];
+                                        switch(payment.method) {
+                                            case 'cash': return 'Cash';
+                                            case 'card': return 'Card';
+                                            case 'mobile_money': return 'Mobile Money';
+                                            case 'bank_transfer': return 'Bank Transfer';
+                                            case 'not_paid': return 'Not Paid';
+                                            default: return payment.method.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                                        }
+                                    })()}
+                                </span>
+                            </div>
+                            ${order.payments[0].amount_received ? `
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Amount Received</span>
+                                <span class="font-medium">UGX ${order.payments[0].amount_received.toLocaleString()}</span>
+                            </div>
+                            ` : ''}
+                            ${order.payments[0].change ? `
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Change</span>
+                                <span class="font-medium">UGX ${order.payments[0].change.toLocaleString()}</span>
+                            </div>
+                            ` : ''}
+                            ` : ''}
                             <div class="border-t pt-2">
                                 <div class="flex justify-between text-lg font-bold">
                                     <span>Total</span>
-                                    <span>UGX ${order.total_amount.toLocaleString()}</span>
+                                    <span>UG ${order.total_amount.toLocaleString()}</span>
                                 </div>
                             </div>
                         </div>
@@ -2299,6 +2695,11 @@ document.addEventListener('DOMContentLoaded', () => {
     .no-print { display: none !important; }
     body { background: white !important; }
     .bg-gradient-to-r { background: #3b82f6 !important; color: white !important; }
+}
+
+/* Add loading state styles for the create button */
+#create-preorder-loading {
+    display: none;
 }
 </style>
 <!-- Confirm Order Modal -->

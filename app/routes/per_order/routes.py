@@ -31,6 +31,39 @@ async def per_order_detail_page(request: Request, per_order_id: str, current_use
         if not per_order:
             return RedirectResponse(url="/per-order?error=Per order not found", status_code=302)
 
+        # Convert ObjectId to string for JSON serialization
+        per_order["id"] = str(per_order["_id"])
+        del per_order["_id"]
+        
+        # Convert other ObjectIds to strings
+        if per_order.get("client_id"):
+            per_order["client_id"] = str(per_order["client_id"])
+        if per_order.get("created_by"):
+            per_order["created_by"] = str(per_order["created_by"])
+        if per_order.get("sale_id"):
+            per_order["sale_id"] = str(per_order["sale_id"])
+        if per_order.get("installment_id"):
+            per_order["installment_id"] = str(per_order["installment_id"])
+
+        # Convert datetime objects to ISO format
+        if per_order.get("created_at"):
+            per_order["created_at"] = per_order["created_at"].isoformat()
+        if per_order.get("updated_at"):
+            per_order["updated_at"] = per_order["updated_at"].isoformat()
+            
+        # Ensure payments are properly serialized
+        if 'payments' in per_order and isinstance(per_order['payments'], list):
+            for payment in per_order['payments']:
+                if isinstance(payment, dict) and 'method' in payment:
+                    # Handle both enum and string cases
+                    if hasattr(payment['method'], 'value'):
+                        payment['method'] = payment['method'].value
+                    elif not isinstance(payment['method'], str):
+                        payment['method'] = str(payment['method'])
+        
+        # Debug: Print payment information
+        print(f"DEBUG: Payment info for order {per_order.get('order_number', 'Unknown')}: {per_order.get('payments', 'No payments')}")
+
         # Get additional customer information if customer_id exists
         customer_info = None
         if per_order.get("customer_id"):
@@ -90,11 +123,32 @@ async def per_order_list_page(request: Request, current_user: User = Depends(get
     db = await get_database()
     per_orders = await db.per_orders.find().sort("created_at", -1).to_list(length=100)
 
+    # Convert ObjectId to string for JSON serialization
+    def convert_objectid_to_str(obj):
+        if isinstance(obj, dict):
+            return {k: convert_objectid_to_str(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [convert_objectid_to_str(elem) for elem in obj]
+        elif isinstance(obj, ObjectId):
+            return str(obj)
+        elif hasattr(obj, 'value'):  # Handle enum values
+            return obj.value
+        return obj
+
+    per_orders_serializable = [convert_objectid_to_str(order) for order in per_orders]
+    
+    # Ensure payments are properly serialized
+    for order in per_orders_serializable:
+        if 'payments' in order and isinstance(order['payments'], list):
+            for payment in order['payments']:
+                if isinstance(payment, dict) and 'method' in payment and hasattr(payment['method'], 'value'):
+                    payment['method'] = payment['method'].value
+
     context = {
         "request": request,
         "user": current_user,
-        "per_orders": per_orders,
-        "per_orders_json": json.loads(json_util.dumps(per_orders)),
+        "per_orders": per_orders_serializable,
+        "per_orders_json": json.loads(json_util.dumps(per_orders_serializable)),
         "per_order": None # Explicitly set per_order to None for the list view
     }
 

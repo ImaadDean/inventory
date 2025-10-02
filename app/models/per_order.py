@@ -71,6 +71,8 @@ class PerOrderPayment(BaseModel):
     method: PerOrderPaymentMethod
     reference: Optional[str] = Field(None, max_length=100)
     amount: float = Field(..., ge=0)
+    amount_received: Optional[float] = Field(None, ge=0)  # Add this field
+    change: Optional[float] = Field(None, ge=0)  # Add this field
     currency: str = Field(default="UGX", max_length=3)
     status: PerOrderPaymentStatus = PerOrderPaymentStatus.PENDING
     processed_at: Optional[datetime] = None
@@ -240,6 +242,14 @@ class PerOrder(BaseModel):
         }
 
 
+class PerOrderPaymentInfo(BaseModel):
+    """Payment information for creating a per order"""
+    method: str
+    amount_received: Optional[float] = None
+    change: Optional[float] = None
+    reference: Optional[str] = None
+
+
 class PerOrderCreate(BaseModel):
     """Schema for creating a new per order"""
     original_order_id: Optional[str] = None
@@ -256,6 +266,8 @@ class PerOrderCreate(BaseModel):
     tags: List[str] = Field(default_factory=list)
     source: str = Field(default="manual", max_length=50)
     channel: Optional[str] = Field(None, max_length=50)
+    # Add payment information
+    payment: Optional[PerOrderPaymentInfo] = None
 
 
 class PerOrderUpdate(BaseModel):
@@ -273,3 +285,5 @@ class PerOrderUpdate(BaseModel):
     notes: Optional[str] = Field(None, max_length=2000)
     internal_notes: Optional[str] = Field(None, max_length=2000)
     tags: Optional[List[str]] = None
+    # Add payment information for updates
+    payment: Optional[PerOrderPaymentInfo] = None
