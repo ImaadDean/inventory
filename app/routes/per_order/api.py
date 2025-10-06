@@ -298,19 +298,25 @@ async def confirm_per_order(
                 if per_order.get("status") == "confirmed":
                     raise HTTPException(status_code=400, detail="Order already confirmed")
 
-                # 2. Decrement stock for all items
+                # 2. Decrement stock for all items (but allow negative stock for per-orders)
                 product_ids = [ObjectId(item["product_id"]) for item in per_order["items"]]
                 products_map = {p["_id"]: p async for p in db.products.find({"_id": {"$in": product_ids}}, session=session)}
 
                 product_updates = []
+                stock_warnings = []
                 for item in per_order["items"]:
                     product_id = ObjectId(item["product_id"])
                     product = products_map.get(product_id)
                     quantity_to_decrement = item["quantity"]
 
+                    # Check stock but don't prevent confirmation for per-orders
                     if not product or product.get("stock_quantity", 0) < quantity_to_decrement:
-                        raise HTTPException(status_code=400, detail=f"Not enough stock for {item['product_name']}")
+                        # Add warning but continue processing
+                        product_name = item.get("product_name", "Unknown Product")
+                        current_stock = product.get("stock_quantity", 0) if product else 0
+                        stock_warnings.append(f"Not enough stock for {product_name} (needed: {quantity_to_decrement}, available: {current_stock})")
 
+                    # Still decrement stock even if it goes negative
                     product_updates.append(
                         db.products.update_one(
                             {"_id": product_id},
@@ -419,12 +425,18 @@ async def confirm_per_order(
                     session=session
                 )
 
-                return {
+                # Prepare response with any stock warnings
+                response_data = {
                     "success": True,
                     "message": "Order confirmed successfully",
                     "order_id": str(order_result.inserted_id),
                     "sale_id": str(sale_result.inserted_id)
                 }
+                
+                if stock_warnings:
+                    response_data["warnings"] = stock_warnings
+
+                return response_data
 
             except Exception as e:
                 await session.abort_transaction()

@@ -1143,41 +1143,28 @@ function displaySearchResultsInModal(products) {
 
             let fullBottleOption = '';
             const productPrice = product.price || 0;
-            if (product.stock_quantity > 0) {
-                fullBottleOption = `
-                    <div class="group bg-white hover:bg-blue-50 cursor-pointer border border-gray-200 rounded-lg p-2" onclick='addToCart("${product.id}", "${product.name.replace(/'/g, "\'") } (Full Bottle)", ${productPrice}, "${product.sku}", ${product.stock_quantity}, false)'>
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center">
-                                <i class="fas fa-wine-bottle text-blue-500 mr-2"></i>
-                                <div>
-                                    <p class="text-sm font-medium text-gray-900">Full Bottle (${product.bottle_size_ml || 0}ml)</p>
-                                    <p class="text-xs text-gray-500">${product.stock_quantity} bottles available</p>
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <p class="font-bold text-sm text-blue-600">UGX ${productPrice.toLocaleString()}</p>
-                                <button class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-2 py-1 rounded text-xs font-medium">
-                                    <i class="fas fa-plus mr-1"></i>Add Bottle
-                                </button>
+            // Allow adding full bottles even when out of stock for per-orders
+            fullBottleOption = `
+                <div class="group bg-white hover:bg-blue-50 cursor-pointer border ${product.stock_quantity > 0 ? 'border-gray-200' : 'border-yellow-300'} rounded-lg p-2" onclick='addToCart("${product.id}", "${product.name.replace(/'/g, "\'") } (Full Bottle)", ${productPrice}, "${product.sku}", ${product.stock_quantity}, false)'>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <i class="fas fa-wine-bottle text-blue-500 mr-2"></i>
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">Full Bottle (${product.bottle_size_ml || 0}ml)</p>
+                                <p class="text-xs ${product.stock_quantity > 0 ? 'text-gray-500' : 'text-yellow-600'}">
+                                    ${product.stock_quantity > 0 ? `${product.stock_quantity} bottles available` : 'Out of Stock - Can still add to pre-order'}
+                                </p>
                             </div>
                         </div>
-                    </div>
-                `;
-            } else {
-                fullBottleOption = `
-                    <div class="group bg-gray-100 border border-gray-200 rounded-lg p-2 opacity-50">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center">
-                                <i class="fas fa-wine-bottle text-gray-400 mr-2"></i>
-                                <div>
-                                    <p class="text-sm font-medium text-gray-500">Full Bottle (${product.bottle_size_ml || 0}ml)</p>
-                                    <p class="text-xs text-red-500">Out of Stock</p>
-                                </div>
-                            </div>
+                        <div class="text-right">
+                            <p class="font-bold text-sm text-blue-600">UGX ${productPrice.toLocaleString()}</p>
+                            <button class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-2 py-1 rounded text-xs font-medium">
+                                <i class="fas fa-plus mr-1"></i>Add Bottle
+                            </button>
                         </div>
                     </div>
-                `;
-            }
+                </div>
+            `;
 
             return `
                 <div class="bg-gray-50 rounded-lg p-2 space-y-2">
@@ -1189,13 +1176,16 @@ function displaySearchResultsInModal(products) {
         }
 
         const productPrice = product.price || 0;
+        // Allow adding products even when out of stock for per-orders
         return `
-            <div class="group bg-gray-50 hover:bg-blue-50 border border-gray-200 rounded-lg p-3 cursor-pointer" onclick='addToCart("${product.id}", "${product.name.replace(/'/g, "\'") }", ${productPrice}, "${product.sku}", ${product.stock_quantity}, false)'>
+            <div class="group bg-gray-50 hover:bg-blue-50 border ${product.stock_quantity > 0 ? 'border-gray-200' : 'border-yellow-300'} rounded-lg p-3 cursor-pointer" onclick='addToCart("${product.id}", "${product.name.replace(/'/g, "\'") }", ${productPrice}, "${product.sku}", ${product.stock_quantity}, false)'>
                 <div class="flex justify-between items-center">
                     <div class="flex-1">
                         <p class="font-semibold text-sm text-gray-800 group-hover:text-blue-800">${product.name || 'Unnamed Product'}</p>
                         <p class="text-xs text-gray-500">${product.sku || ''}</p>
-                        <p class="text-xs text-gray-500">${product.stock_quantity} ${product.unit || 'pcs'}</p>
+                        <p class="text-xs ${product.stock_quantity > 0 ? 'text-gray-500' : 'text-yellow-600'}">
+                            ${product.stock_quantity} ${product.unit || 'pcs'} ${product.stock_quantity <= 0 ? '(Out of Stock - Can still add to pre-order)' : ''}
+                        </p>
                     </div>
                     <div class="text-right">
                         <p class="font-bold text-sm text-blue-600 mb-1">UGX ${productPrice.toLocaleString()}</p>
@@ -1291,8 +1281,10 @@ function addToCart(id, name, price, sku, stock, isDecant) {
     const cartItemId = isDecant ? `${id}-DECANT` : id;
     const existingItem = cart.find(item => item.cartItemId === cartItemId);
     if (existingItem) {
+        // Allow adding more items even if it exceeds stock for per-orders
         existingItem.quantity++;
     } else {
+        // Add item to cart regardless of stock for per-orders
         cart.push({ id, name, price, sku, quantity: 1, stock, isDecant, cartItemId, discount_amount: 0, discount_type: 'fixed', discount_value: 0 });
     }
     updateModalCartDisplay();
@@ -1316,9 +1308,11 @@ function updateModalCartDisplay() {
         const isDecant = item.isDecant || false;
         const iconClass = isDecant ? 'fas fa-vial' : 'fas fa-box';
         const bgColor = isDecant ? 'from-purple-500 to-pink-600' : 'from-blue-500 to-indigo-600';
+        const outOfStock = item.stock !== undefined && item.stock <= 0;
+        const insufficientStock = item.stock !== undefined && item.quantity > item.stock;
 
         return `
-        <div class="group bg-white hover:bg-gray-50 border border-gray-200 rounded-xl p-3 transition-all duration-200 shadow-sm">
+        <div class="group bg-white hover:bg-gray-50 border ${outOfStock || insufficientStock ? 'border-yellow-300' : 'border-gray-200'} rounded-xl p-3 transition-all duration-200 shadow-sm">
             <div class="flex items-center justify-between">
                 <div class="flex items-center flex-1 mr-3">
                     <div class="w-8 h-8 bg-gradient-to-r ${bgColor} rounded-lg flex items-center justify-center mr-3 shadow-sm">
@@ -1332,6 +1326,8 @@ function updateModalCartDisplay() {
                                 UGX ${item.price.toLocaleString()}
                             </span>
                             ${isDecant ? '<span class="bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-xs">Decant</span>' : ''}
+                            ${outOfStock ? '<span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs">Out of Stock</span>' : ''}
+                            ${insufficientStock && !outOfStock ? `<span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs">Insufficient Stock (${item.stock} available)</span>` : ''}
                         </div>
                     </div>
                 </div>
@@ -1372,9 +1368,11 @@ function updateQuantityInModal(cartItemId, newQuantity) {
     }
     const item = cart.find(item => item.cartItemId === cartItemId);
     if (item) {
+        // For per-orders, we allow quantities to exceed stock
+        // We'll just show a warning but still allow it
         if (item.stock !== undefined && newQuantity > item.stock) {
-            alert(`Cannot add more ${item.name}. Only ${item.stock} available.`);
-            return;
+            // Show warning but still allow the update
+            console.warn(`Quantity ${newQuantity} exceeds stock ${item.stock} for ${item.name}`);
         }
         item.quantity = newQuantity;
         updateModalCartDisplay();
@@ -1409,8 +1407,33 @@ function updateModalSummary() {
 
     const totalDiscount = itemDiscounts + orderDiscount;
     const total = subtotal - totalDiscount;
+    
+    // Check for out of stock items
+    const outOfStockItems = cart.filter(item => item.stock !== undefined && item.stock <= 0);
+    const insufficientStockItems = cart.filter(item => item.stock !== undefined && item.quantity > item.stock && item.stock > 0);
+    const hasStockIssues = outOfStockItems.length > 0 || insufficientStockItems.length > 0;
+
+    let stockWarning = '';
+    if (hasStockIssues) {
+        stockWarning = `
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-3">
+            <div class="flex items-start">
+                <i class="fas fa-exclamation-triangle text-yellow-600 mt-0.5 mr-2"></i>
+                <div>
+                    <p class="text-sm font-semibold text-yellow-800">Stock Warning</p>
+                    <p class="text-xs text-yellow-700">
+                        ${outOfStockItems.length > 0 ? `${outOfStockItems.length} item(s) are out of stock. ` : ''}
+                        ${insufficientStockItems.length > 0 ? `${insufficientStockItems.length} item(s) have insufficient stock. ` : ''}
+                        You can still create this pre-order.
+                    </p>
+                </div>
+            </div>
+        </div>
+        `;
+    }
 
     summaryContainer.innerHTML = `
+        ${stockWarning}
         <div class="space-y-3">
             <div class="flex justify-between items-center p-2 bg-gray-50 rounded-lg">
                 <span class="text-gray-600 text-sm font-medium">Subtotal:</span>
@@ -1497,8 +1520,7 @@ function calculateOrderTotal() {
         }
     }
 
-    const totalDiscount = itemDiscounts + orderDiscount;
-    return subtotal - totalDiscount;
+    return subtotal - orderDiscount - itemDiscounts;
 }
 
 function processPreorderPayment() {
@@ -1894,8 +1916,16 @@ async function confirmOrder() {
         console.log('Received response:', response); // New log
 
         if (response.ok) {
+            const responseData = await response.json();
             console.log('Order confirmed successfully'); // New log
-            alert('Order confirmed successfully!');
+            
+            // Show any warnings if they exist
+            if (responseData.warnings && responseData.warnings.length > 0) {
+                alert(`Order confirmed with warnings:\n\n${responseData.warnings.join('\n')}`);
+            } else {
+                alert('Order confirmed successfully!');
+            }
+            
             window.location.reload();
         } else {
             const errorData = await response.json();
