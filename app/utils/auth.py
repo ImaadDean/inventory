@@ -10,8 +10,13 @@ from ..models import User, UserRole
 from .timezone import now_kampala, kampala_to_utc
 from bson import ObjectId
 
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Password hashing with bcrypt backend configuration
+pwd_context = CryptContext(
+    schemes=["bcrypt"],
+    deprecated="auto",
+    bcrypt__rounds=12,
+    bcrypt__ident="2b"
+)
 
 # JWT token scheme
 security = HTTPBearer()
@@ -19,11 +24,21 @@ security = HTTPBearer()
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against its hash"""
+    # Truncate password to 72 bytes to avoid bcrypt limitation
+    if isinstance(plain_password, str):
+        plain_password = plain_password.encode('utf-8')
+    if len(plain_password) > 72:
+        plain_password = plain_password[:72]
     return pwd_context.verify(plain_password, hashed_password)
 
 
 def get_password_hash(password: str) -> str:
     """Hash a password"""
+    # Truncate password to 72 bytes to avoid bcrypt limitation
+    if isinstance(password, str):
+        password = password.encode('utf-8')
+    if len(password) > 72:
+        password = password[:72]
     return pwd_context.hash(password)
 
 

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Depends, Request
+from fastapi import APIRouter, HTTPException, status, Depends, Request, Body
 from datetime import datetime, timedelta
 from ...utils.timezone import now_kampala, kampala_to_utc
 from ...config.database import get_database
@@ -13,7 +13,9 @@ from ...utils.auth import (
     verify_password,
     get_user_by_id,
     get_user_by_email,
-    check_email_exists
+    get_user_by_username,
+    check_email_exists,
+    require_admin
 )
 from ...utils.email import (
     generate_reset_token,
@@ -39,7 +41,75 @@ async def ping(request: Request):
     }
 
 
-# Public registration removed - Only admin/manager can create users
+@router.post("/register", response_model=dict)
+async def register_user(request_data: UserRegister, current_user: User = Depends(require_admin)):
+    """Register a new user (admin only)"""
+    try:
+        # Check if username already exists
+        existing_user = await get_user_by_username(request_data.username)
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Username already registered"
+            )
+
+        # Check if email already exists
+        existing_email = await get_user_by_email(request_data.email)
+        if existing_email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already registered"
+            )
+
+        # Validate password length (bcrypt limitation)
+        if len(request_data.password.encode('utf-8')) > 72:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Password is too long. Please use a password with fewer than 72 characters."
+            )
+
+        # Hash password
+        hashed_password = get_password_hash(request_data.password)
+
+        # Create user object
+        user_data = {
+            "username": request_data.username,
+            "email": request_data.email,
+            "full_name": request_data.full_name,
+            "hashed_password": hashed_password,
+            "role": request_data.role.value,  # Convert enum to string
+            "is_active": True,
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
+        }
+
+        # Insert user into database
+        db = await get_database()
+        result = await db.users.insert_one(user_data)
+
+        # Prepare response
+        user_response = UserResponse(
+            id=str(result.inserted_id),
+            username=request_data.username,
+            email=request_data.email,
+            full_name=request_data.full_name,
+            role=request_data.role,
+            is_active=True
+        )
+
+        return {
+            "message": "User registered successfully",
+            "user": user_response
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error registering user: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error"
+        )
 
 
 @router.post("/login", response_model=Token)
@@ -105,32 +175,49 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
 
 
 @router.post("/change-password")
-async def change_password(
-    password_data: PasswordChange,
-    current_user: User = Depends(get_current_user)
-):
+async def change_password(current_user: User = Depends(get_current_user), request_data: PasswordChange = Body(...)):
     """Change user password"""
-    # Verify current password
-    if not verify_password(password_data.current_password, current_user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Incorrect current password"
+    try:
+        # Verify current password
+        if not verify_password(request_data.current_password, current_user.hashed_password):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Current password is incorrect"
+            )
+
+        # Validate new password length (bcrypt limitation)
+        if len(request_data.new_password.encode('utf-8')) > 72:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="New password is too long. Please use a password with fewer than 72 characters."
+            )
+
+        # Hash new password
+        new_hashed_password = get_password_hash(request_data.new_password)
+
+        # Update password in database
+        db = await get_database()
+        await db.users.update_one(
+            {"_id": current_user.id},
+            {"$set": {
+                "hashed_password": new_hashed_password,
+                "updated_at": datetime.utcnow()
+            }}
         )
 
-    # Hash new password
-    new_hashed_password = get_password_hash(password_data.new_password)
+        # Send confirmation email
+        await send_password_changed_notification(current_user.email, current_user.full_name)
 
-    # Update password in database
-    db = await get_database()
-    await db.users.update_one(
-        {"_id": current_user.id},
-        {"$set": {
-            "hashed_password": new_hashed_password,
-            "updated_at": datetime.utcnow()
-        }}
-    )
+        return {"message": "Password changed successfully"}
 
-    return {"message": "Password changed successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error changing password: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error"
+        )
 
 
 @router.post("/forgot-password")
@@ -210,6 +297,13 @@ async def reset_password(request: ResetPasswordRequest):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Passwords do not match"
+            )
+        
+        # Validate password length (bcrypt limitation)
+        if len(request.new_password.encode('utf-8')) > 72:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Password is too long. Please use a password with fewer than 72 characters."
             )
 
         # Verify reset token

@@ -198,6 +198,13 @@ async def reset_password_form(request: Request):
                 "auth/reset_password.html",
                 {"request": request, "token": token, "error": "Passwords do not match"}
             )
+        
+        # Validate password length (bcrypt limitation)
+        if len(new_password.encode('utf-8')) > 72:
+            return templates.TemplateResponse(
+                "auth/reset_password.html",
+                {"request": request, "token": token, "error": "Password is too long. Please use a password with fewer than 72 characters."}
+            )
 
         # Verify reset token
         user_id = await verify_reset_token(token)

@@ -18,11 +18,26 @@ A comprehensive FastAPI-based inventory management system with MongoDB backend, 
 
 - **Backend**: FastAPI (Python 3.11+)
 - **Database**: MongoDB with Motor (async driver)
-- **Authentication**: JWT with bcrypt password hashing
+- **Authentication**: JWT with bcrypt password hashing (with 72-byte limit handling)
 - **Frontend**: Jinja2 templates with static file serving
 - **File Storage**: Cloudinary integration for image management
 - **Email**: FastAPI-Mail for notifications
 - **Containerization**: Docker & Docker Compose
+
+## Recent Security Improvements
+
+### Bcrypt Password Length Handling
+The system now properly handles bcrypt's 72-byte password limitation:
+- Passwords longer than 72 bytes are automatically truncated before hashing
+- All password-related operations (registration, login, password change, reset) now validate password length
+- Clear error messages are provided to users when passwords exceed the limit
+- Existing password hashes are compatible with the new implementation
+
+### Bcrypt Compatibility Fixes
+Resolved compatibility issues between passlib and bcrypt libraries:
+- Updated dependencies to ensure proper bcrypt version compatibility
+- Fixed AttributeError related to bcrypt module structure
+- Improved password hashing reliability across different environments
 
 ## Quick Start
 
